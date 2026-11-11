@@ -1,0 +1,3434 @@
+[
+  {
+    "name": "United States",
+    "code": "us",
+    "regions": [
+      {
+        "path": "/us/alabama",
+        "name": "Alabama",
+        "title": "Alabama Classifieds & Personal Ads for Backpage Alabama Alternative",
+        "cities": [
+          {
+            "path": "/city/auburn",
+            "name": "Auburn",
+            "title": "Auburn Classifieds & Personal Ads for Backpage Auburn Alternative"
+          },
+          {
+            "path": "/city/birmingham",
+            "name": "Birmingham",
+            "title": "Birmingham Classifieds & Personal Ads for Backpage Birmingham Alternative"
+          },
+          {
+            "path": "/city/dothan",
+            "name": "Dothan",
+            "title": "Dothan Classifieds & Personal Ads for Backpage Dothan Alternative"
+          },
+          {
+            "path": "/city/gadsden",
+            "name": "Gadsden",
+            "title": "Gadsden Classifieds & Personal Ads for Backpage Gadsden Alternative"
+          },
+          {
+            "path": "/city/huntsville-al",
+            "name": "Huntsville",
+            "title": "Huntsville Classifieds & Personal Ads for Backpage Huntsville Alternative"
+          },
+          {
+            "path": "/city/mobile",
+            "name": "Mobile",
+            "title": "Mobile Classifieds & Personal Ads for Backpage Mobile Alternative"
+          },
+          {
+            "path": "/city/montgomery",
+            "name": "Montgomery",
+            "title": "Montgomery Classifieds & Personal Ads for Backpage Montgomery Alternative"
+          },
+          {
+            "path": "/city/muscle-shoals",
+            "name": "Muscle Shoals",
+            "title": "Muscle Shoals Classifieds & Personal Ads for Backpage Muscle Shoals Alternative"
+          },
+          {
+            "path": "/city/tuscaloosa",
+            "name": "Tuscaloosa",
+            "title": "Tuscaloosa Classifieds & Personal Ads for Backpage Tuscaloosa Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/alaska",
+        "name": "Alaska",
+        "title": "Alaska Classifieds & Personal Ads for Backpage Alaska Alternative",
+        "cities": [
+          {
+            "path": "/city/anchorage",
+            "name": "Anchorage",
+            "title": "Anchorage Classifieds & Personal Ads for Backpage Anchorage Alternative"
+          },
+          {
+            "path": "/city/fairbanks",
+            "name": "Fairbanks",
+            "title": "Fairbanks Classifieds & Personal Ads for Backpage Fairbanks Alternative"
+          },
+          {
+            "path": "/city/juneau",
+            "name": "Juneau",
+            "title": "Juneau Classifieds & Personal Ads for Backpage Juneau Alternative"
+          },
+          {
+            "path": "/city/kenaipeninsula",
+            "name": "Kenai Peninsula",
+            "title": "Kenai Peninsula Classifieds & Personal Ads for Backpage Kenai Peninsula Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/arizona",
+        "name": "Arizona",
+        "title": "Arizona Classifieds & Personal Ads for Backpage Arizona Alternative",
+        "cities": [
+          {
+            "path": "/city/flagstaff",
+            "name": "Flagstaff",
+            "title": "Flagstaff Classifieds & Personal Ads for Backpage Flagstaff Alternative"
+          },
+          {
+            "path": "/city/mohave-county",
+            "name": "Mohave County",
+            "title": "Mohave County Classifieds & Personal Ads for Backpage Mohave County Alternative"
+          },
+          {
+            "path": "/city/phoenix",
+            "name": "Phoenix",
+            "title": "Phoenix Classifieds & Personal Ads for Backpage Phoenix Alternative"
+          },
+          {
+            "path": "/city/prescott",
+            "name": "Prescott",
+            "title": "Prescott Classifieds & Personal Ads for Backpage Prescott Alternative"
+          },
+          {
+            "path": "/city/show-low",
+            "name": "Show Low",
+            "title": "Show Low Classifieds & Personal Ads for Backpage Show Low Alternative"
+          },
+          {
+            "path": "/city/sierra-vista",
+            "name": "Sierra Vista",
+            "title": "Sierra Vista Classifieds & Personal Ads for Backpage Sierra Vista Alternative"
+          },
+          {
+            "path": "/city/tucson",
+            "name": "Tucson",
+            "title": "Tucson Classifieds & Personal Ads for Backpage Tucson Alternative"
+          },
+          {
+            "path": "/city/yuma",
+            "name": "Yuma",
+            "title": "Yuma Classifieds & Personal Ads for Backpage Yuma Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/arkansas",
+        "name": "Arkansas",
+        "title": "Arkansas Classifieds & Personal Ads for Backpage Arkansas Alternative",
+        "cities": [
+          {
+            "path": "/city/fayetteville",
+            "name": "Fayetteville",
+            "title": "Fayetteville Classifieds & Personal Ads for Backpage Fayetteville Alternative"
+          },
+          {
+            "path": "/city/fort-smith",
+            "name": "Fort Smith",
+            "title": "Fort Smith Classifieds & Personal Ads for Backpage Fort Smith Alternative"
+          },
+          {
+            "path": "/city/jonesboro",
+            "name": "Jonesboro",
+            "title": "Jonesboro Classifieds & Personal Ads for Backpage Jonesboro Alternative"
+          },
+          {
+            "path": "/city/little-rock",
+            "name": "Little Rock",
+            "title": "Little Rock Classifieds & Personal Ads for Backpage Little Rock Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/california",
+        "name": "California",
+        "title": "California Classifieds & Personal Ads for Backpage California Alternative",
+        "cities": [
+          {
+            "path": "/city/bakersfield",
+            "name": "Bakersfield",
+            "title": "Bakersfield Classifieds & Personal Ads for Backpage Bakersfield Alternative"
+          },
+          {
+            "path": "/city/chico",
+            "name": "Chico",
+            "title": "Chico Classifieds & Personal Ads for Backpage Chico Alternative"
+          },
+          {
+            "path": "/city/fresno",
+            "name": "Fresno",
+            "title": "Fresno Classifieds & Personal Ads for Backpage Fresno Alternative"
+          },
+          {
+            "path": "/city/humboldt-county",
+            "name": "Humboldt County",
+            "title": "Humboldt County Classifieds & Personal Ads for Backpage Humboldt County Alternative"
+          },
+          {
+            "path": "/city/imperial-county",
+            "name": "Imperial County",
+            "title": "Imperial County Classifieds & Personal Ads for Backpage Imperial County Alternative"
+          },
+          {
+            "path": "/city/inland-empire",
+            "name": "Inland Empire",
+            "title": "Inland Empire Classifieds & Personal Ads for Backpage Inland Empire Alternative"
+          },
+          {
+            "path": "/city/long-beach",
+            "name": "Long Beach",
+            "title": "Long Beach Classifieds & Personal Ads for Backpage Long Beach Alternative"
+          },
+          {
+            "path": "/city/los-angeles",
+            "name": "Los Angeles",
+            "title": "Los Angeles Classifieds & Personal Ads for Backpage Los Angeles Alternative"
+          },
+          {
+            "path": "/city/mendocino",
+            "name": "Mendocino",
+            "title": "Mendocino Classifieds & Personal Ads for Backpage Mendocino Alternative"
+          },
+          {
+            "path": "/city/merced",
+            "name": "Merced",
+            "title": "Merced Classifieds & Personal Ads for Backpage Merced Alternative"
+          },
+          {
+            "path": "/city/modesto",
+            "name": "Modesto",
+            "title": "Modesto Classifieds & Personal Ads for Backpage Modesto Alternative"
+          },
+          {
+            "path": "/city/monterey",
+            "name": "Monterey",
+            "title": "Monterey Classifieds & Personal Ads for Backpage Monterey Alternative"
+          },
+          {
+            "path": "/city/north-bay",
+            "name": "North Bay",
+            "title": "North Bay Classifieds & Personal Ads for Backpage North Bay Alternative"
+          },
+          {
+            "path": "/city/oakland",
+            "name": "Oakland",
+            "title": "Oakland Classifieds & Personal Ads for Backpage Oakland Alternative"
+          },
+          {
+            "path": "/city/orange-county",
+            "name": "Orange County",
+            "title": "Orange County Classifieds & Personal Ads for Backpage Orange County Alternative"
+          },
+          {
+            "path": "/city/palm-springs",
+            "name": "Palm Springs",
+            "title": "Palm Springs Classifieds & Personal Ads for Backpage Palm Springs Alternative"
+          },
+          {
+            "path": "/city/palmdale",
+            "name": "Palmdale",
+            "title": "Palmdale Classifieds & Personal Ads for Backpage Palmdale Alternative"
+          },
+          {
+            "path": "/city/redding",
+            "name": "Redding",
+            "title": "Redding Classifieds & Personal Ads for Backpage Redding Alternative"
+          },
+          {
+            "path": "/city/sacramento",
+            "name": "Sacramento",
+            "title": "Sacramento Classifieds & Personal Ads for Backpage Sacramento Alternative"
+          },
+          {
+            "path": "/city/san-diego",
+            "name": "San Diego",
+            "title": "San Diego Classifieds & Personal Ads for Backpage San Diego Alternative"
+          },
+          {
+            "path": "/city/san-fernando-valley",
+            "name": "San Fernando Valley",
+            "title": "San Fernando Valley Classifieds & Personal Ads for Backpage San Fernando Valley Alternative"
+          },
+          {
+            "path": "/city/san-francisco",
+            "name": "San Francisco",
+            "title": "San Francisco Classifieds & Personal Ads for Backpage San Francisco Alternative"
+          },
+          {
+            "path": "/city/san-gabriel-valley",
+            "name": "San Gabriel Valley",
+            "title": "San Gabriel Valley Classifieds & Personal Ads for Backpage San Gabriel Valley Alternative"
+          },
+          {
+            "path": "/city/san-jose",
+            "name": "San Jose",
+            "title": "San Jose Classifieds & Personal Ads for Backpage San Jose Alternative"
+          },
+          {
+            "path": "/city/san-luis-obispo",
+            "name": "San Luis Obispo",
+            "title": "San Luis Obispo Classifieds & Personal Ads for Backpage San Luis Obispo Alternative"
+          },
+          {
+            "path": "/city/san-mateo",
+            "name": "San Mateo",
+            "title": "San Mateo Classifieds & Personal Ads for Backpage San Mateo Alternative"
+          },
+          {
+            "path": "/city/santa-barbara",
+            "name": "Santa Barbara",
+            "title": "Santa Barbara Classifieds & Personal Ads for Backpage Santa Barbara Alternative"
+          },
+          {
+            "path": "/city/santa-cruz",
+            "name": "Santa Cruz",
+            "title": "Santa Cruz Classifieds & Personal Ads for Backpage Santa Cruz Alternative"
+          },
+          {
+            "path": "/city/santa-maria",
+            "name": "Santa Maria",
+            "title": "Santa Maria Classifieds & Personal Ads for Backpage Santa Maria Alternative"
+          },
+          {
+            "path": "/city/siskiyou",
+            "name": "Siskiyou",
+            "title": "Siskiyou Classifieds & Personal Ads for Backpage Siskiyou Alternative"
+          },
+          {
+            "path": "/city/stockton",
+            "name": "Stockton",
+            "title": "Stockton Classifieds & Personal Ads for Backpage Stockton Alternative"
+          },
+          {
+            "path": "/city/ventura",
+            "name": "Ventura",
+            "title": "Ventura Classifieds & Personal Ads for Backpage Ventura Alternative"
+          },
+          {
+            "path": "/city/visalia",
+            "name": "Visalia",
+            "title": "Visalia Classifieds & Personal Ads for Backpage Visalia Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/colorado",
+        "name": "Colorado",
+        "title": "Colorado Classifieds & Personal Ads for Backpage Colorado Alternative",
+        "cities": [
+          {
+            "path": "/city/boulder",
+            "name": "Boulder",
+            "title": "Boulder Classifieds & Personal Ads for Backpage Boulder Alternative"
+          },
+          {
+            "path": "/city/colorado-springs",
+            "name": "Colorado Springs",
+            "title": "Colorado Springs Classifieds & Personal Ads for Backpage Colorado Springs Alternative"
+          },
+          {
+            "path": "/city/denver",
+            "name": "Denver",
+            "title": "Denver Classifieds & Personal Ads for Backpage Denver Alternative"
+          },
+          {
+            "path": "/city/fort-collins",
+            "name": "Fort Collins",
+            "title": "Fort Collins Classifieds & Personal Ads for Backpage Fort Collins Alternative"
+          },
+          {
+            "path": "/city/pueblo",
+            "name": "Pueblo",
+            "title": "Pueblo Classifieds & Personal Ads for Backpage Pueblo Alternative"
+          },
+          {
+            "path": "/city/rockies",
+            "name": "Rockies",
+            "title": "Rockies Classifieds & Personal Ads for Backpage Rockies Alternative"
+          },
+          {
+            "path": "/city/western-slope",
+            "name": "Western Slope",
+            "title": "Western Slope Classifieds & Personal Ads for Backpage Western Slope Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/connecticut",
+        "name": "Connecticut",
+        "title": "Connecticut Classifieds & Personal Ads for Backpage Connecticut Alternative",
+        "cities": [
+          {
+            "path": "/city/bridgeport",
+            "name": "Bridgeport",
+            "title": "Bridgeport Classifieds & Personal Ads for Backpage Bridgeport Alternative"
+          },
+          {
+            "path": "/city/eastern-connecticut",
+            "name": "Eastern Connecticut",
+            "title": "Eastern Connecticut Classifieds & Personal Ads for Backpage Eastern Connecticut Alternative"
+          },
+          {
+            "path": "/city/hartford",
+            "name": "Hartford",
+            "title": "Hartford Classifieds & Personal Ads for Backpage Hartford Alternative"
+          },
+          {
+            "path": "/city/new-haven",
+            "name": "New Haven",
+            "title": "New Haven Classifieds & Personal Ads for Backpage New Haven Alternative"
+          },
+          {
+            "path": "/city/northwest-connecticut",
+            "name": "Northwest",
+            "title": "Northwest Classifieds & Personal Ads for Backpage Northwest Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/delaware",
+        "name": "Delaware",
+        "title": "Delaware Classifieds & Personal Ads for Backpage Delaware Alternative",
+        "cities": [
+          {
+            "path": "/city/delaware",
+            "name": "Delaware",
+            "title": "Delaware Classifieds & Personal Ads for Backpage Delaware Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/district-of-columbia",
+        "name": "District Of Columbia",
+        "title": "District Of Columbia Classifieds & Personal Ads for Backpage District Of Columbia Alternative",
+        "cities": [
+          {
+            "path": "/city/northern-virginia",
+            "name": "Northern Virginia",
+            "title": "Northern Virginia Classifieds & Personal Ads for Backpage Northern Virginia Alternative"
+          },
+          {
+            "path": "/city/southern-maryland",
+            "name": "Southern Maryland",
+            "title": "Southern Maryland Classifieds & Personal Ads for Backpage Southern Maryland Alternative"
+          },
+          {
+            "path": "/city/washington-dc",
+            "name": "Washington Dc",
+            "title": "Washington DC Classifieds & Personal Ads for Backpage Washington DC Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/florida",
+        "name": "Florida",
+        "title": "Florida Classifieds & Personal Ads for Backpage Florida Alternative",
+        "cities": [
+          {
+            "path": "/city/daytona",
+            "name": "Daytona",
+            "title": "Daytona Classifieds & Personal Ads for Backpage Daytona Alternative"
+          },
+          {
+            "path": "/city/fort-lauderdale",
+            "name": "Fort Lauderdale",
+            "title": "Fort Lauderdale Classifieds & Personal Ads for Backpage Fort Lauderdale Alternative"
+          },
+          {
+            "path": "/city/fort-myers",
+            "name": "Fort Myers",
+            "title": "Fort Myers Classifieds & Personal Ads for Backpage Fort Myers Alternative"
+          },
+          {
+            "path": "/city/gainesville",
+            "name": "Gainesville",
+            "title": "Gainesville Classifieds & Personal Ads for Backpage Gainesville Alternative"
+          },
+          {
+            "path": "/city/jacksonville",
+            "name": "Jacksonville",
+            "title": "Jacksonville Classifieds & Personal Ads for Backpage Jacksonville Alternative"
+          },
+          {
+            "path": "/city/keys",
+            "name": "Keys",
+            "title": "Keys Classifieds & Personal Ads for Backpage Keys Alternative"
+          },
+          {
+            "path": "/city/lakeland",
+            "name": "Lakeland",
+            "title": "Lakeland Classifieds & Personal Ads for Backpage Lakeland Alternative"
+          },
+          {
+            "path": "/city/miami",
+            "name": "Miami",
+            "title": "Miami Classifieds & Personal Ads for Backpage Miami Alternative"
+          },
+          {
+            "path": "/city/ocala",
+            "name": "Ocala",
+            "title": "Ocala Classifieds & Personal Ads for Backpage Ocala Alternative"
+          },
+          {
+            "path": "/city/okaloosa",
+            "name": "Okaloosa",
+            "title": "Okaloosa Classifieds & Personal Ads for Backpage Okaloosa Alternative"
+          },
+          {
+            "path": "/city/orlando",
+            "name": "Orlando",
+            "title": "Orlando Classifieds & Personal Ads for Backpage Orlando Alternative"
+          },
+          {
+            "path": "/city/palmbay",
+            "name": "Palm Bay",
+            "title": "Palm Bay Classifieds & Personal Ads for Backpage Palm Bay Alternative"
+          },
+          {
+            "path": "/city/panama-city",
+            "name": "Panama City",
+            "title": "Panama City Classifieds & Personal Ads for Backpage Panama City Alternative"
+          },
+          {
+            "path": "/city/pensacola",
+            "name": "Pensacola",
+            "title": "Pensacola Classifieds & Personal Ads for Backpage Pensacola Alternative"
+          },
+          {
+            "path": "/city/sarasota",
+            "name": "Sarasota",
+            "title": "Sarasota Classifieds & Personal Ads for Backpage Sarasota Alternative"
+          },
+          {
+            "path": "/city/space-coast",
+            "name": "Space Coast",
+            "title": "Space Coast Classifieds & Personal Ads for Backpage Space Coast Alternative"
+          },
+          {
+            "path": "/city/st-augustine",
+            "name": "St. Augustine",
+            "title": "St. Augustine Classifieds & Personal Ads for Backpage St. Augustine Alternative"
+          },
+          {
+            "path": "/city/tallahassee",
+            "name": "Tallahassee",
+            "title": "Tallahassee Classifieds & Personal Ads for Backpage Tallahassee Alternative"
+          },
+          {
+            "path": "/city/tampa",
+            "name": "Tampa",
+            "title": "Tampa Classifieds & Personal Ads for Backpage Tampa Alternative"
+          },
+          {
+            "path": "/city/treasure-coast",
+            "name": "Treasure Coast",
+            "title": "Treasure Coast Classifieds & Personal Ads for Backpage Treasure Coast Alternative"
+          },
+          {
+            "path": "/city/west-palm-beach",
+            "name": "West Palm Beach",
+            "title": "West Palm Beach Classifieds & Personal Ads for Backpage West Palm Beach Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/georgia",
+        "name": "Georgia",
+        "title": "Georgia Classifieds & Personal Ads for Backpage Georgia Alternative",
+        "cities": [
+          {
+            "path": "/city/albany-ga",
+            "name": "Albany",
+            "title": "Albany Classifieds & Personal Ads for Backpage Albany Alternative"
+          },
+          {
+            "path": "/city/athens",
+            "name": "Athens",
+            "title": "Athens Classifieds & Personal Ads for Backpage Athens Alternative"
+          },
+          {
+            "path": "/city/atlanta",
+            "name": "Atlanta",
+            "title": "Atlanta Classifieds & Personal Ads for Backpage Atlanta Alternative"
+          },
+          {
+            "path": "/city/augusta",
+            "name": "Augusta",
+            "title": "Augusta Classifieds & Personal Ads for Backpage Augusta Alternative"
+          },
+          {
+            "path": "/city/brunswick",
+            "name": "Brunswick",
+            "title": "Brunswick Classifieds & Personal Ads for Backpage Brunswick Alternative"
+          },
+          {
+            "path": "/city/columbus",
+            "name": "Columbus",
+            "title": "Columbus Classifieds & Personal Ads for Backpage Columbus Alternative"
+          },
+          {
+            "path": "/city/macon",
+            "name": "Macon",
+            "title": "Macon Classifieds & Personal Ads for Backpage Macon Alternative"
+          },
+          {
+            "path": "/city/northwest-georgia",
+            "name": "Northwest Georgia",
+            "title": "Northwest Georgia Classifieds & Personal Ads for Backpage Northwest Georgia Alternative"
+          },
+          {
+            "path": "/city/savannah",
+            "name": "Savannah",
+            "title": "Savannah Classifieds & Personal Ads for Backpage Savannah Alternative"
+          },
+          {
+            "path": "/city/statesboro",
+            "name": "Statesboro",
+            "title": "Statesboro Classifieds & Personal Ads for Backpage Statesboro Alternative"
+          },
+          {
+            "path": "/city/valdosta",
+            "name": "Valdosta",
+            "title": "Valdosta Classifieds & Personal Ads for Backpage Valdosta Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/hawaii",
+        "name": "Hawaii",
+        "title": "Hawaii Classifieds & Personal Ads for Backpage Hawaii Alternative",
+        "cities": [
+          {
+            "path": "/city/big-island",
+            "name": "Big Island",
+            "title": "Big Island Classifieds & Personal Ads for Backpage Big Island Alternative"
+          },
+          {
+            "path": "/city/honolulu-oahu",
+            "name": "Honolulu",
+            "title": "Honolulu Classifieds & Personal Ads for Backpage Honolulu Alternative"
+          },
+          {
+            "path": "/city/kauai",
+            "name": "Kauai",
+            "title": "Kauai Classifieds & Personal Ads for Backpage Kauai Alternative"
+          },
+          {
+            "path": "/city/maui",
+            "name": "Maui",
+            "title": "Maui Classifieds & Personal Ads for Backpage Maui Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/idaho",
+        "name": "Idaho",
+        "title": "Idaho Classifieds & Personal Ads for Backpage Idaho Alternative",
+        "cities": [
+          {
+            "path": "/city/boise",
+            "name": "Boise",
+            "title": "Boise Classifieds & Personal Ads for Backpage Boise Alternative"
+          },
+          {
+            "path": "/city/east-idaho",
+            "name": "East Idaho",
+            "title": "East Idaho Classifieds & Personal Ads for Backpage East Idaho Alternative"
+          },
+          {
+            "path": "/city/lewiston",
+            "name": "Lewiston",
+            "title": "Lewiston Classifieds & Personal Ads for Backpage Lewiston Alternative"
+          },
+          {
+            "path": "/city/twin-falls",
+            "name": "Twin Falls",
+            "title": "Twin Falls Classifieds & Personal Ads for Backpage Twin Falls Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/illinois",
+        "name": "Illinois",
+        "title": "Illinois Classifieds & Personal Ads for Backpage Illinois Alternative",
+        "cities": [
+          {
+            "path": "/city/bloomington-il",
+            "name": "Bloomington",
+            "title": "Bloomington Classifieds & Personal Ads for Backpage Bloomington Alternative"
+          },
+          {
+            "path": "/city/carbondale",
+            "name": "Carbondale",
+            "title": "Carbondale Classifieds & Personal Ads for Backpage Carbondale Alternative"
+          },
+          {
+            "path": "/city/chambana",
+            "name": "Chambana",
+            "title": "Chambana Classifieds & Personal Ads for Backpage Chambana Alternative"
+          },
+          {
+            "path": "/city/chicago",
+            "name": "Chicago",
+            "title": "Chicago Classifieds & Personal Ads for Backpage Chicago Alternative"
+          },
+          {
+            "path": "/city/decatur",
+            "name": "Decatur",
+            "title": "Decatur Classifieds & Personal Ads for Backpage Decatur Alternative"
+          },
+          {
+            "path": "/city/la-salle-co",
+            "name": "La Salle Co",
+            "title": "La Salle Co Classifieds & Personal Ads for Backpage La Salle Co Alternative"
+          },
+          {
+            "path": "/city/mattoon",
+            "name": "Mattoon",
+            "title": "Mattoon Classifieds & Personal Ads for Backpage Mattoon Alternative"
+          },
+          {
+            "path": "/city/peoria",
+            "name": "Peoria",
+            "title": "Peoria Classifieds & Personal Ads for Backpage Peoria Alternative"
+          },
+          {
+            "path": "/city/rockford",
+            "name": "Rockford",
+            "title": "Rockford Classifieds & Personal Ads for Backpage Rockford Alternative"
+          },
+          {
+            "path": "/city/springfield-il",
+            "name": "Springfield",
+            "title": "Springfield Classifieds & Personal Ads for Backpage Springfield Alternative"
+          },
+          {
+            "path": "/city/western-illinois",
+            "name": "Western Il",
+            "title": "Western IL Classifieds & Personal Ads for Backpage Western IL Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/indiana",
+        "name": "Indiana",
+        "title": "Indiana Classifieds & Personal Ads for Backpage Indiana Alternative",
+        "cities": [
+          {
+            "path": "/city/bloomington",
+            "name": "Bloomington",
+            "title": "Bloomington Classifieds & Personal Ads for Backpage Bloomington Alternative"
+          },
+          {
+            "path": "/city/evansville",
+            "name": "Evansville",
+            "title": "Evansville Classifieds & Personal Ads for Backpage Evansville Alternative"
+          },
+          {
+            "path": "/city/ft-wayne",
+            "name": "Ft Wayne",
+            "title": "Ft Wayne Classifieds & Personal Ads for Backpage Ft Wayne Alternative"
+          },
+          {
+            "path": "/city/indianapolis",
+            "name": "Indianapolis",
+            "title": "Indianapolis Classifieds & Personal Ads for Backpage Indianapolis Alternative"
+          },
+          {
+            "path": "/city/kokomo",
+            "name": "Kokomo",
+            "title": "Kokomo Classifieds & Personal Ads for Backpage Kokomo Alternative"
+          },
+          {
+            "path": "/city/lafayette",
+            "name": "Lafayette",
+            "title": "Lafayette Classifieds & Personal Ads for Backpage Lafayette Alternative"
+          },
+          {
+            "path": "/city/muncie",
+            "name": "Muncie",
+            "title": "Muncie Classifieds & Personal Ads for Backpage Muncie Alternative"
+          },
+          {
+            "path": "/city/richmond-in",
+            "name": "Richmond",
+            "title": "Richmond Classifieds & Personal Ads for Backpage Richmond Alternative"
+          },
+          {
+            "path": "/city/south-bend",
+            "name": "South Bend",
+            "title": "South Bend Classifieds & Personal Ads for Backpage South Bend Alternative"
+          },
+          {
+            "path": "/city/terre-haute",
+            "name": "Terre Haute",
+            "title": "Terre Haute Classifieds & Personal Ads for Backpage Terre Haute Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/iowa",
+        "name": "Iowa",
+        "title": "Iowa Classifieds & Personal Ads for Backpage Iowa Alternative",
+        "cities": [
+          {
+            "path": "/city/ames",
+            "name": "Ames",
+            "title": "Ames Classifieds & Personal Ads for Backpage Ames Alternative"
+          },
+          {
+            "path": "/city/cedar-rapids",
+            "name": "Cedar Rapids",
+            "title": "Cedar Rapids Classifieds & Personal Ads for Backpage Cedar Rapids Alternative"
+          },
+          {
+            "path": "/city/des-moines",
+            "name": "Des Moines",
+            "title": "Des Moines Classifieds & Personal Ads for Backpage Des Moines Alternative"
+          },
+          {
+            "path": "/city/dubuque",
+            "name": "Dubuque",
+            "title": "Dubuque Classifieds & Personal Ads for Backpage Dubuque Alternative"
+          },
+          {
+            "path": "/city/fort-dodge",
+            "name": "Fort Dodge",
+            "title": "Fort Dodge Classifieds & Personal Ads for Backpage Fort Dodge Alternative"
+          },
+          {
+            "path": "/city/iowa-city",
+            "name": "Iowa City",
+            "title": "Iowa City Classifieds & Personal Ads for Backpage Iowa City Alternative"
+          },
+          {
+            "path": "/city/mason-city",
+            "name": "Mason City",
+            "title": "Mason City Classifieds & Personal Ads for Backpage Mason City Alternative"
+          },
+          {
+            "path": "/city/quad-cities",
+            "name": "Quad Cities",
+            "title": "Quad Cities Classifieds & Personal Ads for Backpage Quad Cities Alternative"
+          },
+          {
+            "path": "/city/sioux-city",
+            "name": "Sioux City",
+            "title": "Sioux City Classifieds & Personal Ads for Backpage Sioux City Alternative"
+          },
+          {
+            "path": "/city/southeast-iowa",
+            "name": "Southeast Iowa",
+            "title": "Southeast Iowa Classifieds & Personal Ads for Backpage Southeast Iowa Alternative"
+          },
+          {
+            "path": "/city/waterloo",
+            "name": "Waterloo",
+            "title": "Waterloo Classifieds & Personal Ads for Backpage Waterloo Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/kansas",
+        "name": "Kansas",
+        "title": "Kansas Classifieds & Personal Ads for Backpage Kansas Alternative",
+        "cities": [
+          {
+            "path": "/city/lawrence",
+            "name": "Lawrence",
+            "title": "Lawrence Classifieds & Personal Ads for Backpage Lawrence Alternative"
+          },
+          {
+            "path": "/city/manhattan",
+            "name": "Manhattan",
+            "title": "Manhattan Classifieds & Personal Ads for Backpage Manhattan Alternative"
+          },
+          {
+            "path": "/city/salina",
+            "name": "Salina",
+            "title": "Salina Classifieds & Personal Ads for Backpage Salina Alternative"
+          },
+          {
+            "path": "/city/topeka",
+            "name": "Topeka",
+            "title": "Topeka Classifieds & Personal Ads for Backpage Topeka Alternative"
+          },
+          {
+            "path": "/city/wichita",
+            "name": "Wichita",
+            "title": "Wichita Classifieds & Personal Ads for Backpage Wichita Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/kentucky",
+        "name": "Kentucky",
+        "title": "Kentucky Classifieds & Personal Ads for Backpage Kentucky Alternative",
+        "cities": [
+          {
+            "path": "/city/bowling-green",
+            "name": "Bowling Green",
+            "title": "Bowling Green Classifieds & Personal Ads for Backpage Bowling Green Alternative"
+          },
+          {
+            "path": "/city/eastern-kentucky",
+            "name": "Eastern Kentucky",
+            "title": "Eastern Kentucky Classifieds & Personal Ads for Backpage Eastern Kentucky Alternative"
+          },
+          {
+            "path": "/city/lexington",
+            "name": "Lexington",
+            "title": "Lexington Classifieds & Personal Ads for Backpage Lexington Alternative"
+          },
+          {
+            "path": "/city/louisville",
+            "name": "Louisville",
+            "title": "Louisville Classifieds & Personal Ads for Backpage Louisville Alternative"
+          },
+          {
+            "path": "/city/owensboro",
+            "name": "Owensboro",
+            "title": "Owensboro Classifieds & Personal Ads for Backpage Owensboro Alternative"
+          },
+          {
+            "path": "/city/western-kentucky",
+            "name": "Western Kentucky",
+            "title": "Western Kentucky Classifieds & Personal Ads for Backpage Western Kentucky Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/louisiana",
+        "name": "Louisiana",
+        "title": "Louisiana Classifieds & Personal Ads for Backpage Louisiana Alternative",
+        "cities": [
+          {
+            "path": "/city/alexandria",
+            "name": "Alexandria",
+            "title": "Alexandria Classifieds & Personal Ads for Backpage Alexandria Alternative"
+          },
+          {
+            "path": "/city/baton-rouge",
+            "name": "Baton Rouge",
+            "title": "Baton Rouge Classifieds & Personal Ads for Backpage Baton Rouge Alternative"
+          },
+          {
+            "path": "/city/houma",
+            "name": "Houma",
+            "title": "Houma Classifieds & Personal Ads for Backpage Houma Alternative"
+          },
+          {
+            "path": "/city/lafayette-la",
+            "name": "Lafayette",
+            "title": "Lafayette Classifieds & Personal Ads for Backpage Lafayette Alternative"
+          },
+          {
+            "path": "/city/lake-charles",
+            "name": "Lake Charles",
+            "title": "Lake Charles Classifieds & Personal Ads for Backpage Lake Charles Alternative"
+          },
+          {
+            "path": "/city/monroe-la",
+            "name": "Monroe",
+            "title": "Monroe Classifieds & Personal Ads for Backpage Monroe Alternative"
+          },
+          {
+            "path": "/city/new-orleans",
+            "name": "New Orleans",
+            "title": "New Orleans Classifieds & Personal Ads for Backpage New Orleans Alternative"
+          },
+          {
+            "path": "/city/shreveport",
+            "name": "Shreveport",
+            "title": "Shreveport Classifieds & Personal Ads for Backpage Shreveport Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/maine",
+        "name": "Maine",
+        "title": "Maine Classifieds & Personal Ads for Backpage Maine Alternative",
+        "cities": [
+          {
+            "path": "/city/bangor",
+            "name": "Bangor",
+            "title": "Bangor Classifieds & Personal Ads for Backpage Bangor Alternative"
+          },
+          {
+            "path": "/city/Lewiston-Auburn",
+            "name": "Lewiston Auburn",
+            "title": "Lewiston Auburn Classifieds & Personal Ads for Backpage Lewiston Auburn Alternative"
+          },
+          {
+            "path": "/city/portland-me",
+            "name": "Portland",
+            "title": "Portland Classifieds & Personal Ads for Backpage Portland Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/maryland",
+        "name": "Maryland",
+        "title": "Maryland Classifieds & Personal Ads for Backpage Maryland Alternative",
+        "cities": [
+          {
+            "path": "/city/annapolis",
+            "name": "Annapolis",
+            "title": "Annapolis Classifieds & Personal Ads for Backpage Annapolis Alternative"
+          },
+          {
+            "path": "/city/baltimore",
+            "name": "Baltimore",
+            "title": "Baltimore Classifieds & Personal Ads for Backpage Baltimore Alternative"
+          },
+          {
+            "path": "/city/cumberland-valley",
+            "name": "Cumberland Valley",
+            "title": "Cumberland Valley Classifieds & Personal Ads for Backpage Cumberland Valley Alternative"
+          },
+          {
+            "path": "/city/eastern-shore",
+            "name": "Eastern Shore",
+            "title": "Eastern Shore Classifieds & Personal Ads for Backpage Eastern Shore Alternative"
+          },
+          {
+            "path": "/city/frederick",
+            "name": "Frederick",
+            "title": "Frederick Classifieds & Personal Ads for Backpage Frederick Alternative"
+          },
+          {
+            "path": "/city/western-maryland",
+            "name": "Western Maryland",
+            "title": "Western Maryland Classifieds & Personal Ads for Backpage Western Maryland Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/massachusetts",
+        "name": "Massachusetts",
+        "title": "Massachusetts Classifieds & Personal Ads for Backpage Massachusetts Alternative",
+        "cities": [
+          {
+            "path": "/city/boston",
+            "name": "Boston",
+            "title": "Boston Classifieds & Personal Ads for Backpage Boston Alternative"
+          },
+          {
+            "path": "/city/brockton",
+            "name": "Brockton",
+            "title": "Brockton Classifieds & Personal Ads for Backpage Brockton Alternative"
+          },
+          {
+            "path": "/city/cape-cod",
+            "name": "Cape Cod",
+            "title": "Cape Cod Classifieds & Personal Ads for Backpage Cape Cod Alternative"
+          },
+          {
+            "path": "/city/lowell",
+            "name": "Lowell",
+            "title": "Lowell Classifieds & Personal Ads for Backpage Lowell Alternative"
+          },
+          {
+            "path": "/city/south-coast",
+            "name": "South Coast",
+            "title": "South Coast Classifieds & Personal Ads for Backpage South Coast Alternative"
+          },
+          {
+            "path": "/city/springfield-ma",
+            "name": "Springfield",
+            "title": "Springfield Classifieds & Personal Ads for Backpage Springfield Alternative"
+          },
+          {
+            "path": "/city/worcester",
+            "name": "Worcester",
+            "title": "Worcester Classifieds & Personal Ads for Backpage Worcester Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/michigan",
+        "name": "Michigan",
+        "title": "Michigan Classifieds & Personal Ads for Backpage Michigan Alternative",
+        "cities": [
+          {
+            "path": "/city/ann-arbor",
+            "name": "Ann Arbor",
+            "title": "Ann Arbor Classifieds & Personal Ads for Backpage Ann Arbor Alternative"
+          },
+          {
+            "path": "/city/battle-creek",
+            "name": "Battle Creek",
+            "title": "Battle Creek Classifieds & Personal Ads for Backpage Battle Creek Alternative"
+          },
+          {
+            "path": "/city/central-michigan",
+            "name": "Central Michigan",
+            "title": "Central Michigan Classifieds & Personal Ads for Backpage Central Michigan Alternative"
+          },
+          {
+            "path": "/city/detroit",
+            "name": "Detroit",
+            "title": "Detroit Classifieds & Personal Ads for Backpage Detroit Alternative"
+          },
+          {
+            "path": "/city/flint",
+            "name": "Flint",
+            "title": "Flint Classifieds & Personal Ads for Backpage Flint Alternative"
+          },
+          {
+            "path": "/city/grand-rapids",
+            "name": "Grand Rapids",
+            "title": "Grand Rapids Classifieds & Personal Ads for Backpage Grand Rapids Alternative"
+          },
+          {
+            "path": "/city/holland",
+            "name": "Holland",
+            "title": "Holland Classifieds & Personal Ads for Backpage Holland Alternative"
+          },
+          {
+            "path": "/city/jackson-mi",
+            "name": "Jackson",
+            "title": "Jackson Classifieds & Personal Ads for Backpage Jackson Alternative"
+          },
+          {
+            "path": "/city/kalamazoo",
+            "name": "Kalamazoo",
+            "title": "Kalamazoo Classifieds & Personal Ads for Backpage Kalamazoo Alternative"
+          },
+          {
+            "path": "/city/lansing",
+            "name": "Lansing",
+            "title": "Lansing Classifieds & Personal Ads for Backpage Lansing Alternative"
+          },
+          {
+            "path": "/city/monroe-mi",
+            "name": "Monroe",
+            "title": "Monroe Classifieds & Personal Ads for Backpage Monroe Alternative"
+          },
+          {
+            "path": "/city/muskegon",
+            "name": "Muskegon",
+            "title": "Muskegon Classifieds & Personal Ads for Backpage Muskegon Alternative"
+          },
+          {
+            "path": "/city/northern-michigan",
+            "name": "Northern Michigan",
+            "title": "Northern Michigan Classifieds & Personal Ads for Backpage Northern Michigan Alternative"
+          },
+          {
+            "path": "/city/port-huron",
+            "name": "Port Huron",
+            "title": "Port Huron Classifieds & Personal Ads for Backpage Port Huron Alternative"
+          },
+          {
+            "path": "/city/saginaw",
+            "name": "Saginaw",
+            "title": "Saginaw Classifieds & Personal Ads for Backpage Saginaw Alternative"
+          },
+          {
+            "path": "/city/southwest-michigan",
+            "name": "Southwest Michigan",
+            "title": "Southwest Michigan Classifieds & Personal Ads for Backpage Southwest Michigan Alternative"
+          },
+          {
+            "path": "/city/upper-peninsula",
+            "name": "Upper Peninsula",
+            "title": "Upper Peninsula Classifieds & Personal Ads for Backpage Upper Peninsula Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/minnesota",
+        "name": "Minnesota",
+        "title": "Minnesota Classifieds & Personal Ads for Backpage Minnesota Alternative",
+        "cities": [
+          {
+            "path": "/city/bemidji",
+            "name": "Bemidji",
+            "title": "Bemidji Classifieds & Personal Ads for Backpage Bemidji Alternative"
+          },
+          {
+            "path": "/city/brainerd",
+            "name": "Brainerd",
+            "title": "Brainerd Classifieds & Personal Ads for Backpage Brainerd Alternative"
+          },
+          {
+            "path": "/city/duluth",
+            "name": "Duluth",
+            "title": "Duluth Classifieds & Personal Ads for Backpage Duluth Alternative"
+          },
+          {
+            "path": "/city/mankato",
+            "name": "Mankato",
+            "title": "Mankato Classifieds & Personal Ads for Backpage Mankato Alternative"
+          },
+          {
+            "path": "/city/minneapolis-st-paul",
+            "name": "Minneapolis",
+            "title": "Minneapolis Classifieds & Personal Ads for Backpage Minneapolis Alternative"
+          },
+          {
+            "path": "/city/rochester-mn",
+            "name": "Rochester",
+            "title": "Rochester Classifieds & Personal Ads for Backpage Rochester Alternative"
+          },
+          {
+            "path": "/city/st-cloud",
+            "name": "St. Cloud",
+            "title": "St. Cloud Classifieds & Personal Ads for Backpage St. Cloud Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/mississippi",
+        "name": "Mississippi",
+        "title": "Mississippi Classifieds & Personal Ads for Backpage Mississippi Alternative",
+        "cities": [
+          {
+            "path": "/city/biloxi",
+            "name": "Biloxi",
+            "title": "Biloxi Classifieds & Personal Ads for Backpage Biloxi Alternative"
+          },
+          {
+            "path": "/city/hattiesburg",
+            "name": "Hattiesburg",
+            "title": "Hattiesburg Classifieds & Personal Ads for Backpage Hattiesburg Alternative"
+          },
+          {
+            "path": "/city/jackson",
+            "name": "Jackson",
+            "title": "Jackson Classifieds & Personal Ads for Backpage Jackson Alternative"
+          },
+          {
+            "path": "/city/meridian",
+            "name": "Meridian",
+            "title": "Meridian Classifieds & Personal Ads for Backpage Meridian Alternative"
+          },
+          {
+            "path": "/city/north-mississippi",
+            "name": "North Mississippi",
+            "title": "North Mississippi Classifieds & Personal Ads for Backpage North Mississippi Alternative"
+          },
+          {
+            "path": "/city/southwest-mississippi",
+            "name": "Southwest Mississippi",
+            "title": "Southwest Mississippi Classifieds & Personal Ads for Backpage Southwest Mississippi Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/missouri",
+        "name": "Missouri",
+        "title": "Missouri Classifieds & Personal Ads for Backpage Missouri Alternative",
+        "cities": [
+          {
+            "path": "/city/columbia-mo",
+            "name": "Columbia",
+            "title": "Columbia Classifieds & Personal Ads for Backpage Columbia Alternative"
+          },
+          {
+            "path": "/city/joplin",
+            "name": "Joplin",
+            "title": "Joplin Classifieds & Personal Ads for Backpage Joplin Alternative"
+          },
+          {
+            "path": "/city/kansas-city",
+            "name": "Kansas City",
+            "title": "Kansas City Classifieds & Personal Ads for Backpage Kansas City Alternative"
+          },
+          {
+            "path": "/city/kirksville",
+            "name": "Kirksville",
+            "title": "Kirksville Classifieds & Personal Ads for Backpage Kirksville Alternative"
+          },
+          {
+            "path": "/city/lake-of-the-ozarks",
+            "name": "Lake Of The Ozarks",
+            "title": "Lake Of The Ozarks Classifieds & Personal Ads for Backpage Lake Of The Ozarks Alternative"
+          },
+          {
+            "path": "/city/st-louis",
+            "name": "Saint Louis",
+            "title": "Saint Louis Classifieds & Personal Ads for Backpage Saint Louis Alternative"
+          },
+          {
+            "path": "/city/southeast-missouri",
+            "name": "Southeast Missouri",
+            "title": "Southeast Missouri Classifieds & Personal Ads for Backpage Southeast Missouri Alternative"
+          },
+          {
+            "path": "/city/springfield-mo",
+            "name": "Springfield",
+            "title": "Springfield Classifieds & Personal Ads for Backpage Springfield Alternative"
+          },
+          {
+            "path": "/city/st-joseph",
+            "name": "St Joseph",
+            "title": "St Joseph Classifieds & Personal Ads for Backpage St Joseph Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/montana",
+        "name": "Montana",
+        "title": "Montana Classifieds & Personal Ads for Backpage Montana Alternative",
+        "cities": [
+          {
+            "path": "/city/billings",
+            "name": "Billings",
+            "title": "Billings Classifieds & Personal Ads for Backpage Billings Alternative"
+          },
+          {
+            "path": "/city/bozeman",
+            "name": "Bozeman",
+            "title": "Bozeman Classifieds & Personal Ads for Backpage Bozeman Alternative"
+          },
+          {
+            "path": "/city/butte",
+            "name": "Butte",
+            "title": "Butte Classifieds & Personal Ads for Backpage Butte Alternative"
+          },
+          {
+            "path": "/city/great-falls",
+            "name": "Great Falls",
+            "title": "Great Falls Classifieds & Personal Ads for Backpage Great Falls Alternative"
+          },
+          {
+            "path": "/city/helena",
+            "name": "Helena",
+            "title": "Helena Classifieds & Personal Ads for Backpage Helena Alternative"
+          },
+          {
+            "path": "/city/kalispell",
+            "name": "Kalispell",
+            "title": "Kalispell Classifieds & Personal Ads for Backpage Kalispell Alternative"
+          },
+          {
+            "path": "/city/missoula",
+            "name": "Missoula",
+            "title": "Missoula Classifieds & Personal Ads for Backpage Missoula Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/nebraska",
+        "name": "Nebraska",
+        "title": "Nebraska Classifieds & Personal Ads for Backpage Nebraska Alternative",
+        "cities": [
+          {
+            "path": "/city/grand-island",
+            "name": "Grand Island",
+            "title": "Grand Island Classifieds & Personal Ads for Backpage Grand Island Alternative"
+          },
+          {
+            "path": "/city/lincoln",
+            "name": "Lincoln",
+            "title": "Lincoln Classifieds & Personal Ads for Backpage Lincoln Alternative"
+          },
+          {
+            "path": "/city/north-platte",
+            "name": "North Platte",
+            "title": "North Platte Classifieds & Personal Ads for Backpage North Platte Alternative"
+          },
+          {
+            "path": "/city/omaha",
+            "name": "Omaha",
+            "title": "Omaha Classifieds & Personal Ads for Backpage Omaha Alternative"
+          },
+          {
+            "path": "/city/scottsbluff",
+            "name": "Scottsbluff",
+            "title": "Scottsbluff Classifieds & Personal Ads for Backpage Scottsbluff Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/nevada",
+        "name": "Nevada",
+        "title": "Nevada Classifieds & Personal Ads for Backpage Nevada Alternative",
+        "cities": [
+          {
+            "path": "/city/elko",
+            "name": "Elko",
+            "title": "Elko Classifieds & Personal Ads for Backpage Elko Alternative"
+          },
+          {
+            "path": "/city/las-vegas",
+            "name": "Las Vegas",
+            "title": "Las Vegas Classifieds & Personal Ads for Backpage Las Vegas Alternative"
+          },
+          {
+            "path": "/city/reno",
+            "name": "Reno",
+            "title": "Reno Classifieds & Personal Ads for Backpage Reno Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/new-hampshire",
+        "name": "New Hampshire",
+        "title": "New Hampshire Classifieds & Personal Ads for Backpage New Hampshire Alternative",
+        "cities": [
+          {
+            "path": "/city/concord",
+            "name": "Concord",
+            "title": "Concord Classifieds & Personal Ads for Backpage Concord Alternative"
+          },
+          {
+            "path": "/city/dover",
+            "name": "Dover",
+            "title": "Dover Classifieds & Personal Ads for Backpage Dover Alternative"
+          },
+          {
+            "path": "/city/manchester-nh",
+            "name": "Manchester",
+            "title": "Manchester Classifieds & Personal Ads for Backpage Manchester Alternative"
+          },
+          {
+            "path": "/city/nashua",
+            "name": "Nashua",
+            "title": "Nashua Classifieds & Personal Ads for Backpage Nashua Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/new-jersey",
+        "name": "New Jersey",
+        "title": "New Jersey Classifieds & Personal Ads for Backpage New Jersey Alternative",
+        "cities": [
+          {
+            "path": "/city/central-jersey",
+            "name": "Central Jersey",
+            "title": "Central Jersey Classifieds & Personal Ads for Backpage Central Jersey Alternative"
+          },
+          {
+            "path": "/city/jersey-shore",
+            "name": "Jersey Shore",
+            "title": "Jersey Shore Classifieds & Personal Ads for Backpage Jersey Shore Alternative"
+          },
+          {
+            "path": "/city/north-jersey",
+            "name": "North Jersey",
+            "title": "North Jersey Classifieds & Personal Ads for Backpage North Jersey Alternative"
+          },
+          {
+            "path": "/city/south-jersey",
+            "name": "South Jersey",
+            "title": "South Jersey Classifieds & Personal Ads for Backpage South Jersey Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/new-mexico",
+        "name": "New Mexico",
+        "title": "New Mexico Classifieds & Personal Ads for Backpage New Mexico Alternative",
+        "cities": [
+          {
+            "path": "/city/albuquerque",
+            "name": "Albuquerque",
+            "title": "Albuquerque Classifieds & Personal Ads for Backpage Albuquerque Alternative"
+          },
+          {
+            "path": "/city/clovis",
+            "name": "Clovis",
+            "title": "Clovis Classifieds & Personal Ads for Backpage Clovis Alternative"
+          },
+          {
+            "path": "/city/farmington",
+            "name": "Farmington",
+            "title": "Farmington Classifieds & Personal Ads for Backpage Farmington Alternative"
+          },
+          {
+            "path": "/city/las-cruces",
+            "name": "Las Cruces",
+            "title": "Las Cruces Classifieds & Personal Ads for Backpage Las Cruces Alternative"
+          },
+          {
+            "path": "/city/roswell",
+            "name": "Roswell",
+            "title": "Roswell Classifieds & Personal Ads for Backpage Roswell Alternative"
+          },
+          {
+            "path": "/city/santa-fe",
+            "name": "Santa Fe",
+            "title": "Santa Fe Classifieds & Personal Ads for Backpage Santa Fe Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/new-york",
+        "name": "New York",
+        "title": "New York Classifieds & Personal Ads for Backpage New York Alternative",
+        "cities": [
+          {
+            "path": "/city/albany",
+            "name": "Albany",
+            "title": "Albany Classifieds & Personal Ads for Backpage Albany Alternative"
+          },
+          {
+            "path": "/city/binghamton",
+            "name": "Binghamton",
+            "title": "Binghamton Classifieds & Personal Ads for Backpage Binghamton Alternative"
+          },
+          {
+            "path": "/city/bronx",
+            "name": "Bronx",
+            "title": "Bronx Classifieds & Personal Ads for Backpage Bronx Alternative"
+          },
+          {
+            "path": "/city/brooklyn",
+            "name": "Brooklyn",
+            "title": "Brooklyn Classifieds & Personal Ads for Backpage Brooklyn Alternative"
+          },
+          {
+            "path": "/city/buffalo",
+            "name": "Buffalo",
+            "title": "Buffalo Classifieds & Personal Ads for Backpage Buffalo Alternative"
+          },
+          {
+            "path": "/city/catskills",
+            "name": "Catskills",
+            "title": "Catskills Classifieds & Personal Ads for Backpage Catskills Alternative"
+          },
+          {
+            "path": "/city/chautauqua",
+            "name": "Chautauqua",
+            "title": "Chautauqua Classifieds & Personal Ads for Backpage Chautauqua Alternative"
+          },
+          {
+            "path": "/city/elmira",
+            "name": "Elmira",
+            "title": "Elmira Classifieds & Personal Ads for Backpage Elmira Alternative"
+          },
+          {
+            "path": "/city/finger-lakes",
+            "name": "Finger Lakes",
+            "title": "Finger Lakes Classifieds & Personal Ads for Backpage Finger Lakes Alternative"
+          },
+          {
+            "path": "/city/glens-falls",
+            "name": "Glens Falls",
+            "title": "Glens Falls Classifieds & Personal Ads for Backpage Glens Falls Alternative"
+          },
+          {
+            "path": "/city/hudson-valley",
+            "name": "Hudson Valley",
+            "title": "Hudson Valley Classifieds & Personal Ads for Backpage Hudson Valley Alternative"
+          },
+          {
+            "path": "/city/ithaca",
+            "name": "Ithaca",
+            "title": "Ithaca Classifieds & Personal Ads for Backpage Ithaca Alternative"
+          },
+          {
+            "path": "/city/long-island",
+            "name": "Long Island",
+            "title": "Long Island Classifieds & Personal Ads for Backpage Long Island Alternative"
+          },
+          {
+            "path": "/city/manhattan-ny",
+            "name": "Manhattan",
+            "title": "Manhattan Classifieds & Personal Ads for Backpage Manhattan Alternative"
+          },
+          {
+            "path": "/city/new-york-city",
+            "name": "New York",
+            "title": "New York Classifieds & Personal Ads for Backpage New York Alternative"
+          },
+          {
+            "path": "/city/oneonta",
+            "name": "Oneonta",
+            "title": "Oneonta Classifieds & Personal Ads for Backpage Oneonta Alternative"
+          },
+          {
+            "path": "/city/plattsburgh",
+            "name": "Plattsburgh",
+            "title": "Plattsburgh Classifieds & Personal Ads for Backpage Plattsburgh Alternative"
+          },
+          {
+            "path": "/city/potsdam",
+            "name": "Potsdam",
+            "title": "Potsdam Classifieds & Personal Ads for Backpage Potsdam Alternative"
+          },
+          {
+            "path": "/city/queens",
+            "name": "Queens",
+            "title": "Queens Classifieds & Personal Ads for Backpage Queens Alternative"
+          },
+          {
+            "path": "/city/rochester",
+            "name": "Rochester",
+            "title": "Rochester Classifieds & Personal Ads for Backpage Rochester Alternative"
+          },
+          {
+            "path": "/city/staten-island",
+            "name": "Staten Island",
+            "title": "Staten Island Classifieds & Personal Ads for Backpage Staten Island Alternative"
+          },
+          {
+            "path": "/city/syracuse",
+            "name": "Syracuse",
+            "title": "Syracuse Classifieds & Personal Ads for Backpage Syracuse Alternative"
+          },
+          {
+            "path": "/city/twin-tiers",
+            "name": "Twin Tiers",
+            "title": "Twin Tiers Classifieds & Personal Ads for Backpage Twin Tiers Alternative"
+          },
+          {
+            "path": "/city/utica",
+            "name": "Utica",
+            "title": "Utica Classifieds & Personal Ads for Backpage Utica Alternative"
+          },
+          {
+            "path": "/city/watertown",
+            "name": "Watertown",
+            "title": "Watertown Classifieds & Personal Ads for Backpage Watertown Alternative"
+          },
+          {
+            "path": "/city/westchester",
+            "name": "Westchester",
+            "title": "Westchester Classifieds & Personal Ads for Backpage Westchester Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/north-carolina",
+        "name": "North Carolina",
+        "title": "North Carolina Classifieds & Personal Ads for Backpage North Carolina Alternative",
+        "cities": [
+          {
+            "path": "/city/asheville",
+            "name": "Asheville",
+            "title": "Asheville Classifieds & Personal Ads for Backpage Asheville Alternative"
+          },
+          {
+            "path": "/city/boone",
+            "name": "Boone",
+            "title": "Boone Classifieds & Personal Ads for Backpage Boone Alternative"
+          },
+          {
+            "path": "/city/charlotte",
+            "name": "Charlotte",
+            "title": "Charlotte Classifieds & Personal Ads for Backpage Charlotte Alternative"
+          },
+          {
+            "path": "/city/eastern",
+            "name": "Eastern",
+            "title": "Eastern Classifieds & Personal Ads for Backpage Eastern Alternative"
+          },
+          {
+            "path": "/city/fayetteville-nc",
+            "name": "Fayetteville",
+            "title": "Fayetteville Classifieds & Personal Ads for Backpage Fayetteville Alternative"
+          },
+          {
+            "path": "/city/greensboro",
+            "name": "Greensboro",
+            "title": "Greensboro Classifieds & Personal Ads for Backpage Greensboro Alternative"
+          },
+          {
+            "path": "/city/hickory",
+            "name": "Hickory",
+            "title": "Hickory Classifieds & Personal Ads for Backpage Hickory Alternative"
+          },
+          {
+            "path": "/city/high-point",
+            "name": "High Point",
+            "title": "High Point Classifieds & Personal Ads for Backpage High Point Alternative"
+          },
+          {
+            "path": "/city/outer-banks",
+            "name": "Outer Banks",
+            "title": "Outer Banks Classifieds & Personal Ads for Backpage Outer Banks Alternative"
+          },
+          {
+            "path": "/city/raleigh",
+            "name": "Raleigh",
+            "title": "Raleigh Classifieds & Personal Ads for Backpage Raleigh Alternative"
+          },
+          {
+            "path": "/city/raleigh-durham",
+            "name": "Raleigh Durham",
+            "title": "Raleigh Durham Classifieds & Personal Ads for Backpage Raleigh Durham Alternative"
+          },
+          {
+            "path": "/city/wilmington",
+            "name": "Wilmington",
+            "title": "Wilmington Classifieds & Personal Ads for Backpage Wilmington Alternative"
+          },
+          {
+            "path": "/city/winston-salem",
+            "name": "Winston Salem",
+            "title": "Winston Salem Classifieds & Personal Ads for Backpage Winston Salem Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/north-dakota",
+        "name": "North Dakota",
+        "title": "North Dakota Classifieds & Personal Ads for Backpage North Dakota Alternative",
+        "cities": [
+          {
+            "path": "/city/bismarck",
+            "name": "Bismarck",
+            "title": "Bismarck Classifieds & Personal Ads for Backpage Bismarck Alternative"
+          },
+          {
+            "path": "/city/fargo",
+            "name": "Fargo",
+            "title": "Fargo Classifieds & Personal Ads for Backpage Fargo Alternative"
+          },
+          {
+            "path": "/city/grand-forks",
+            "name": "Grand Forks",
+            "title": "Grand Forks Classifieds & Personal Ads for Backpage Grand Forks Alternative"
+          },
+          {
+            "path": "/city/minot",
+            "name": "Minot",
+            "title": "Minot Classifieds & Personal Ads for Backpage Minot Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/ohio",
+        "name": "Ohio",
+        "title": "Ohio Classifieds & Personal Ads for Backpage Ohio Alternative",
+        "cities": [
+          {
+            "path": "/city/akron-canton",
+            "name": "Akron",
+            "title": "Akron Classifieds & Personal Ads for Backpage Akron Alternative"
+          },
+          {
+            "path": "/city/ashtabula",
+            "name": "Ashtabula",
+            "title": "Ashtabula Classifieds & Personal Ads for Backpage Ashtabula Alternative"
+          },
+          {
+            "path": "/city/athens-oh",
+            "name": "Athens",
+            "title": "Athens Classifieds & Personal Ads for Backpage Athens Alternative"
+          },
+          {
+            "path": "/city/chillicothe",
+            "name": "Chillicothe",
+            "title": "Chillicothe Classifieds & Personal Ads for Backpage Chillicothe Alternative"
+          },
+          {
+            "path": "/city/cincinnati",
+            "name": "Cincinnati",
+            "title": "Cincinnati Classifieds & Personal Ads for Backpage Cincinnati Alternative"
+          },
+          {
+            "path": "/city/cleveland",
+            "name": "Cleveland",
+            "title": "Cleveland Classifieds & Personal Ads for Backpage Cleveland Alternative"
+          },
+          {
+            "path": "/city/columbus-oh",
+            "name": "Columbus",
+            "title": "Columbus Classifieds & Personal Ads for Backpage Columbus Alternative"
+          },
+          {
+            "path": "/city/dayton",
+            "name": "Dayton",
+            "title": "Dayton Classifieds & Personal Ads for Backpage Dayton Alternative"
+          },
+          {
+            "path": "/city/lima",
+            "name": "Lima",
+            "title": "Lima Classifieds & Personal Ads for Backpage Lima Alternative"
+          },
+          {
+            "path": "/city/mansfield",
+            "name": "Mansfield",
+            "title": "Mansfield Classifieds & Personal Ads for Backpage Mansfield Alternative"
+          },
+          {
+            "path": "/city/sandusky",
+            "name": "Sandusky",
+            "title": "Sandusky Classifieds & Personal Ads for Backpage Sandusky Alternative"
+          },
+          {
+            "path": "/city/toledo",
+            "name": "Toledo",
+            "title": "Toledo Classifieds & Personal Ads for Backpage Toledo Alternative"
+          },
+          {
+            "path": "/city/tuscarawas-county",
+            "name": "Tuscarawas County",
+            "title": "Tuscarawas County Classifieds & Personal Ads for Backpage Tuscarawas County Alternative"
+          },
+          {
+            "path": "/city/youngstown",
+            "name": "Youngstown",
+            "title": "Youngstown Classifieds & Personal Ads for Backpage Youngstown Alternative"
+          },
+          {
+            "path": "/city/zanesville",
+            "name": "Zanesville",
+            "title": "Zanesville Classifieds & Personal Ads for Backpage Zanesville Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/oklahoma",
+        "name": "Oklahoma",
+        "title": "Oklahoma Classifieds & Personal Ads for Backpage Oklahoma Alternative",
+        "cities": [
+          {
+            "path": "/city/lawton",
+            "name": "Lawton",
+            "title": "Lawton Classifieds & Personal Ads for Backpage Lawton Alternative"
+          },
+          {
+            "path": "/city/norman",
+            "name": "Norman",
+            "title": "Norman Classifieds & Personal Ads for Backpage Norman Alternative"
+          },
+          {
+            "path": "/city/oklahoma-city",
+            "name": "Oklahoma City",
+            "title": "Oklahoma City Classifieds & Personal Ads for Backpage Oklahoma City Alternative"
+          },
+          {
+            "path": "/city/stillwater",
+            "name": "Stillwater",
+            "title": "Stillwater Classifieds & Personal Ads for Backpage Stillwater Alternative"
+          },
+          {
+            "path": "/city/tulsa",
+            "name": "Tulsa",
+            "title": "Tulsa Classifieds & Personal Ads for Backpage Tulsa Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/oregon",
+        "name": "Oregon",
+        "title": "Oregon Classifieds & Personal Ads for Backpage Oregon Alternative",
+        "cities": [
+          {
+            "path": "/city/bend",
+            "name": "Bend",
+            "title": "Bend Classifieds & Personal Ads for Backpage Bend Alternative"
+          },
+          {
+            "path": "/city/corvallis",
+            "name": "Corvallis",
+            "title": "Corvallis Classifieds & Personal Ads for Backpage Corvallis Alternative"
+          },
+          {
+            "path": "/city/east-oregon",
+            "name": "East Oregon",
+            "title": "East Oregon Classifieds & Personal Ads for Backpage East Oregon Alternative"
+          },
+          {
+            "path": "/city/eugene",
+            "name": "Eugene",
+            "title": "Eugene Classifieds & Personal Ads for Backpage Eugene Alternative"
+          },
+          {
+            "path": "/city/klamath-falls",
+            "name": "Klamath Falls",
+            "title": "Klamath Falls Classifieds & Personal Ads for Backpage Klamath Falls Alternative"
+          },
+          {
+            "path": "/city/medford",
+            "name": "Medford",
+            "title": "Medford Classifieds & Personal Ads for Backpage Medford Alternative"
+          },
+          {
+            "path": "/city/oregon-coast",
+            "name": "Oregon Coast",
+            "title": "Oregon Coast Classifieds & Personal Ads for Backpage Oregon Coast Alternative"
+          },
+          {
+            "path": "/city/portland",
+            "name": "Portland",
+            "title": "Portland Classifieds & Personal Ads for Backpage Portland Alternative"
+          },
+          {
+            "path": "/city/roseburg",
+            "name": "Roseburg",
+            "title": "Roseburg Classifieds & Personal Ads for Backpage Roseburg Alternative"
+          },
+          {
+            "path": "/city/salem",
+            "name": "Salem",
+            "title": "Salem Classifieds & Personal Ads for Backpage Salem Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/pennsylvania",
+        "name": "Pennsylvania",
+        "title": "Pennsylvania Classifieds & Personal Ads for Backpage Pennsylvania Alternative",
+        "cities": [
+          {
+            "path": "/city/allentown",
+            "name": "Allentown",
+            "title": "Allentown Classifieds & Personal Ads for Backpage Allentown Alternative"
+          },
+          {
+            "path": "/city/altoona",
+            "name": "Altoona",
+            "title": "Altoona Classifieds & Personal Ads for Backpage Altoona Alternative"
+          },
+          {
+            "path": "/city/chambersburg",
+            "name": "Chambersburg",
+            "title": "Chambersburg Classifieds & Personal Ads for Backpage Chambersburg Alternative"
+          },
+          {
+            "path": "/city/erie",
+            "name": "Erie",
+            "title": "Erie Classifieds & Personal Ads for Backpage Erie Alternative"
+          },
+          {
+            "path": "/city/harrisburg",
+            "name": "Harrisburg",
+            "title": "Harrisburg Classifieds & Personal Ads for Backpage Harrisburg Alternative"
+          },
+          {
+            "path": "/city/lancaster",
+            "name": "Lancaster",
+            "title": "Lancaster Classifieds & Personal Ads for Backpage Lancaster Alternative"
+          },
+          {
+            "path": "/city/meadville",
+            "name": "Meadville",
+            "title": "Meadville Classifieds & Personal Ads for Backpage Meadville Alternative"
+          },
+          {
+            "path": "/city/penn-state",
+            "name": "Penn State",
+            "title": "Penn State Classifieds & Personal Ads for Backpage Penn State Alternative"
+          },
+          {
+            "path": "/city/philadelphia",
+            "name": "Philadelphia",
+            "title": "Philadelphia Classifieds & Personal Ads for Backpage Philadelphia Alternative"
+          },
+          {
+            "path": "/city/pittsburgh",
+            "name": "Pittsburgh",
+            "title": "Pittsburgh Classifieds & Personal Ads for Backpage Pittsburgh Alternative"
+          },
+          {
+            "path": "/city/poconos",
+            "name": "Poconos",
+            "title": "Poconos Classifieds & Personal Ads for Backpage Poconos Alternative"
+          },
+          {
+            "path": "/city/reading",
+            "name": "Reading",
+            "title": "Reading Classifieds & Personal Ads for Backpage Reading Alternative"
+          },
+          {
+            "path": "/city/scranton",
+            "name": "Scranton",
+            "title": "Scranton Classifieds & Personal Ads for Backpage Scranton Alternative"
+          },
+          {
+            "path": "/city/williamsport",
+            "name": "Williamsport",
+            "title": "Williamsport Classifieds & Personal Ads for Backpage Williamsport Alternative"
+          },
+          {
+            "path": "/city/york",
+            "name": "York",
+            "title": "York Classifieds & Personal Ads for Backpage York Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/rhode-island",
+        "name": "Rhode Island",
+        "title": "Rhode Island Classifieds & Personal Ads for Backpage Rhode Island Alternative",
+        "cities": [
+          {
+            "path": "/city/providence",
+            "name": "Providence",
+            "title": "Providence Classifieds & Personal Ads for Backpage Providence Alternative"
+          },
+          {
+            "path": "/city/warwick",
+            "name": "Warwick",
+            "title": "Warwick Classifieds & Personal Ads for Backpage Warwick Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/south-carolina",
+        "name": "South Carolina",
+        "title": "South Carolina Classifieds & Personal Ads for Backpage South Carolina Alternative",
+        "cities": [
+          {
+            "path": "/city/charleston-sc",
+            "name": "Charleston",
+            "title": "Charleston Classifieds & Personal Ads for Backpage Charleston Alternative"
+          },
+          {
+            "path": "/city/columbia",
+            "name": "Columbia",
+            "title": "Columbia Classifieds & Personal Ads for Backpage Columbia Alternative"
+          },
+          {
+            "path": "/city/florence",
+            "name": "Florence",
+            "title": "Florence Classifieds & Personal Ads for Backpage Florence Alternative"
+          },
+          {
+            "path": "/city/greenville",
+            "name": "Greenville",
+            "title": "Greenville Classifieds & Personal Ads for Backpage Greenville Alternative"
+          },
+          {
+            "path": "/city/hilton-head",
+            "name": "Hilton Head",
+            "title": "Hilton Head Classifieds & Personal Ads for Backpage Hilton Head Alternative"
+          },
+          {
+            "path": "/city/myrtle-beach",
+            "name": "Myrtle Beach",
+            "title": "Myrtle Beach Classifieds & Personal Ads for Backpage Myrtle Beach Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/south-dakota",
+        "name": "South Dakota",
+        "title": "South Dakota Classifieds & Personal Ads for Backpage South Dakota Alternative",
+        "cities": [
+          {
+            "path": "/city/aberdeen",
+            "name": "Aberdeen",
+            "title": "Aberdeen Classifieds & Personal Ads for Backpage Aberdeen Alternative"
+          },
+          {
+            "path": "/city/pierre",
+            "name": "Pierre",
+            "title": "Pierre Classifieds & Personal Ads for Backpage Pierre Alternative"
+          },
+          {
+            "path": "/city/rapid-city",
+            "name": "Rapid City",
+            "title": "Rapid City Classifieds & Personal Ads for Backpage Rapid City Alternative"
+          },
+          {
+            "path": "/city/sioux-falls",
+            "name": "Sioux Falls",
+            "title": "Sioux Falls Classifieds & Personal Ads for Backpage Sioux Falls Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/tennessee",
+        "name": "Tennessee",
+        "title": "Tennessee Classifieds & Personal Ads for Backpage Tennessee Alternative",
+        "cities": [
+          {
+            "path": "/city/chattanooga",
+            "name": "Chattanooga",
+            "title": "Chattanooga Classifieds & Personal Ads for Backpage Chattanooga Alternative"
+          },
+          {
+            "path": "/city/clarksville",
+            "name": "Clarksville",
+            "title": "Clarksville Classifieds & Personal Ads for Backpage Clarksville Alternative"
+          },
+          {
+            "path": "/city/cookeville",
+            "name": "Cookeville",
+            "title": "Cookeville Classifieds & Personal Ads for Backpage Cookeville Alternative"
+          },
+          {
+            "path": "/city/johnson-city",
+            "name": "Johnson City",
+            "title": "Johnson City Classifieds & Personal Ads for Backpage Johnson City Alternative"
+          },
+          {
+            "path": "/city/knoxville",
+            "name": "Knoxville",
+            "title": "Knoxville Classifieds & Personal Ads for Backpage Knoxville Alternative"
+          },
+          {
+            "path": "/city/memphis",
+            "name": "Memphis",
+            "title": "Memphis Classifieds & Personal Ads for Backpage Memphis Alternative"
+          },
+          {
+            "path": "/city/nashville",
+            "name": "Nashville",
+            "title": "Nashville Classifieds & Personal Ads for Backpage Nashville Alternative"
+          },
+          {
+            "path": "/city/tri-cities",
+            "name": "Tri Cities",
+            "title": "Tri Cities Classifieds & Personal Ads for Backpage Tri Cities Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/territories",
+        "name": "Territories",
+        "title": "Territories Classifieds & Personal Ads for Backpage Territories Alternative",
+        "cities": [
+          {
+            "path": "/city/guam-micronesia",
+            "name": "Guam Micronesia",
+            "title": "Guam Micronesia Classifieds & Personal Ads for Backpage Guam Micronesia Alternative"
+          },
+          {
+            "path": "/city/puerto-rico",
+            "name": "Puerto Rico",
+            "title": "Puerto Rico Classifieds & Personal Ads for Backpage Puerto Rico Alternative"
+          },
+          {
+            "path": "/city/u-s-virgin-islands",
+            "name": "U.S. Virgin Islands",
+            "title": "U.S. Virgin Islands Classifieds & Personal Ads for Backpage U.S. Virgin Islands Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/texas",
+        "name": "Texas",
+        "title": "Texas Classifieds & Personal Ads for Backpage Texas Alternative",
+        "cities": [
+          {
+            "path": "/city/abilene",
+            "name": "Abilene",
+            "title": "Abilene Classifieds & Personal Ads for Backpage Abilene Alternative"
+          },
+          {
+            "path": "/city/amarillo",
+            "name": "Amarillo",
+            "title": "Amarillo Classifieds & Personal Ads for Backpage Amarillo Alternative"
+          },
+          {
+            "path": "/city/austin",
+            "name": "Austin",
+            "title": "Austin Classifieds & Personal Ads for Backpage Austin Alternative"
+          },
+          {
+            "path": "/city/beaumont",
+            "name": "Beaumont",
+            "title": "Beaumont Classifieds & Personal Ads for Backpage Beaumont Alternative"
+          },
+          {
+            "path": "/city/brownsville",
+            "name": "Brownsville",
+            "title": "Brownsville Classifieds & Personal Ads for Backpage Brownsville Alternative"
+          },
+          {
+            "path": "/city/college-station",
+            "name": "College Station",
+            "title": "College Station Classifieds & Personal Ads for Backpage College Station Alternative"
+          },
+          {
+            "path": "/city/corpus-christi",
+            "name": "Corpus Christi",
+            "title": "Corpus Christi Classifieds & Personal Ads for Backpage Corpus Christi Alternative"
+          },
+          {
+            "path": "/city/dallas",
+            "name": "Dallas",
+            "title": "Dallas Classifieds & Personal Ads for Backpage Dallas Alternative"
+          },
+          {
+            "path": "/city/del-rio",
+            "name": "Del Rio",
+            "title": "Del Rio Classifieds & Personal Ads for Backpage Del Rio Alternative"
+          },
+          {
+            "path": "/city/denton",
+            "name": "Denton",
+            "title": "Denton Classifieds & Personal Ads for Backpage Denton Alternative"
+          },
+          {
+            "path": "/city/el-paso",
+            "name": "El Paso",
+            "title": "El Paso Classifieds & Personal Ads for Backpage El Paso Alternative"
+          },
+          {
+            "path": "/city/fort-worth",
+            "name": "Fort Worth",
+            "title": "Fort Worth Classifieds & Personal Ads for Backpage Fort Worth Alternative"
+          },
+          {
+            "path": "/city/galveston",
+            "name": "Galveston",
+            "title": "Galveston Classifieds & Personal Ads for Backpage Galveston Alternative"
+          },
+          {
+            "path": "/city/houston",
+            "name": "Houston",
+            "title": "Houston Classifieds & Personal Ads for Backpage Houston Alternative"
+          },
+          {
+            "path": "/city/huntsville",
+            "name": "Huntsville",
+            "title": "Huntsville Classifieds & Personal Ads for Backpage Huntsville Alternative"
+          },
+          {
+            "path": "/city/killeen",
+            "name": "Killeen",
+            "title": "Killeen Classifieds & Personal Ads for Backpage Killeen Alternative"
+          },
+          {
+            "path": "/city/laredo",
+            "name": "Laredo",
+            "title": "Laredo Classifieds & Personal Ads for Backpage Laredo Alternative"
+          },
+          {
+            "path": "/city/longview",
+            "name": "Longview",
+            "title": "Longview Classifieds & Personal Ads for Backpage Longview Alternative"
+          },
+          {
+            "path": "/city/lubbock",
+            "name": "Lubbock",
+            "title": "Lubbock Classifieds & Personal Ads for Backpage Lubbock Alternative"
+          },
+          {
+            "path": "/city/mcallen",
+            "name": "Mcallen",
+            "title": "Mcallen Classifieds & Personal Ads for Backpage Mcallen Alternative"
+          },
+          {
+            "path": "/city/mid-cities",
+            "name": "Mid Cities",
+            "title": "Mid Cities Classifieds & Personal Ads for Backpage Mid Cities Alternative"
+          },
+          {
+            "path": "/city/odessa",
+            "name": "Odessa",
+            "title": "Odessa Classifieds & Personal Ads for Backpage Odessa Alternative"
+          },
+          {
+            "path": "/city/san-antonio",
+            "name": "San Antonio",
+            "title": "San Antonio Classifieds & Personal Ads for Backpage San Antonio Alternative"
+          },
+          {
+            "path": "/city/san-marcos",
+            "name": "San Marcos",
+            "title": "San Marcos Classifieds & Personal Ads for Backpage San Marcos Alternative"
+          },
+          {
+            "path": "/city/texarkana",
+            "name": "Texarkana",
+            "title": "Texarkana Classifieds & Personal Ads for Backpage Texarkana Alternative"
+          },
+          {
+            "path": "/city/texoma",
+            "name": "Texoma",
+            "title": "Texoma Classifieds & Personal Ads for Backpage Texoma Alternative"
+          },
+          {
+            "path": "/city/tyler",
+            "name": "Tyler",
+            "title": "Tyler Classifieds & Personal Ads for Backpage Tyler Alternative"
+          },
+          {
+            "path": "/city/victoria-tx",
+            "name": "Victoria",
+            "title": "Victoria Classifieds & Personal Ads for Backpage Victoria Alternative"
+          },
+          {
+            "path": "/city/waco",
+            "name": "Waco",
+            "title": "Waco Classifieds & Personal Ads for Backpage Waco Alternative"
+          },
+          {
+            "path": "/city/wichita-falls",
+            "name": "Wichita Falls",
+            "title": "Wichita Falls Classifieds & Personal Ads for Backpage Wichita Falls Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/utah",
+        "name": "Utah",
+        "title": "Utah Classifieds & Personal Ads for Backpage Utah Alternative",
+        "cities": [
+          {
+            "path": "/city/logan",
+            "name": "Logan",
+            "title": "Logan Classifieds & Personal Ads for Backpage Logan Alternative"
+          },
+          {
+            "path": "/city/ogden",
+            "name": "Ogden",
+            "title": "Ogden Classifieds & Personal Ads for Backpage Ogden Alternative"
+          },
+          {
+            "path": "/city/provo",
+            "name": "Provo",
+            "title": "Provo Classifieds & Personal Ads for Backpage Provo Alternative"
+          },
+          {
+            "path": "/city/salt-lake-city",
+            "name": "Salt Lake City",
+            "title": "Salt Lake City Classifieds & Personal Ads for Backpage Salt Lake City Alternative"
+          },
+          {
+            "path": "/city/st-george",
+            "name": "St. George",
+            "title": "St. George Classifieds & Personal Ads for Backpage St. George Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/vermont",
+        "name": "Vermont",
+        "title": "Vermont Classifieds & Personal Ads for Backpage Vermont Alternative",
+        "cities": [
+          {
+            "path": "/city/burlington",
+            "name": "Burlington",
+            "title": "Burlington Classifieds & Personal Ads for Backpage Burlington Alternative"
+          },
+          {
+            "path": "/city/colchester",
+            "name": "Colchester",
+            "title": "Colchester Classifieds & Personal Ads for Backpage Colchester Alternative"
+          },
+          {
+            "path": "/city/essex",
+            "name": "Essex",
+            "title": "Essex Classifieds & Personal Ads for Backpage Essex Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/virginia",
+        "name": "Virginia",
+        "title": "Virginia Classifieds & Personal Ads for Backpage Virginia Alternative",
+        "cities": [
+          {
+            "path": "/city/charlottesville",
+            "name": "Charlottesville",
+            "title": "Charlottesville Classifieds & Personal Ads for Backpage Charlottesville Alternative"
+          },
+          {
+            "path": "/city/chesapeake",
+            "name": "Chesapeake",
+            "title": "Chesapeake Classifieds & Personal Ads for Backpage Chesapeake Alternative"
+          },
+          {
+            "path": "/city/danville",
+            "name": "Danville",
+            "title": "Danville Classifieds & Personal Ads for Backpage Danville Alternative"
+          },
+          {
+            "path": "/city/fredericksburg",
+            "name": "Fredericksburg",
+            "title": "Fredericksburg Classifieds & Personal Ads for Backpage Fredericksburg Alternative"
+          },
+          {
+            "path": "/city/hampton",
+            "name": "Hampton",
+            "title": "Hampton Classifieds & Personal Ads for Backpage Hampton Alternative"
+          },
+          {
+            "path": "/city/harrisonburg",
+            "name": "Harrisonburg",
+            "title": "Harrisonburg Classifieds & Personal Ads for Backpage Harrisonburg Alternative"
+          },
+          {
+            "path": "/city/lynchburg",
+            "name": "Lynchburg",
+            "title": "Lynchburg Classifieds & Personal Ads for Backpage Lynchburg Alternative"
+          },
+          {
+            "path": "/city/new-river-valley",
+            "name": "New River Valley",
+            "title": "New River Valley Classifieds & Personal Ads for Backpage New River Valley Alternative"
+          },
+          {
+            "path": "/city/newport-news",
+            "name": "Newport News",
+            "title": "Newport News Classifieds & Personal Ads for Backpage Newport News Alternative"
+          },
+          {
+            "path": "/city/norfolk",
+            "name": "Norfolk",
+            "title": "Norfolk Classifieds & Personal Ads for Backpage Norfolk Alternative"
+          },
+          {
+            "path": "/city/portsmouth",
+            "name": "Portsmouth",
+            "title": "Portsmouth Classifieds & Personal Ads for Backpage Portsmouth Alternative"
+          },
+          {
+            "path": "/city/richmond",
+            "name": "Richmond",
+            "title": "Richmond Classifieds & Personal Ads for Backpage Richmond Alternative"
+          },
+          {
+            "path": "/city/roanoke",
+            "name": "Roanoke",
+            "title": "Roanoke Classifieds & Personal Ads for Backpage Roanoke Alternative"
+          },
+          {
+            "path": "/city/southwest-virginia",
+            "name": "Southwest Virginia",
+            "title": "Southwest Virginia Classifieds & Personal Ads for Backpage Southwest Virginia Alternative"
+          },
+          {
+            "path": "/city/suffolk",
+            "name": "Suffolk",
+            "title": "Suffolk Classifieds & Personal Ads for Backpage Suffolk Alternative"
+          },
+          {
+            "path": "/city/virginia-beach",
+            "name": "Virginia Beach",
+            "title": "Virginia Beach Classifieds & Personal Ads for Backpage Virginia Beach Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/washington",
+        "name": "Washington",
+        "title": "Washington Classifieds & Personal Ads for Backpage Washington Alternative",
+        "cities": [
+          {
+            "path": "/city/bellingham",
+            "name": "Bellingham",
+            "title": "Bellingham Classifieds & Personal Ads for Backpage Bellingham Alternative"
+          },
+          {
+            "path": "/city/everett",
+            "name": "Everett",
+            "title": "Everett Classifieds & Personal Ads for Backpage Everett Alternative"
+          },
+          {
+            "path": "/city/moses-lake",
+            "name": "Moses Lake",
+            "title": "Moses Lake Classifieds & Personal Ads for Backpage Moses Lake Alternative"
+          },
+          {
+            "path": "/city/mt-vernon",
+            "name": "Mt. Vernon",
+            "title": "Mt. Vernon Classifieds & Personal Ads for Backpage Mt. Vernon Alternative"
+          },
+          {
+            "path": "/city/olympia",
+            "name": "Olympia",
+            "title": "Olympia Classifieds & Personal Ads for Backpage Olympia Alternative"
+          },
+          {
+            "path": "/city/pullman",
+            "name": "Pullman",
+            "title": "Pullman Classifieds & Personal Ads for Backpage Pullman Alternative"
+          },
+          {
+            "path": "/city/seattle",
+            "name": "Seattle",
+            "title": "Seattle Classifieds & Personal Ads for Backpage Seattle Alternative"
+          },
+          {
+            "path": "/city/spokane-coeurdalene",
+            "name": "Spokane",
+            "title": "Spokane Classifieds & Personal Ads for Backpage Spokane Alternative"
+          },
+          {
+            "path": "/city/tacoma",
+            "name": "Tacoma",
+            "title": "Tacoma Classifieds & Personal Ads for Backpage Tacoma Alternative"
+          },
+          {
+            "path": "/city/tri-cities-wa",
+            "name": "Tri Cities",
+            "title": "Tri Cities Classifieds & Personal Ads for Backpage Tri Cities Alternative"
+          },
+          {
+            "path": "/city/wenatchee",
+            "name": "Wenatchee",
+            "title": "Wenatchee Classifieds & Personal Ads for Backpage Wenatchee Alternative"
+          },
+          {
+            "path": "/city/yakima",
+            "name": "Yakima",
+            "title": "Yakima Classifieds & Personal Ads for Backpage Yakima Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/west-virginia",
+        "name": "West Virginia",
+        "title": "West Virginia Classifieds & Personal Ads for Backpage West Virginia Alternative",
+        "cities": [
+          {
+            "path": "/city/charleston",
+            "name": "Charleston",
+            "title": "Charleston Classifieds & Personal Ads for Backpage Charleston Alternative"
+          },
+          {
+            "path": "/city/huntington",
+            "name": "Huntington",
+            "title": "Huntington Classifieds & Personal Ads for Backpage Huntington Alternative"
+          },
+          {
+            "path": "/city/martinsburg",
+            "name": "Martinsburg",
+            "title": "Martinsburg Classifieds & Personal Ads for Backpage Martinsburg Alternative"
+          },
+          {
+            "path": "/city/morgantown",
+            "name": "Morgantown",
+            "title": "Morgantown Classifieds & Personal Ads for Backpage Morgantown Alternative"
+          },
+          {
+            "path": "/city/parkersburg",
+            "name": "Parkersburg",
+            "title": "Parkersburg Classifieds & Personal Ads for Backpage Parkersburg Alternative"
+          },
+          {
+            "path": "/city/southern-west-virginia",
+            "name": "Southern West Virginia",
+            "title": "Southern West Virginia Classifieds & Personal Ads for Backpage Southern West Virginia Alternative"
+          },
+          {
+            "path": "/city/wheeling",
+            "name": "Wheeling",
+            "title": "Wheeling Classifieds & Personal Ads for Backpage Wheeling Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/wisconsin",
+        "name": "Wisconsin",
+        "title": "Wisconsin Classifieds & Personal Ads for Backpage Wisconsin Alternative",
+        "cities": [
+          {
+            "path": "/city/appleton",
+            "name": "Appleton",
+            "title": "Appleton Classifieds & Personal Ads for Backpage Appleton Alternative"
+          },
+          {
+            "path": "/city/eau-claire",
+            "name": "Eau Claire",
+            "title": "Eau Claire Classifieds & Personal Ads for Backpage Eau Claire Alternative"
+          },
+          {
+            "path": "/city/green-bay",
+            "name": "Green Bay",
+            "title": "Green Bay Classifieds & Personal Ads for Backpage Green Bay Alternative"
+          },
+          {
+            "path": "/city/janesville",
+            "name": "Janesville",
+            "title": "Janesville Classifieds & Personal Ads for Backpage Janesville Alternative"
+          },
+          {
+            "path": "/city/la-crosse",
+            "name": "La Crosse",
+            "title": "La Crosse Classifieds & Personal Ads for Backpage La Crosse Alternative"
+          },
+          {
+            "path": "/city/madison",
+            "name": "Madison",
+            "title": "Madison Classifieds & Personal Ads for Backpage Madison Alternative"
+          },
+          {
+            "path": "/city/milwaukee",
+            "name": "Milwaukee",
+            "title": "Milwaukee Classifieds & Personal Ads for Backpage Milwaukee Alternative"
+          },
+          {
+            "path": "/city/racine",
+            "name": "Racine",
+            "title": "Racine Classifieds & Personal Ads for Backpage Racine Alternative"
+          },
+          {
+            "path": "/city/sheboygan",
+            "name": "Sheboygan",
+            "title": "Sheboygan Classifieds & Personal Ads for Backpage Sheboygan Alternative"
+          },
+          {
+            "path": "/city/wausau",
+            "name": "Wausau",
+            "title": "Wausau Classifieds & Personal Ads for Backpage Wausau Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/us/wyoming",
+        "name": "Wyoming",
+        "title": "Wyoming Classifieds & Personal Ads for Backpage Wyoming Alternative",
+        "cities": [
+          {
+            "path": "/city/casper",
+            "name": "Casper",
+            "title": "Casper Classifieds & Personal Ads for Backpage Casper Alternative"
+          },
+          {
+            "path": "/city/cheyenne",
+            "name": "Cheyenne",
+            "title": "Cheyenne Classifieds & Personal Ads for Backpage Cheyenne Alternative"
+          },
+          {
+            "path": "/city/laramie",
+            "name": "Laramie",
+            "title": "Laramie Classifieds & Personal Ads for Backpage Laramie Alternative"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Canada",
+    "code": "ca",
+    "regions": [
+      {
+        "path": "/ca/alberta",
+        "name": "Alberta",
+        "title": "Alberta Classifieds & Personal Ads for Backpage Alberta Alternative",
+        "cities": [
+          {
+            "path": "/city/calgary",
+            "name": "Calgary",
+            "title": "Calgary Classifieds & Personal Ads for Backpage Calgary Alternative"
+          },
+          {
+            "path": "/city/edmonton",
+            "name": "Edmonton",
+            "title": "Edmonton Classifieds & Personal Ads for Backpage Edmonton Alternative"
+          },
+          {
+            "path": "/city/ft-mcmurray",
+            "name": "Ft Mcmurray",
+            "title": "Ft Mcmurray Classifieds & Personal Ads for Backpage Ft Mcmurray Alternative"
+          },
+          {
+            "path": "/city/grande-prairie",
+            "name": "Grande Prairie",
+            "title": "Grande Prairie Classifieds & Personal Ads for Backpage Grande Prairie Alternative"
+          },
+          {
+            "path": "/city/lethbridge",
+            "name": "Lethbridge",
+            "title": "Lethbridge Classifieds & Personal Ads for Backpage Lethbridge Alternative"
+          },
+          {
+            "path": "/city/medicine-hat",
+            "name": "Medicine Hat",
+            "title": "Medicine Hat Classifieds & Personal Ads for Backpage Medicine Hat Alternative"
+          },
+          {
+            "path": "/city/red-deer",
+            "name": "Red Deer",
+            "title": "Red Deer Classifieds & Personal Ads for Backpage Red Deer Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/british-columbia",
+        "name": "British Columbia",
+        "title": "British Columbia Classifieds & Personal Ads for Backpage British Columbia Alternative",
+        "cities": [
+          {
+            "path": "/city/abbotsford",
+            "name": "Abbotsford",
+            "title": "Abbotsford Classifieds & Personal Ads for Backpage Abbotsford Alternative"
+          },
+          {
+            "path": "/city/cariboo",
+            "name": "Cariboo",
+            "title": "Cariboo Classifieds & Personal Ads for Backpage Cariboo Alternative"
+          },
+          {
+            "path": "/city/chilliwack",
+            "name": "Chilliwack",
+            "title": "Chilliwack Classifieds & Personal Ads for Backpage Chilliwack Alternative"
+          },
+          {
+            "path": "/city/comox-valley",
+            "name": "Comox Valley",
+            "title": "Comox Valley Classifieds & Personal Ads for Backpage Comox Valley Alternative"
+          },
+          {
+            "path": "/city/cranbrook",
+            "name": "Cranbrook",
+            "title": "Cranbrook Classifieds & Personal Ads for Backpage Cranbrook Alternative"
+          },
+          {
+            "path": "/city/kamloops",
+            "name": "Kamloops",
+            "title": "Kamloops Classifieds & Personal Ads for Backpage Kamloops Alternative"
+          },
+          {
+            "path": "/city/kelowna",
+            "name": "Kelowna",
+            "title": "Kelowna Classifieds & Personal Ads for Backpage Kelowna Alternative"
+          },
+          {
+            "path": "/city/nanaimo",
+            "name": "Nanaimo",
+            "title": "Nanaimo Classifieds & Personal Ads for Backpage Nanaimo Alternative"
+          },
+          {
+            "path": "/city/peace-river-country",
+            "name": "Peace River Country",
+            "title": "Peace River Country Classifieds & Personal Ads for Backpage Peace River Country Alternative"
+          },
+          {
+            "path": "/city/prince-george",
+            "name": "Prince George",
+            "title": "Prince George Classifieds & Personal Ads for Backpage Prince George Alternative"
+          },
+          {
+            "path": "/city/skeena",
+            "name": "Skeena",
+            "title": "Skeena Classifieds & Personal Ads for Backpage Skeena Alternative"
+          },
+          {
+            "path": "/city/sunshine-coast",
+            "name": "Sunshine Coast",
+            "title": "Sunshine Coast Classifieds & Personal Ads for Backpage Sunshine Coast Alternative"
+          },
+          {
+            "path": "/city/vancouver",
+            "name": "Vancouver",
+            "title": "Vancouver Classifieds & Personal Ads for Backpage Vancouver Alternative"
+          },
+          {
+            "path": "/city/vernon",
+            "name": "Vernon",
+            "title": "Vernon Classifieds & Personal Ads for Backpage Vernon Alternative"
+          },
+          {
+            "path": "/city/victoria",
+            "name": "Victoria",
+            "title": "Victoria Classifieds & Personal Ads for Backpage Victoria Alternative"
+          },
+          {
+            "path": "/city/whistler",
+            "name": "Whistler",
+            "title": "Whistler Classifieds & Personal Ads for Backpage Whistler Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/manitoba",
+        "name": "Manitoba",
+        "title": "Manitoba Classifieds & Personal Ads for Backpage Manitoba Alternative",
+        "cities": [
+          {
+            "path": "/city/brandon",
+            "name": "Brandon",
+            "title": "Brandon Classifieds & Personal Ads for Backpage Brandon Alternative"
+          },
+          {
+            "path": "/city/winnipeg",
+            "name": "Winnipeg",
+            "title": "Winnipeg Classifieds & Personal Ads for Backpage Winnipeg Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/new-brunswick",
+        "name": "New Brunswick",
+        "title": "New Brunswick Classifieds & Personal Ads for Backpage New Brunswick Alternative",
+        "cities": [
+          {
+            "path": "/city/fredericton",
+            "name": "Fredericton",
+            "title": "Fredericton Classifieds & Personal Ads for Backpage Fredericton Alternative"
+          },
+          {
+            "path": "/city/moncton",
+            "name": "Moncton",
+            "title": "Moncton Classifieds & Personal Ads for Backpage Moncton Alternative"
+          },
+          {
+            "path": "/city/saint-john",
+            "name": "Saint John",
+            "title": "Saint John Classifieds & Personal Ads for Backpage Saint John Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/newfoundland-and-labrador",
+        "name": "Newfoundland",
+        "title": "Newfoundland Classifieds & Personal Ads for Backpage Newfoundland Alternative",
+        "cities": [
+          {
+            "path": "/city/newfoundland-and-labrador",
+            "name": "Newfoundland And Labrador",
+            "title": "Newfoundland Classifieds & Personal Ads for Backpage Newfoundland Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/northwest-territories",
+        "name": "Northwest Territories",
+        "title": "Northwest Territories Classifieds & Personal Ads for Backpage Northwest Territories Alternative",
+        "cities": [
+          {
+            "path": "/city/yellowknife",
+            "name": "Yellowknife",
+            "title": "Yellowknife Classifieds & Personal Ads for Backpage Yellowknife Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/nova-scotia",
+        "name": "Nova Scotia",
+        "title": "Nova Scotia Classifieds & Personal Ads for Backpage Nova Scotia Alternative",
+        "cities": [
+          {
+            "path": "/city/halifax",
+            "name": "Halifax",
+            "title": "Halifax Classifieds & Personal Ads for Backpage Halifax Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/ontario",
+        "name": "Ontario",
+        "title": "Ontario Classifieds & Personal Ads for Backpage Ontario Alternative",
+        "cities": [
+          {
+            "path": "/city/barrie",
+            "name": "Barrie",
+            "title": "Barrie Classifieds & Personal Ads for Backpage Barrie Alternative"
+          },
+          {
+            "path": "/city/belleville",
+            "name": "Belleville",
+            "title": "Belleville Classifieds & Personal Ads for Backpage Belleville Alternative"
+          },
+          {
+            "path": "/city/brantford",
+            "name": "Brantford",
+            "title": "Brantford Classifieds & Personal Ads for Backpage Brantford Alternative"
+          },
+          {
+            "path": "/city/chatham",
+            "name": "Chatham",
+            "title": "Chatham Classifieds & Personal Ads for Backpage Chatham Alternative"
+          },
+          {
+            "path": "/city/cornwall",
+            "name": "Cornwall",
+            "title": "Cornwall Classifieds & Personal Ads for Backpage Cornwall Alternative"
+          },
+          {
+            "path": "/city/guelph",
+            "name": "Guelph",
+            "title": "Guelph Classifieds & Personal Ads for Backpage Guelph Alternative"
+          },
+          {
+            "path": "/city/hamilton",
+            "name": "Hamilton",
+            "title": "Hamilton Classifieds & Personal Ads for Backpage Hamilton Alternative"
+          },
+          {
+            "path": "/city/kingston",
+            "name": "Kingston",
+            "title": "Kingston Classifieds & Personal Ads for Backpage Kingston Alternative"
+          },
+          {
+            "path": "/city/kitchener",
+            "name": "Kitchener",
+            "title": "Kitchener Classifieds & Personal Ads for Backpage Kitchener Alternative"
+          },
+          {
+            "path": "/city/london",
+            "name": "London",
+            "title": "London Classifieds & Personal Ads for Backpage London Alternative"
+          },
+          {
+            "path": "/city/mississauga",
+            "name": "Mississauga",
+            "title": "Mississauga Classifieds & Personal Ads for Backpage Mississauga Alternative"
+          },
+          {
+            "path": "/city/niagara",
+            "name": "Niagara",
+            "title": "Niagara Classifieds & Personal Ads for Backpage Niagara Alternative"
+          },
+          {
+            "path": "/city/ottawa",
+            "name": "Ottawa",
+            "title": "Ottawa Classifieds & Personal Ads for Backpage Ottawa Alternative"
+          },
+          {
+            "path": "/city/owen-sound",
+            "name": "Owen Sound",
+            "title": "Owen Sound Classifieds & Personal Ads for Backpage Owen Sound Alternative"
+          },
+          {
+            "path": "/city/peterborough",
+            "name": "Peterborough",
+            "title": "Peterborough Classifieds & Personal Ads for Backpage Peterborough Alternative"
+          },
+          {
+            "path": "/city/sarnia",
+            "name": "Sarnia",
+            "title": "Sarnia Classifieds & Personal Ads for Backpage Sarnia Alternative"
+          },
+          {
+            "path": "/city/sault-ste-marie",
+            "name": "Sault Ste Marie",
+            "title": "Sault Ste Marie Classifieds & Personal Ads for Backpage Sault Ste Marie Alternative"
+          },
+          {
+            "path": "/city/sudbury",
+            "name": "Sudbury",
+            "title": "Sudbury Classifieds & Personal Ads for Backpage Sudbury Alternative"
+          },
+          {
+            "path": "/city/thunder-bay",
+            "name": "Thunder Bay",
+            "title": "Thunder Bay Classifieds & Personal Ads for Backpage Thunder Bay Alternative"
+          },
+          {
+            "path": "/city/toronto",
+            "name": "Toronto",
+            "title": "Toronto Classifieds & Personal Ads for Backpage Toronto Alternative"
+          },
+          {
+            "path": "/city/windsor",
+            "name": "Windsor",
+            "title": "Windsor Classifieds & Personal Ads for Backpage Windsor Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/prince-edward-island",
+        "name": "Prince Edward Island",
+        "title": "Prince Edward Island Classifieds & Personal Ads for Backpage Prince Edward Island Alternative",
+        "cities": [
+          {
+            "path": "/city/charlottetown",
+            "name": "Charlottetown",
+            "title": "Charlottetown Classifieds & Personal Ads for Backpage Charlottetown Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/quebec",
+        "name": "Quebec",
+        "title": "Quebec Classifieds & Personal Ads for Backpage Quebec Alternative",
+        "cities": [
+          {
+            "path": "/city/montreal",
+            "name": "Montreal",
+            "title": "Montreal Classifieds & Personal Ads for Backpage Montreal Alternative"
+          },
+          {
+            "path": "/city/quebec-city",
+            "name": "Quebec City",
+            "title": "Quebec City Classifieds & Personal Ads for Backpage Quebec City Alternative"
+          },
+          {
+            "path": "/city/saguenay",
+            "name": "Saguenay",
+            "title": "Saguenay Classifieds & Personal Ads for Backpage Saguenay Alternative"
+          },
+          {
+            "path": "/city/sherbrooke",
+            "name": "Sherbrooke",
+            "title": "Sherbrooke Classifieds & Personal Ads for Backpage Sherbrooke Alternative"
+          },
+          {
+            "path": "/city/trois-rivieres",
+            "name": "Trois Rivieres",
+            "title": "Trois Rivieres Classifieds & Personal Ads for Backpage Trois Rivieres Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/saskatchewan",
+        "name": "Saskatchewan",
+        "title": "Saskatchewan Classifieds & Personal Ads for Backpage Saskatchewan Alternative",
+        "cities": [
+          {
+            "path": "/city/lloydminister",
+            "name": "Lloydminister",
+            "title": "Lloydminister Classifieds & Personal Ads for Backpage Lloydminister Alternative"
+          },
+          {
+            "path": "/city/prince-albert",
+            "name": "Prince Albert",
+            "title": "Prince Albert Classifieds & Personal Ads for Backpage Prince Albert Alternative"
+          },
+          {
+            "path": "/city/regina",
+            "name": "Regina",
+            "title": "Regina Classifieds & Personal Ads for Backpage Regina Alternative"
+          },
+          {
+            "path": "/city/saskatoon",
+            "name": "Saskatoon",
+            "title": "Saskatoon Classifieds & Personal Ads for Backpage Saskatoon Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/ca/yukon-territory",
+        "name": "Yukon Territory",
+        "title": "Yukon Territory Classifieds & Personal Ads for Backpage Yukon Territory Alternative",
+        "cities": [
+          {
+            "path": "/city/whitehorse",
+            "name": "Whitehorse",
+            "title": "Whitehorse Classifieds & Personal Ads for Backpage Whitehorse Alternative"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "United Kingdom",
+    "code": "uk",
+    "regions": [
+      {
+        "path": "/uk/east-midlands",
+        "name": "East Midlands",
+        "title": "East Midlands Classifieds & Personal Ads for Backpage East Midlands Alternative",
+        "cities": [
+          {
+            "path": "/city/derby",
+            "name": "Derby",
+            "title": "Derby Classifieds & Personal Ads for Backpage Derby Alternative"
+          },
+          {
+            "path": "/city/leicester",
+            "name": "Leicester",
+            "title": "Leicester Classifieds & Personal Ads for Backpage Leicester Alternative"
+          },
+          {
+            "path": "/city/nottingham",
+            "name": "Nottingham",
+            "title": "Nottingham Classifieds & Personal Ads for Backpage Nottingham Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/east-of-england",
+        "name": "East Of England",
+        "title": "East Of England Classifieds & Personal Ads for Backpage East Of England Alternative",
+        "cities": [
+          {
+            "path": "/city/cambridge",
+            "name": "Cambridge",
+            "title": "Cambridge Classifieds & Personal Ads for Backpage Cambridge Alternative"
+          },
+          {
+            "path": "/city/ipswich",
+            "name": "Ipswich",
+            "title": "Ipswich Classifieds & Personal Ads for Backpage Ipswich Alternative"
+          },
+          {
+            "path": "/city/norwich",
+            "name": "Norwich",
+            "title": "Norwich Classifieds & Personal Ads for Backpage Norwich Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/greater-london",
+        "name": "Greater London",
+        "title": "Greater London Classifieds & Personal Ads for Backpage Greater London Alternative",
+        "cities": [
+          {
+            "path": "/city/bromley",
+            "name": "Bromley",
+            "title": "Bromley Classifieds & Personal Ads for Backpage Bromley Alternative"
+          },
+          {
+            "path": "/city/croydon",
+            "name": "Croydon",
+            "title": "Croydon Classifieds & Personal Ads for Backpage Croydon Alternative"
+          },
+          {
+            "path": "/city/uk-london",
+            "name": "London",
+            "title": "London Classifieds & Personal Ads for Backpage London Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/north-east",
+        "name": "North East",
+        "title": "North East Classifieds & Personal Ads for Backpage North East Alternative",
+        "cities": [
+          {
+            "path": "/city/durham",
+            "name": "Durham",
+            "title": "Durham Classifieds & Personal Ads for Backpage Durham Alternative"
+          },
+          {
+            "path": "/city/newcastle",
+            "name": "Newcastle",
+            "title": "Newcastle Classifieds & Personal Ads for Backpage Newcastle Alternative"
+          },
+          {
+            "path": "/city/sunderland",
+            "name": "Sunderland",
+            "title": "Sunderland Classifieds & Personal Ads for Backpage Sunderland Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/north-west",
+        "name": "North West",
+        "title": "North West Classifieds & Personal Ads for Backpage North West Alternative",
+        "cities": [
+          {
+            "path": "/city/blackpool",
+            "name": "Blackpool",
+            "title": "Blackpool Classifieds & Personal Ads for Backpage Blackpool Alternative"
+          },
+          {
+            "path": "/city/liverpool",
+            "name": "Liverpool",
+            "title": "Liverpool Classifieds & Personal Ads for Backpage Liverpool Alternative"
+          },
+          {
+            "path": "/city/manchester",
+            "name": "Manchester",
+            "title": "Manchester Classifieds & Personal Ads for Backpage Manchester Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/northern-ireland",
+        "name": "Northern Ireland",
+        "title": "Northern Ireland Classifieds & Personal Ads for Backpage Northern Ireland Alternative",
+        "cities": [
+          {
+            "path": "/city/belfast",
+            "name": "Belfast",
+            "title": "Belfast Classifieds & Personal Ads for Backpage Belfast Alternative"
+          },
+          {
+            "path": "/city/derry",
+            "name": "Derry",
+            "title": "Derry Classifieds & Personal Ads for Backpage Derry Alternative"
+          },
+          {
+            "path": "/city/lisburn",
+            "name": "Lisburn",
+            "title": "Lisburn Classifieds & Personal Ads for Backpage Lisburn Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/scotland",
+        "name": "Scotland",
+        "title": "Scotland Classifieds & Personal Ads for Backpage Scotland Alternative",
+        "cities": [
+          {
+            "path": "/city/uk-aberdeen",
+            "name": "Aberdeen",
+            "title": "Aberdeen Classifieds & Personal Ads for Backpage Aberdeen Alternative"
+          },
+          {
+            "path": "/city/edinburgh",
+            "name": "Edinburgh",
+            "title": "Edinburgh Classifieds & Personal Ads for Backpage Edinburgh Alternative"
+          },
+          {
+            "path": "/city/glasgow",
+            "name": "Glasgow",
+            "title": "Glasgow Classifieds & Personal Ads for Backpage Glasgow Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/south-east",
+        "name": "South East",
+        "title": "South East Classifieds & Personal Ads for Backpage South East Alternative",
+        "cities": [
+          {
+            "path": "/city/brighton",
+            "name": "Brighton",
+            "title": "Brighton Classifieds & Personal Ads for Backpage Brighton Alternative"
+          },
+          {
+            "path": "/city/uk-portsmouth",
+            "name": "Portsmouth",
+            "title": "Portsmouth Classifieds & Personal Ads for Backpage Portsmouth Alternative"
+          },
+          {
+            "path": "/city/uk-southampton",
+            "name": "Southampton",
+            "title": "Southampton Classifieds & Personal Ads for Backpage Southampton Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/south-west",
+        "name": "South West",
+        "title": "South West Classifieds & Personal Ads for Backpage South West Alternative",
+        "cities": [
+          {
+            "path": "/city/bristol",
+            "name": "Bristol",
+            "title": "Bristol Classifieds & Personal Ads for Backpage Bristol Alternative"
+          },
+          {
+            "path": "/city/exeter",
+            "name": "Exeter",
+            "title": "Exeter Classifieds & Personal Ads for Backpage Exeter Alternative"
+          },
+          {
+            "path": "/city/plymouth",
+            "name": "Plymouth",
+            "title": "Plymouth Classifieds & Personal Ads for Backpage Plymouth Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/wales",
+        "name": "Wales",
+        "title": "Wales Classifieds & Personal Ads for Backpage Wales Alternative",
+        "cities": [
+          {
+            "path": "/city/cardiff",
+            "name": "Cardiff",
+            "title": "Cardiff Classifieds & Personal Ads for Backpage Cardiff Alternative"
+          },
+          {
+            "path": "/city/newport",
+            "name": "Newport",
+            "title": "Newport Classifieds & Personal Ads for Backpage Newport Alternative"
+          },
+          {
+            "path": "/city/swansea",
+            "name": "Swansea",
+            "title": "Swansea Classifieds & Personal Ads for Backpage Swansea Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/west-midlands",
+        "name": "West Midlands",
+        "title": "West Midlands Classifieds & Personal Ads for Backpage West Midlands Alternative",
+        "cities": [
+          {
+            "path": "/city/uk-birmingham",
+            "name": "Birmingham",
+            "title": "Birmingham Classifieds & Personal Ads for Backpage Birmingham Alternative"
+          },
+          {
+            "path": "/city/coventry",
+            "name": "Coventry",
+            "title": "Coventry Classifieds & Personal Ads for Backpage Coventry Alternative"
+          },
+          {
+            "path": "/city/wolverhampton",
+            "name": "Wolverhampton",
+            "title": "Wolverhampton Classifieds & Personal Ads for Backpage Wolverhampton Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/uk/yorkshire-and-the-humber",
+        "name": "Yorkshire",
+        "title": "Yorkshire Classifieds & Personal Ads for Backpage Yorkshire Alternative",
+        "cities": [
+          {
+            "path": "/city/bradford",
+            "name": "Bradford",
+            "title": "Bradford Classifieds & Personal Ads for Backpage Bradford Alternative"
+          },
+          {
+            "path": "/city/leeds",
+            "name": "Leeds",
+            "title": "Leeds Classifieds & Personal Ads for Backpage Leeds Alternative"
+          },
+          {
+            "path": "/city/sheffield",
+            "name": "Sheffield",
+            "title": "Sheffield Classifieds & Personal Ads for Backpage Sheffield Alternative"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Australia",
+    "code": "au",
+    "regions": [
+      {
+        "path": "/au/australian-capital-territory",
+        "name": "Capital Territory",
+        "title": "Capital Territory Classifieds & Personal Ads for Backpage Capital Territory Alternative",
+        "cities": [
+          {
+            "path": "/city/canberra",
+            "name": "Canberra",
+            "title": "Canberra Classifieds & Personal Ads for Backpage Canberra Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/au/new-south-wales",
+        "name": "New South Wales",
+        "title": "New South Wales Classifieds & Personal Ads for Backpage New South Wales Alternative",
+        "cities": [
+          {
+            "path": "/city/au-newcastle",
+            "name": "Newcastle",
+            "title": "Newcastle Classifieds & Personal Ads for Backpage Newcastle Alternative"
+          },
+          {
+            "path": "/city/au-sydney",
+            "name": "Sydney",
+            "title": "Sydney Classifieds & Personal Ads for Backpage Sydney Alternative"
+          },
+          {
+            "path": "/city/wollongong",
+            "name": "Wollongong",
+            "title": "Wollongong Classifieds & Personal Ads for Backpage Wollongong Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/au/northern-territory",
+        "name": "Northern Territory",
+        "title": "Northern Territory Classifieds & Personal Ads for Backpage Northern Territory Alternative",
+        "cities": [
+          {
+            "path": "/city/alice-springs",
+            "name": "Alice Springs",
+            "title": "Alice Springs Classifieds & Personal Ads for Backpage Alice Springs Alternative"
+          },
+          {
+            "path": "/city/au-darwin",
+            "name": "Darwin",
+            "title": "Darwin Classifieds & Personal Ads for Backpage Darwin Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/au/queensland",
+        "name": "Queensland",
+        "title": "Queensland Classifieds & Personal Ads for Backpage Queensland Alternative",
+        "cities": [
+          {
+            "path": "/city/au-brisbane",
+            "name": "Brisbane",
+            "title": "Brisbane Classifieds & Personal Ads for Backpage Brisbane Alternative"
+          },
+          {
+            "path": "/city/cairns",
+            "name": "Cairns",
+            "title": "Cairns Classifieds & Personal Ads for Backpage Cairns Alternative"
+          },
+          {
+            "path": "/city/gold-coast",
+            "name": "Gold Coast",
+            "title": "Gold Coast Classifieds & Personal Ads for Backpage Gold Coast Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/au/south-australia",
+        "name": "South Australia",
+        "title": "South Australia Classifieds & Personal Ads for Backpage South Australia Alternative",
+        "cities": [
+          {
+            "path": "/city/au-adelaide",
+            "name": "Adelaide",
+            "title": "Adelaide Classifieds & Personal Ads for Backpage Adelaide Alternative"
+          },
+          {
+            "path": "/city/mount-gambier",
+            "name": "Mount Gambier",
+            "title": "Mount Gambier Classifieds & Personal Ads for Backpage Mount Gambier Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/au/tasmania",
+        "name": "Tasmania",
+        "title": "Tasmania Classifieds & Personal Ads for Backpage Tasmania Alternative",
+        "cities": [
+          {
+            "path": "/city/au-hobart",
+            "name": "Hobart",
+            "title": "Hobart Classifieds & Personal Ads for Backpage Hobart Alternative"
+          },
+          {
+            "path": "/city/launceston",
+            "name": "Launceston",
+            "title": "Launceston Classifieds & Personal Ads for Backpage Launceston Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/au/victoria",
+        "name": "Victoria",
+        "title": "Victoria Classifieds & Personal Ads for Backpage Victoria Alternative",
+        "cities": [
+          {
+            "path": "/city/ballarat",
+            "name": "Ballarat",
+            "title": "Ballarat Classifieds & Personal Ads for Backpage Ballarat Alternative"
+          },
+          {
+            "path": "/city/geelong",
+            "name": "Geelong",
+            "title": "Geelong Classifieds & Personal Ads for Backpage Geelong Alternative"
+          },
+          {
+            "path": "/city/au-melbourne",
+            "name": "Melbourne",
+            "title": "Melbourne Classifieds & Personal Ads for Backpage Melbourne Alternative"
+          }
+        ]
+      },
+      {
+        "path": "/au/western-australia",
+        "name": "Western Australia",
+        "title": "Western Australia Classifieds & Personal Ads for Backpage Western Australia Alternative",
+        "cities": [
+          {
+            "path": "/city/au-albany",
+            "name": "Albany",
+            "title": "Albany Classifieds & Personal Ads for Backpage Albany Alternative"
+          },
+          {
+            "path": "/city/fremantle",
+            "name": "Fremantle",
+            "title": "Fremantle Classifieds & Personal Ads for Backpage Fremantle Alternative"
+          },
+          {
+            "path": "/city/au-perth",
+            "name": "Perth",
+            "title": "Perth Classifieds & Personal Ads for Backpage Perth Alternative"
+          }
+        ]
+      }
+    ]
+  }
+]

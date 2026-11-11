@@ -1,0 +1,69 @@
+body:has(.admin) > :global(.header),
+body:has(.admin) > :global(.footer) { display: none; }
+
+.admin { min-height: 100dvh; background: #f4f6fb; color: #172744; font-family: "Inter Variable", sans-serif; }
+.admin .sidebar {
+  --app-shell-navbar-border-color: #233354;
+  background: #101c36;
+  color: #edf3ff;
+}
+.sidebar :global(.mantine-Text-root) { color: inherit; }
+.sidebar :global(.mantine-NavLink-root) { margin-block: 3px; border-radius: 7px; color: #c6d3ec; }
+.sidebar :global(.mantine-NavLink-root:hover), .sidebar :global(.mantine-NavLink-root[data-active]) {
+  background: #263d69;
+  color: white;
+}
+.logo { display: block; width: clamp(94px, 20vw, 150px); height: auto; }
+.headerCrumbs { min-width: 0; font-size: 13px; }
+.admin .galleryPhoto { position: relative; overflow: hidden; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.cardPhoto { position: relative; width: 100%; height: 100%; border: 0; padding: 0; border-radius: inherit; overflow: hidden; cursor: pointer; }
+.cardPhoto img, .galleryPhoto img { object-fit: cover; }
+.previewPhoto { display: block; width: 100%; height: auto; }
+.content { max-width: 1450px; margin-inline: auto; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block: 8px 20px; }
+.heading h1 { font-size: clamp(25px, 4vw, 35px); letter-spacing: -.04em; }
+.heading p { color: var(--mantine-color-dimmed); font-size: 14px; }
+.heading p:empty { display: none; }
+.stat { text-align: left; cursor: pointer; background: white; }
+.stat:hover { border-color: var(--mantine-color-indigo-4); }
+.toolbar, .formActions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.toolbar { margin-block: 12px; }
+.search { flex: 1 1 230px; min-width: 0; max-width: 460px; }
+.admin td small { display: block; margin-top: 3px; color: var(--mantine-color-dimmed); }
+.admin th { white-space: nowrap; background: #f3f6fb; }
+.admin td { overflow-wrap: anywhere; }
+.primary { white-space: nowrap; }
+.feedback { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-bottom: 12px; padding: 10px; border-radius: 6px; background: var(--mantine-color-indigo-0); }
+.empty { margin-top: 10px; padding: 8px 0; color: var(--mantine-color-dimmed); }
+.subheading { margin-top: 15px; font-size: 14px; }
+.requirements { list-style: disc; padding: 6px 0 0 18px; color: var(--mantine-color-dimmed); }
+.requirements li + li { margin-top: 5px; }
+.publisher { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fields { display: grid; gap: 9px; }
+.fields > * { min-width: 0; }
+.cityList { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 8px; max-height: 190px; overflow: auto; padding: 10px; border: 1px solid var(--mantine-color-gray-3); border-radius: 6px; }
+.cityList label { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.cityList small { display: block; color: var(--mantine-color-dimmed); }
+.cityActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-block: 12px; }
+.cityActions button { min-width: 0; min-height: 36px; padding-inline: 4px; }
+.formActions { grid-column: 1 / -1; }
+.formActions p { color: var(--mantine-color-red-8); }
+.responsiveTable { table-layout: auto; }
+
+@media (max-width: 767px) {
+  .publisher { grid-template-columns: minmax(0, 1fr); }
+  .heading { align-items: flex-start; }
+  .heading p { font-size: 13px; }
+  .search { flex-basis: 100%; max-width: none; }
+  .responsiveTable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .responsiveTable, .responsiveTable tbody { display: block; width: 100%; }
+  .responsiveTable tr { display: block; margin-top: 10px; padding: 6px 10px; border: 1px solid #e0e6f1; border-radius: 8px; }
+  .responsiveTable td { display: grid; grid-template-columns: minmax(72px, 31%) minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 0; border: 0; font-size: 13px; }
+  .responsiveTable td:first-child { display: block; font-size: 14px; }
+  .responsiveTable td:not(:first-child)::before { content: attr(data-label); color: #52627e; font-size: 12px; }
+  .responsiveTable td :global(.mantine-ActionIcon-root) { justify-self: start; }
+}
+
+@media (width < 62em) {
+  .admin .sidebar { width: min(245px, 80vw); box-shadow: 8px 0 24px #101c3626; }
+}
