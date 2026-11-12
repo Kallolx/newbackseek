@@ -21,12 +21,33 @@ export function HeaderQr() {
     setBusy(true);
     try {
       const { default: QRCode } = await import('qrcode');
-      setQr(await QRCode.toDataURL(siteUrl, {
+      const canvas = document.createElement('canvas');
+      await QRCode.toCanvas(canvas, siteUrl, {
         width: 1024,
         margin: 4,
-        errorCorrectionLevel: 'M',
+        errorCorrectionLevel: 'H',
         color: { dark: '#071d4d', light: '#ffffff' },
-      }));
+      });
+
+      const mascot = new window.Image();
+      mascot.src = '/brand/mascot-transparent.png';
+      await mascot.decode();
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Canvas is unavailable');
+
+      const backingSize = canvas.width * 0.18;
+      const backingOffset = (canvas.width - backingSize) / 2;
+      context.fillStyle = '#ffffff';
+      context.beginPath();
+      context.roundRect(backingOffset, backingOffset, backingSize, backingSize, 18);
+      context.fill();
+
+      const imageSize = backingSize * 0.88;
+      const scale = imageSize / Math.max(mascot.naturalWidth, mascot.naturalHeight);
+      const width = mascot.naturalWidth * scale;
+      const height = mascot.naturalHeight * scale;
+      context.drawImage(mascot, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+      setQr(canvas.toDataURL('image/png'));
     } catch {
       setMessage('Could not generate the QR code. Please close and try again.');
     } finally {
