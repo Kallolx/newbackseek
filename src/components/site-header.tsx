@@ -1,18 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { HeaderQr } from './header-qr';
 
 export function SiteHeader() {
   return (
     <header className="header" id="top"><div className="shell bar">
       <Link className="brand" href="/" aria-label="BackpageNew home">
-        <Image
-          className="brand-mascot"
-          src="/brand/mascot-transparent.png"
-          alt=""
-          width={1280}
-          height={1280}
-          priority
-        />
         <Image
           className="brand-wordmark"
           src="/brand/backpage-new-logo.png"
@@ -22,6 +15,7 @@ export function SiteHeader() {
           priority
         />
       </Link>
+      <HeaderQr />
       <nav aria-label="Main navigation">
         <a href="/post">Post an Ad</a>
       </nav>
