@@ -1,0 +1,16 @@
+.root { position: relative; min-width: 0; font-size: 14px; }
+.root > label { display: block; margin-bottom: 5px; font-weight: 600; color: #272024; }
+.root > label span { color: #981e38; }
+.trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 43px; padding: 9px 11px; border: 1px solid #ccd3de; border-radius: 6px; background: white; font: inherit; color: #272024; cursor: pointer; text-align: left; }
+.trigger > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.trigger svg { flex-shrink: 0; }
+.trigger:disabled { background: #f5f6f8; color: #888; cursor: default; }
+.placeholder { color: #777; }
+.menu { position: absolute; z-index: 20; top: calc(100% + 5px); left: 0; right: 0; border: 1px solid #ccd3de; border-radius: 7px; background: white; box-shadow: 0 8px 22px #12316820; overflow: hidden; font-weight: 400; }
+.search { display: flex; align-items: center; gap: 8px; padding: 8px 11px; border-bottom: 1px solid #e3e7ee; color: #68748a; }
+.search input { width: 100%; min-width: 0; padding: 4px 0; border: 0; border-radius: 0; font: inherit; background: white; color: #272024; }
+.search input:focus-visible { outline-offset: 0; }
+.menu ul { max-height: 225px; overflow: auto; list-style: none; padding: 4px; margin: 0; }
+.menu li { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 8px; border-radius: 4px; cursor: pointer; }
+.menu li:hover, .menu li[data-active], .menu li[aria-selected="true"] { background: #edf2fa; color: #123168; }
+.empty { padding: 10px; color: #68748a; font-size: 13px; margin: 0; }

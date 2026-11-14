@@ -10,6 +10,12 @@ export type Ad = {
   id: number;
   title: string;
   description: string;
+  descriptionHtml?: string;
+  age?: number;
+  location?: string;
+  phone?: string;
+  email?: string;
+  images?: string[];
   category: string;
   owner: string;
   targets: string[];

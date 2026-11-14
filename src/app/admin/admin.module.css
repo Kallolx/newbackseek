@@ -18,9 +18,15 @@ body:has(.admin) > :global(.footer) { display: none; }
 .admin .galleryPhoto { position: relative; overflow: hidden; width: 100%; height: auto; aspect-ratio: 16 / 9; }
 .cardPhoto { position: relative; width: 100%; height: 100%; border: 0; padding: 0; border-radius: inherit; overflow: hidden; cursor: pointer; }
 .cardPhoto img, .galleryPhoto img { object-fit: cover; }
+.foundPost:global(.post-gallery) { max-width: 420px; width: 100%; }
+.foundPost :global(.post-thumbnail) { min-height: 130px; }
+.foundThumbnail { padding: 0; width: 56px; height: 48px; overflow: hidden; border: 1px solid #d6deeb; border-radius: 5px; background: #f4f6fb; cursor: pointer; }
+.foundThumbnail img { width: 100%; height: 100%; object-fit: cover; }
 .previewPhoto { display: block; width: 100%; height: auto; }
 .content { max-width: 1450px; margin-inline: auto; }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block: 8px 20px; }
+.heading > div { flex: 1; min-width: 0; }
+.heading > button { flex-shrink: 0; }
 .heading h1 { font-size: clamp(25px, 4vw, 35px); letter-spacing: -.04em; }
 .heading p { color: var(--mantine-color-dimmed); font-size: 14px; }
 .heading p:empty { display: none; }
@@ -39,6 +45,14 @@ body:has(.admin) > :global(.footer) { display: none; }
 .requirements { list-style: disc; padding: 6px 0 0 18px; color: var(--mantine-color-dimmed); }
 .requirements li + li { margin-top: 5px; }
 .publisher { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.publishFlow { max-width: 980px; margin: 0 auto; min-width: 0; }
+.publishFlow :global(.mantine-Stepper-stepDescription) { display: none; }
+.publishFlow :global(.mantine-Stepper-stepLabel) { font-size: 13px; }
+.publishFlow :global(.mantine-Stepper-separator) { margin-inline: 8px 0; }
+.publishFlow :global(.mantine-Checkbox-label) { font-size: 13px; overflow-wrap: anywhere; }
+.publishFlow :global(.mantine-Button-label) { white-space: normal; }
+.admin :global(.mantine-Input-input)::placeholder { font-weight: 400; font-size: 13px; color: #8993a3; }
+.admin :global(.post-thumbnail) { min-height: 130px; }
 .fields { display: grid; gap: 9px; }
 .fields > * { min-width: 0; }
 .cityList { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 8px; max-height: 190px; overflow: auto; padding: 10px; border: 1px solid var(--mantine-color-gray-3); border-radius: 6px; }

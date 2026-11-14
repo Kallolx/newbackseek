@@ -1,151 +1,100 @@
 'use client';
 
-import { Alert, Badge, Button, Checkbox, Group, Modal, NativeSelect, Paper, ScrollArea, Stack, Text, Textarea, TextInput, Title } from '@mantine/core';
-import { useState, type FormEvent } from 'react';
+import { Accordion, Alert, Badge, Button, Checkbox, FileInput, Group, Modal, NumberInput, Paper, ScrollArea, Select, SimpleGrid, Stack, Stepper, Text, TextInput, Title } from '@mantine/core';
+import Image from 'next/image';
+import { useRef, useState } from 'react';
+import { FiArrowLeft, FiArrowRight, FiCheck, FiImage, FiMapPin, FiSearch, FiX } from 'react-icons/fi';
 import type { Ad, CategoryGroup, LocationCountry } from './admin-data';
+import { DescriptionEditor } from '../../member/description-editor';
+import { EmptyState } from '../../components/page-state';
 import styles from './admin.module.css';
 
-export type PublishRequest = {
-  titles: string[];
-  description: string;
-  category: string;
-  owner: string;
-  targets: string[];
-};
+export type PublishRequest = { titles: string[]; description: string; descriptionHtml?: string; category: string; owner: string; targets: string[]; age?: number; location?: string; phone?: string; email?: string; images?: string[] };
 
-export function Publisher({ locations, categories, source, mode, onSubmit }: {
-  locations: LocationCountry[];
-  categories: CategoryGroup[];
-  source?: Ad;
-  mode: 'create' | 'bulk' | 'copy' | 'edit';
-  onSubmit: (request: PublishRequest) => void;
-}) {
-  const [countryCode, setCountryCode] = useState(locations[0].code);
-  const [regionId, setRegionId] = useState('');
-  const [query, setQuery] = useState('');
+function CityPicker({ locations, selected, onChange, excluded = [] }: { locations: LocationCountry[]; selected: string[]; onChange: (ids: string[]) => void; excluded?: string[] }) {
+  const [code, setCode] = useState(locations[0]?.code ?? '');
+  const [region, setRegion] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [confirm, setConfirm] = useState(false);
+  const country = locations.find((item) => item.code === code);
+  const all = locations.flatMap((country) => country.regions.flatMap((region) => region.cities.map((city) => ({ ...city, country: country.name, region: region.name }))));
+  const groups = country?.regions.filter((item) => !region || item.id === region).map((item) => ({ ...item, cities: item.cities.filter((city) => city.name.toLowerCase().includes(search.toLowerCase())) })).filter((item) => item.cities.length) ?? [];
+  const matching = groups.flatMap((item) => item.cities).filter((city) => !excluded.includes(city.id));
+  const available = all.filter((city) => !excluded.includes(city.id));
+  const add = (ids: string[]) => onChange([...new Set([...selected, ...ids])]);
+  return <Stack gap="md">
+    <Text size="xs" c="dimmed" lh={1.5}>Choose a country and state/region, then select cities. Selections stay saved as you filter.</Text>
+    <SimpleGrid cols={{ base: 1, sm: 2 }}><Select label="1. Country" searchable allowDeselect={false} value={code} data={locations.map((item) => ({ value: item.code, label: item.name }))} onChange={(value) => { setCode(value ?? ''); setRegion(null); setSearch(''); }} /><Select label="2. State / region" searchable clearable value={region} placeholder="All states / regions in this country" data={country?.regions.map((item) => ({ value: item.id, label: item.name })) ?? []} onChange={setRegion} /></SimpleGrid>
+    <TextInput label="3. Find and select cities" placeholder="Search cities within these filters…" leftSection={<FiSearch />} value={search} onChange={(event) => setSearch(event.currentTarget.value)} />
+    <Group justify="space-between"><Text size="xs" c="dimmed">{country?.name} / {country?.regions.find((item) => item.id === region)?.name ?? 'All states and regions'}</Text><Group gap="xs"><Badge>{selected.length} selected</Badge><Button size="compact-xs" variant="subtle" color="red" disabled={!selected.length} onClick={() => onChange([])}>Clear selection</Button></Group></Group>
+    <Group grow wrap="nowrap"><Button size="xs" h="auto" mih={42} variant="light" disabled={!matching.length} onClick={() => add(matching.map((item) => item.id))}>Select filtered cities ({matching.length})</Button><Button size="xs" h="auto" mih={42} variant="default" onClick={() => setConfirm(true)}>Select all cities ({available.length})</Button></Group>
+    <Stack gap={3}><Text size="xs" c="dimmed"><Text span fw={600}>Filtered:</Text> {country?.name}{region ? ' → ' + country?.regions.find((item) => item.id === region)?.name : ' → all states / regions'}{search.trim() ? ` → cities containing “${search.trim()}”` : ''}.</Text><Text size="xs" c="dimmed"><Text span fw={600}>All cities:</Text> every available city across all {locations.length} countries, regardless of filters.</Text></Stack>
+    <ScrollArea.Autosize mah={340} offsetScrollbars>{groups.length ? <Stack gap="sm">{groups.map((item) => {
+      const eligible = item.cities.filter((city) => !excluded.includes(city.id));
+      const checked = eligible.length > 0 && eligible.every((city) => selected.includes(city.id));
+      return <Paper key={item.id} withBorder p="sm" radius="md"><Checkbox disabled={!eligible.length} checked={checked} indeterminate={!checked && eligible.some((city) => selected.includes(city.id))} label={<Text size="sm" fw={600}>{item.name} <Text span c="dimmed" size="xs">· {country?.name}</Text></Text>} onChange={(event) => event.currentTarget.checked ? add(eligible.map((city) => city.id)) : onChange(selected.filter((id) => !eligible.some((city) => city.id === id)))} /><SimpleGrid cols={{ base: 1, xs: 2 }} mt="sm" pl={26}>{item.cities.map((city) => <Checkbox key={city.id} checked={selected.includes(city.id)} disabled={excluded.includes(city.id)} label={city.name + (excluded.includes(city.id) ? ' · already published' : '')} onChange={(event) => event.currentTarget.checked ? add([city.id]) : onChange(selected.filter((id) => id !== city.id))} />)}</SimpleGrid></Paper>;
+    })}</Stack> : <EmptyState compact kind="search" title="No matching cities" description="Try a different spelling or choose another state or region." action="Clear filters" onAction={() => { setSearch(''); setRegion(null); }} />}</ScrollArea.Autosize>
+    <Accordion variant="contained"><Accordion.Item value="selected"><Accordion.Control icon={<FiMapPin />}>Selected destinations ({selected.length})</Accordion.Control><Accordion.Panel>{!selected.length ? <Text size="sm" c="dimmed">Select cities above to see their country and state here.</Text> : <ScrollArea.Autosize mah={220}><Stack gap="xs">{all.filter((city) => selected.includes(city.id)).map((city) => <Group key={city.id} justify="space-between" wrap="nowrap"><div><Text size="sm">{city.name}</Text><Text size="xs" c="dimmed">{city.region} · {city.country}</Text></div><Button size="compact-xs" variant="subtle" aria-label={'Remove ' + city.name + ', ' + city.region} onClick={() => onChange(selected.filter((id) => id !== city.id))}><FiX /></Button></Group>)}</Stack></ScrollArea.Autosize>}</Accordion.Panel></Accordion.Item></Accordion>
+    <Modal opened={confirm} onClose={() => setConfirm(false)} centered title="Select cities across every country?"><Stack><Text size="sm">This selects {available.length} cities across all {locations.length} countries and ignores your filters. Choose “Select filtered cities” to use only the current country, state/region and search.</Text><Group justify="flex-end"><Button variant="default" onClick={() => setConfirm(false)}>Cancel</Button><Button onClick={() => { add(available.map((city) => city.id)); setConfirm(false); }}>Select all cities</Button></Group></Stack></Modal>
+  </Stack>;
+}
+
+export function Publisher({ locations, categories, source, mode, onSubmit }: { locations: LocationCountry[]; categories: CategoryGroup[]; source?: Ad; mode: 'create' | 'copy' | 'edit'; onSubmit: (request: PublishRequest) => void }) {
+  const [step, setStep] = useState(mode === 'copy' ? 1 : 0);
   const [selected, setSelected] = useState<string[]>(mode === 'edit' ? source?.targets ?? [] : []);
+  const [description, setDescription] = useState(source?.description ?? '');
+  const [html, setHtml] = useState(source?.descriptionHtml ?? '');
+  const [group, setGroup] = useState<string | null>(categories.find((item) => item.services.some((service) => service.slug === source?.category))?.name ?? null);
+  const [category, setCategory] = useState<string | null>(source?.category ?? null);
+  const [images, setImages] = useState<string[]>(source?.images ?? []);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [review, setReview] = useState<PublishRequest>();
-  const country = locations.find(({ code }) => code === countryCode) ?? locations[0];
-  const allCities = locations.flatMap(({ regions }) => regions.flatMap(({ cities }) => cities));
-  const countryCities = country.regions.flatMap(({ cities }) => cities);
-  const regionCities = country.regions.find(({ id }) => id === regionId)?.cities ?? countryCities;
-  const visibleCities = regionCities.filter(({ name }) => name.toLowerCase().includes(query.trim().toLowerCase()));
-  const selectedIds = new Set(selected);
-
-  function addCities(ids: string[]) {
-    setSelected((current) => [...new Set([...current, ...ids])]);
-    setError('');
+  const form = useRef<HTMLFormElement>(null);
+  const all = locations.flatMap((country) => country.regions.flatMap((region) => region.cities.map((city) => ({ ...city, country: country.name, region: region.name }))));
+  function draft(): PublishRequest | undefined {
+    const fields = new FormData(form.current!);
+    if (mode === 'copy') return { ...source!, titles: [source!.title], targets: selected };
+    const titles = String(fields.get('titles') ?? '').split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+    const owner = String(fields.get('owner') ?? '').trim();
+    if (!titles.length || titles.length > 100 || titles.some((title) => title.length > 150) || !description.trim() || description.length > 2950 || !category || !owner) { setError('Add an owner, category, subcategory and description (up to 2950 characters). Use up to 100 titles, each up to 150 characters.'); setStep(0); return; }
+    const age = Number(fields.get('age')) || undefined;
+    if (age && (age < 18 || age > 120 || !Number.isInteger(age))) { setError('Age must be a whole number between 18 and 120.'); setStep(0); return; }
+    const email = String(fields.get('email') ?? '').trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Enter a valid contact email.'); setStep(0); return; }
+    return { titles, description, descriptionHtml: html, category, owner, targets: selected, age, location: String(fields.get('location') ?? ''), phone: String(fields.get('phone') ?? ''), email, images };
   }
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const fields = new FormData(event.currentTarget);
-    const original = mode === 'copy' ? source : undefined;
-    const titles = original ? [original.title] : String(fields.get('titles') ?? '').split(/\r?\n/).map((title) => title.trim()).filter(Boolean);
-    const description = original?.description ?? String(fields.get('description') ?? '').trim();
-    const targets = selected.filter((id) => !original?.targets.includes(id));
-    if (!titles.length || !description || !targets.length) {
-      setError(original ? 'Select at least one city where this ad is not already placed.' : 'Enter a title and description and select at least one city.');
-      return;
-    }
+  function next() {
     setError('');
-    setReview({
-      titles,
-      targets,
-      description,
-      category: original?.category ?? String(fields.get('category')),
-      owner: original?.owner ?? (String(fields.get('owner')).trim() || 'admin'),
-    });
+    const value = draft(); if (!value) return;
+    if (step === 0) { setStep(1); return; }
+    if (!selected.length) { setError('Select at least one destination city.'); return; }
+    setReview(value); setStep(2);
   }
-
-  return (
-    <form className={styles.publisher} onSubmit={submit}>
-      <Paper withBorder radius="md" p="md" component="section">
-        <Title order={3} size="h4">1. Ad content</Title>
-        <Text size="sm" c="dimmed" mb="md">{mode === 'bulk' ? 'Enter one title per line. All ads in this batch share the description and category.' : 'Set the details that appear on the listing.'}</Text>
-        <div className={styles.fields}>
-          {mode === 'copy' ? <div><strong>{source?.title}</strong><p>{source?.description}</p></div> : <>
-            {mode === 'bulk'
-              ? <Textarea label="Ad titles" name="titles" rows={5} required placeholder={'Weekend furniture pickup\nLocal photography sessions'} />
-              : <TextInput label="Title" name="titles" defaultValue={source?.title} maxLength={150} required />}
-            <Textarea label={mode === 'bulk' ? 'Shared description' : 'Description'} name="description" rows={4} defaultValue={source?.description} required />
-            <NativeSelect label="Category" name="category" defaultValue={source?.category ?? ''} required
-              data={[
-                { value: '', label: 'Select a category', disabled: true },
-                ...categories.map(({ name, services }) => ({ group: name, items: services.map(({ name, slug }) => ({ value: slug, label: name })) })),
-              ]} />
-            <TextInput label="Owner username" name="owner" defaultValue={source?.owner ?? 'admin'} required />
-          </>}
-        </div>
-      </Paper>
-      <Paper withBorder radius="md" p="md" component="section">
-        <Title order={3} size="h4">2. Choose locations</Title>
-        <Text size="sm" c="dimmed" mb="md">Filter by country or region, then select cities. Your selections stay selected when you change filters.</Text>
-        <div className={styles.fields}>
-          <NativeSelect label="Country" value={countryCode}
-            data={locations.map(({ code, name }) => ({ value: code, label: name }))}
-            onChange={(event) => { setCountryCode(event.currentTarget.value); setRegionId(''); }} />
-          <NativeSelect label="State or region" value={regionId}
-            data={[{ value: '', label: 'All regions' }, ...country.regions.map(({ id, name }) => ({ value: id, label: name }))]}
-            onChange={(event) => setRegionId(event.currentTarget.value)} />
-          <TextInput label="Find a city" type="search" value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search cities" />
-        </div>
-        <div className={styles.cityActions}>
-          <Button variant="light" size="compact-sm" type="button" disabled={!visibleCities.length} onClick={() => addCities(visibleCities.map(({ id }) => id))}>All matching</Button>
-          <Button variant="default" size="compact-sm" type="button" onClick={() => addCities(allCities.map(({ id }) => id))}>All city</Button>
-        </div>
-        <ScrollArea.Autosize mah={190}><div className={styles.cityList}>
-          {visibleCities.map(({ name, id }) => (
-            <Checkbox key={id} label={name} checked={selectedIds.has(id)} onChange={(event) => {
-              if (event.target.checked) addCities([id]);
-              else setSelected((current) => current.filter((item) => item !== id));
-            }} />
-          ))}
-          {!visibleCities.length && <p>No matching cities.</p>}
-        </div></ScrollArea.Autosize>
-        <div className={styles.toolbar}>
-          <Badge variant="light">{selected.length} cities selected</Badge>
-          <Button variant="subtle" type="button" disabled={!selected.length} onClick={() => setSelected([])}>Clear selection</Button>
-        </div>
-        {selected.length > 0 && (
-          <details>
-            <summary>Review selected cities</summary>
-            <ul className={styles.cityList}>
-              {allCities.filter(({ id }) => selectedIds.has(id)).map(({ id, name }) => (
-                <li key={id}>{name} <small>{id.split('/').slice(2, 4).join(' / ')}</small></li>
-              ))}
-            </ul>
-          </details>
-        )}
-      </Paper>
-      <div className={styles.formActions}>
-        <Button className={styles.primary} type="submit">{mode === 'edit' ? 'Review changes' : 'Review publication'}</Button>
-        {error && <Alert color="red" role="alert">{error}</Alert>}
-      </div>
-      <Modal opened={Boolean(review)} onClose={() => setReview(undefined)} title={mode === 'edit' ? 'Review changes' : 'Review publication'} centered>
-        {review && (
-          <Stack gap="md">
-            <div>
-              <Text fw={600} size="sm">{review.titles[0]}</Text>
-              {review.titles.length > 1 && <Text size="xs" c="dimmed">Plus {review.titles.length - 1} more</Text>}
-              <Text size="xs" c="dimmed">Posting as @{review.owner}</Text>
-            </div>
-            <Text size="sm">{review.titles.length} {review.titles.length === 1 ? 'ad' : 'ads'} in {review.targets.length} {review.targets.length === 1 ? 'city' : 'cities'}</Text>
-            <ScrollArea.Autosize mah={160}>
-              <Stack gap={4}>
-                {allCities.filter(({ id }) => review.targets.includes(id)).map(({ id, name }) => (
-                  <Text size="sm" key={id}>{name} <Text span c="dimmed" size="xs">{id.split('/').slice(2, 4).join(' / ')}</Text></Text>
-                ))}
-              </Stack>
-            </ScrollArea.Autosize>
-            <Group justify="flex-end">
-              <Button variant="default" onClick={() => setReview(undefined)}>Back to edit</Button>
-              <Button onClick={() => onSubmit(review)}>{mode === 'edit' ? 'Save changes' : mode === 'copy' ? 'Distribute ad' : 'Publish'}</Button>
-            </Group>
-          </Stack>
-        )}
-      </Modal>
-    </form>
-  );
+  async function photos(files: File[]) {
+    setError('');
+    if (files.length > 6 || files.some((file) => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024)) { setError('Choose up to 6 JPG, PNG or WebP pictures, each under 5 MB.'); return; }
+    setBusy(true);
+    try {
+      const prepared: string[] = [];
+      for (const file of files) { const bitmap = await createImageBitmap(file); const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height)); const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale)); canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close(); prepared.push(canvas.toDataURL('image/webp', .75)); }
+      setImages(prepared);
+    } catch { setError('A picture could not be opened. Please try another file.'); } finally { setBusy(false); }
+  }
+  return <form ref={form} className={styles.publishFlow} noValidate onSubmit={(event) => { event.preventDefault(); if (busy) return; if (step === 2 && review) onSubmit(review); else next(); }}>
+    <Stepper active={step} size="sm" mb="lg"><Stepper.Step label="Details" /><Stepper.Step label="Cities" /><Stepper.Step label="Review" /></Stepper>
+    <div style={{ display: step === 0 ? undefined : 'none' }}><Paper withBorder p={{ base: 'sm', sm: 'lg' }} radius="md"><Stack gap="md"><div><Title order={3} size="h4">{mode === 'edit' ? 'Edit ad #' + source?.id : 'Create an ad'}</Title><Text size="sm" c="dimmed">Use the same content fields and formatting as the public site.</Text></div>
+      <TextInput label="Owner username" name="owner" defaultValue={source?.owner ?? 'admin'} placeholder="Username of the ad owner" />
+      <TextInput label="Ad title" name="titles" maxLength={150} defaultValue={source?.title} placeholder="Enter a clear headline" />
+      <SimpleGrid cols={{ base: 1, sm: 2 }}><Select searchable label="Category group" value={group} placeholder="Choose a category group" data={categories.map((item) => item.name)} onChange={(value) => { setGroup(value); setCategory(null); }} /><Select searchable label="Subcategory" value={category} disabled={!group} placeholder={group ? 'Choose a subcategory' : 'Choose a group first'} data={categories.find((item) => item.name === group)?.services.map((item) => ({ label: item.name, value: item.slug })) ?? []} onChange={setCategory} /></SimpleGrid>
+      <div><Text size="sm" fw={500} mb={6}>Description</Text><DescriptionEditor content={source?.descriptionHtml ?? source?.description ?? ''} onChange={(text, value) => { setDescription(text); setHtml(value); }} /></div>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}><NumberInput label="Age (when applicable)" name="age" defaultValue={source?.age} min={18} max={120} /><TextInput label="Location / neighborhood" name="location" defaultValue={source?.location} placeholder="Public location text" /><TextInput label="Contact phone" name="phone" defaultValue={source?.phone} placeholder="Phone number" /><TextInput label="Contact email" name="email" type="email" defaultValue={source?.email} placeholder="name@example.com" /></SimpleGrid>
+      <FileInput multiple accept="image/jpeg,image/png,image/webp" label="Ad pictures" description="Up to 6 pictures, 5 MB each. Processing is automatic." placeholder="Choose pictures" leftSection={<FiImage />} disabled={busy} onChange={(files) => void photos(files)} />
+      {!!images.length && <SimpleGrid cols={{ base: 3, sm: 6 }}>{images.map((src, index) => <div key={index}><Image src={src} alt={'Ad picture ' + (index + 1)} width={120} height={90} unoptimized style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 6 }} /><Button variant="subtle" size="compact-xs" onClick={() => setImages(images.filter((_, item) => item !== index))}>Remove</Button></div>)}</SimpleGrid>}
+    </Stack></Paper></div>
+    <div style={{ display: step === 1 ? undefined : 'none' }}><Paper withBorder p={{ base: 'sm', sm: 'lg' }} radius="md"><Stack><Title order={3} size="h4">Choose destination cities</Title>{mode === 'copy' && <Alert color="blue">Ad #{source?.id}: {source?.title}. Existing destinations are disabled. Pictures are reused rather than duplicated.</Alert>}<CityPicker locations={locations} selected={selected} onChange={setSelected} excluded={mode === 'copy' ? source?.targets : []} /></Stack></Paper></div>
+    {step === 2 && review && <Paper withBorder p="lg" radius="md"><Stack gap="md"><Title order={3} size="h4">Review your changes</Title><SimpleGrid cols={3}><div><Text size="xs" c="dimmed">Ads</Text><Text fw={700}>{review.titles.length}</Text></div><div><Text size="xs" c="dimmed">Cities per ad</Text><Text fw={700}>{selected.length}</Text></div><div><Text size="xs" c="dimmed">Placements</Text><Text fw={700}>{selected.length * review.titles.length}</Text></div></SimpleGrid><Text size="sm">Owner: @{review.owner} · {categories.flatMap((item) => item.services).find((item) => item.slug === review.category)?.name}</Text><Paper withBorder p="sm"><Text fw={600} size="sm">{review.titles[0]}</Text><Text size="sm" c="dimmed" lineClamp={3}>{review.description}</Text>{review.titles.length > 1 && <Text size="xs">Plus {review.titles.length - 1} other titles</Text>}</Paper><Text size="sm" fw={600}>Destination cities</Text><ScrollArea.Autosize mah={220}><Stack gap={7}>{all.filter((city) => selected.includes(city.id)).map((city) => <Text size="sm" key={city.id}>{city.name}<Text span size="xs" c="dimmed"> · {city.region} · {city.country}</Text></Text>)}</Stack></ScrollArea.Autosize><Alert color="blue">Preview only. Changes apply to this admin session. Public publishing and server processing will be connected with the backend.</Alert></Stack></Paper>}
+    {error && <Alert color="red" mt="md" role="alert">{error}</Alert>}
+    <Paper withBorder p="sm" radius="md" mt="md"><Group justify="space-between"><Button variant="default" leftSection={<FiArrowLeft />} disabled={step === 0 || (mode === 'copy' && step === 1)} onClick={() => setStep(step - 1)}>Back</Button><Button type="submit" loading={busy} rightSection={step === 2 ? <FiCheck /> : <FiArrowRight />}>{step === 0 ? 'Choose cities' : step === 1 ? 'Review changes' : mode === 'edit' ? 'Save changes' : mode === 'copy' ? 'Add destinations' : 'Publish ads'}</Button></Group></Paper>
+  </form>;
 }

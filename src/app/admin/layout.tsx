@@ -1,21 +1,13 @@
-'use client';
+import type { Metadata } from 'next';
+import { countries } from '../../directory/areas';
+import { serviceGroups } from '../../directory/service-groups';
+import { AdminProvider } from './admin-provider';
+import { AdminDashboard } from './dashboard';
 
-import '@mantine/core/styles.css';
-import '@mantine/charts/styles.css';
-import { MantineProvider, createTheme } from '@mantine/core';
+export const metadata: Metadata = { title: { default: 'Admin | BackpageNew', template: '%s | BackpageNew Admin' }, robots: { index: false, follow: false } };
 
-const theme = createTheme({
-  primaryColor: 'indigo',
-  defaultRadius: 'md',
-  fontFamily: '"Inter Variable", sans-serif',
-  headings: { fontFamily: '"Manrope Variable", sans-serif' },
-});
+const locations = countries.map(({ code, name, regions }) => ({ code, name, regions: regions.map(({ name, href, cities }) => ({ name, id: href, cities: cities.map(({ name, href }) => ({ name, id: href })) })) }));
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <MantineProvider theme={theme} forceColorScheme="light">
-      <div id="admin-root">{children}</div>
-    </MantineProvider>
-  );
+  return <AdminProvider><AdminDashboard locations={locations} categories={serviceGroups} />{children}</AdminProvider>;
 }
-

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { HeaderQr } from './header-qr';
+import { MemberNavigation } from './member-navigation';
 
 export function SiteHeader() {
   return (
@@ -16,9 +17,7 @@ export function SiteHeader() {
         />
       </Link>
       <HeaderQr />
-      <nav aria-label="Main navigation">
-        <a href="/post">Post an Ad</a>
-      </nav>
+      <MemberNavigation />
     </div></header>
   );
 }

@@ -111,7 +111,7 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 .listing-views { flex: 0 0 auto; }
 .listing-search { margin-block: 10px 18px; }
 .listing-search input { flex: 1; min-width: 0; }
-.listing-tools select, .listing-search input, .listings button, .dating-warning button {
+.listing-tools select, .listing-search input, .listings button, .listing-views button, .dating-warning button {
   font: inherit;
   font-size: 14px;
   padding: 8px 11px;
@@ -159,6 +159,10 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
   overflow: hidden;
 }
 .post-thumbnail svg { width: 28px; }
+.header-member-nav { display: flex; justify-content: center; align-items: center; gap: 13px; }
+.header-member-nav button { border: 0; background: none; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
+.header-member-nav > * + * { position: relative; margin-left: 1px; }
+.header-member-nav > * + *::before { content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 1px; height: 13px; background: #d3d7df; }
 .post-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 .post-card-heading > div { min-width: 0; }
 .post-card-heading > button { flex-shrink: 0; }

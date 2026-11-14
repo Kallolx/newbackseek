@@ -1,0 +1,24 @@
+.empty { display: flex; flex-direction: column; align-items: center; padding: 42px 22px; text-align: center; border: 1px solid #e1e7ef; border-radius: 10px; background: #fafbfd; }
+.art { display: flex; align-items: center; gap: 12px; margin-bottom: 19px; }
+.art svg { width: 66px; height: 66px; padding: 18px; color: #34547e; background: #e8eef8; border: 1px solid #d8e2f1; border-radius: 18px; transform: rotate(-5deg); }
+.art span { width: 7px; height: 7px; border-radius: 50%; background: #c9d7ed; }
+.art span:last-child { width: 5px; height: 5px; align-self: flex-start; margin-top: 10px; background: #e5a7b9; }
+.empty h2 { font-size: 17px; color: #123168; margin: 0 0 8px; }
+.empty p { max-width: 370px; color: #697487; font-size: 13px; line-height: 1.7; margin: 0; }
+.action { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 9px 15px; min-height: 40px; border: 1px solid #123168; border-radius: 6px; background: #123168; color: white; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.action:hover { color: white; background: #0b234b; text-decoration: none; }
+.empty[data-compact] { padding: 25px 16px; }
+.empty[data-compact] .art { margin-bottom: 12px; }
+.empty[data-compact] .art svg { width: 52px; height: 52px; padding: 14px; }
+.empty[data-compact] h2 { font-size: 15px; }
+.loading { padding: 22px 0; max-width: 760px; margin: 0 auto; }
+.loaderHeading { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #697487; margin-bottom: 24px; }
+.spinner { width: 20px; height: 20px; border: 2px solid #e0e7f1; border-top-color: #123168; border-radius: 50%; animation: spin .8s linear infinite; }
+.skeleton { display: grid; gap: 12px; }
+.skeleton > * { display: block; border-radius: 7px; background: #edf1f7; animation: pulse 1.5s ease-in-out infinite alternate; }
+.skeleton i { width: 43%; height: 17px; }
+.skeleton i + i { width: 68%; height: 11px; margin-bottom: 10px; }
+.skeleton div { height: 110px; border: 1px solid #e4eaf3; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { to { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .spinner, .skeleton > * { animation: none; } }

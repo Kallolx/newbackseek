@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { getSamplePosts } from '../directory/sample-posts';
 import { PostCard } from './post-card';
+import { PostPagination } from './post-pagination';
 
 type Service = { name: string; slug: string };
 type Props = {
@@ -124,18 +125,7 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
               ))}
             </ul>
           ) : <p role="status">No posts match your search.</p>}
-          {matching.length > 0 && (
-            <nav className="pagination" aria-label="Post pages">
-              <button type="button" disabled={page === 1} aria-label="Previous page" onClick={() => setPage((value) => Math.max(1, value - 1))}>‹</button>
-              {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
-                <button key={pageNumber} type="button" aria-current={pageNumber === page ? 'page' : undefined}
-                  onClick={() => setPage(pageNumber)}>
-                  {pageNumber}
-                </button>
-              ))}
-              <button type="button" disabled={page === pageCount} aria-label="Next page" onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>›</button>
-            </nav>
-          )}
+          {matching.length > 0 && <PostPagination page={page} total={pageCount} onChange={setPage} />}
         </section>
       )}
     </>

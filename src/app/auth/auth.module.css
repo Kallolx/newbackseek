@@ -113,3 +113,5 @@
 .legal a { text-decoration: underline; }
 .switch { margin: 17px 0 0; text-align: center; }
 .switch a, .fieldHeading a, .consent a { text-decoration: underline; }
+.preview { margin-bottom: 12px; font-size: 12px; color: #68748a; }
+.submit { cursor: pointer; }

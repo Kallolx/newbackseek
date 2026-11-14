@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+import { adminRoutes } from './admin-routes';
 import { ActionIcon, Alert, AppShell, Avatar, Badge, Box, Breadcrumbs, Burger, Button, Group, Menu, Modal, NativeSelect, NavLink, Paper, ScrollArea, SegmentedControl, SimpleGrid, Stack, Table, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
 import { FiActivity, FiBell, FiChevronRight, FiExternalLink, FiFileText, FiFlag, FiGrid, FiImage, FiMoreHorizontal, FiPlus, FiSearch, FiUsers } from 'react-icons/fi';
 import { Monitoring } from './monitoring';
@@ -11,12 +13,16 @@ import { adStatuses, initialAds, initialMedia, initialReports, initialUsers } fr
 import type { Ad, AdStatus, CategoryGroup, LocationCountry } from './admin-data';
 import { Publisher, type PublishRequest } from './publisher';
 import styles from './admin.module.css';
+import { EmptyState } from '../../components/page-state';
+import { PostPagination } from '../../components/post-pagination';
+import { FoundPost } from './found-post';
 
 const navigation = [
-  ['Overview', FiGrid], ['System health', FiActivity], ['Ads', FiFileText], ['Publish', FiPlus],
-  ['Users', FiUsers], ['Media', FiImage], ['Reports', FiFlag],
+  ['Overview', FiGrid], ['Ads', FiFileText], ['Publish', FiPlus],
+  ['Bump post', FiActivity], ['Distribute post', FiGrid], ['Users', FiUsers], ['Media', FiImage], ['Reports', FiFlag], ['System health', FiActivity],
 ] as const;
 type Screen = typeof navigation[number][0];
+const pageLabel = (screen: Screen) => screen === 'Ads' ? 'All Ads' : screen === 'Publish' ? 'Ad Publish' : screen;
 
 function RowMenu({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -32,7 +38,9 @@ const dateLabel = () => new Date().toLocaleDateString('en-US', { dateStyle: 'med
 export function AdminDashboard({ locations, categories }: { locations: LocationCountry[]; categories: CategoryGroup[] }) {
   const [navigationQuery, setNavigationQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [screen, setScreen] = useState<Screen>('Overview');
+  const pathname = usePathname();
+  const router = useRouter();
+  const screen: Screen = (Object.entries(adminRoutes).find(([, path]) => path === pathname)?.[0] as Screen | undefined) ?? 'Overview';
   const [ads, setAds] = useState(initialAds);
   const [users, setUsers] = useState(initialUsers);
   const [reports, setReports] = useState(initialReports);
@@ -42,9 +50,15 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
   const [message, setMessage] = useState('');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
-  const [publisherMode, setPublisherMode] = useState<'create' | 'bulk' | 'copy' | 'edit'>('create');
+  const [publisherMode, setPublisherMode] = useState<'create' | 'copy' | 'edit'>('create');
   const [source, setSource] = useState<Ad>();
   const [reasonUser, setReasonUser] = useState('');
+  const [adPage, setAdPage] = useState(1);
+  const [distributionId, setDistributionId] = useState<string | null>(null);
+  const [postIdSearch, setPostIdSearch] = useState('');
+  const media = ads.flatMap((ad) => ad.images !== undefined ? ad.images.map((src, index) => ({ id: `${ad.id}-${index}`, name: ad.title + ' · Photo ' + (index + 1), src, adId: ad.id })) : initialMedia.filter((image) => image.adId === ad.id));
+  const selectedDistribution = ads.find((ad) => String(ad.id) === distributionId);
+  const locationLabels = new Map(locations.flatMap((country) => country.regions.flatMap((region) => region.cities.map((city) => [city.id, `${city.name} · ${region.name} · ${country.name}`]))));
   const cityNames = new Map(locations.flatMap(({ regions }) => regions.flatMap(({ cities }) => cities.map(({ id, name }) => [id, name]))));
   const openReports = reports.filter((report) => report.status === 'Open').length;
   function record(action: string) {
@@ -52,17 +66,19 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
   }
 
   function navigate(next: Screen) {
-    setScreen(next);
+    router.push(adminRoutes[next]);
     setMenuOpen(false);
     setQuery('');
     setStatus('');
+    setAdPage(1);
     setMessage('');
   }
 
   function openPublisher(mode: typeof publisherMode, ad?: Ad) {
     setPublisherMode(mode);
-    setSource(ad);
-    navigate('Publish');
+    setSource(ad ? { ...ad, images: ad.images ?? initialMedia.filter((image) => image.adId === ad.id).map((image) => image.src) } : undefined);
+    if (mode === 'copy' && ad) { setDistributionId(String(ad.id)); setPostIdSearch(String(ad.id)); navigate('Distribute post'); }
+    else navigate('Publish');
   }
 
   function bump(ad: Ad) {
@@ -89,14 +105,14 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
     }
     const submitter = (event.nativeEvent as SubmitEvent).submitter;
     if (submitter instanceof HTMLButtonElement && submitter.value === 'copy') openPublisher('copy', ad);
-    else bump(ad);
+    else { setDistributionId(String(ad.id)); setPostIdSearch(String(ad.id)); navigate('Bump post'); }
   }
 
-  function submitPublication({ titles, description, category, owner, targets }: PublishRequest) {
+  function submitPublication({ titles, description, category, owner, targets, ...details }: PublishRequest) {
     setAds((items) => {
       if (source && publisherMode === 'edit') {
         return items.map((ad) => ad.id === source.id
-          ? { ...ad, title: titles[0], description, category, owner, targets, updated: dateLabel() }
+          ? { ...ad, ...details, title: titles[0], description, category, owner, targets, updated: dateLabel() }
           : ad);
       }
       if (source && publisherMode === 'copy') {
@@ -106,11 +122,11 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
       }
       const lastId = Math.max(1000, ...items.map(({ id }) => id));
       return [...titles.map((title, index): Ad => ({
-        id: lastId + index + 1, title, description, category, owner, targets,
+        ...details, id: lastId + index + 1, title, description, category, owner, targets,
         status: 'Published', updated: dateLabel(),
       })), ...items];
     });
-    navigate('Ads');
+    navigate(publisherMode === 'copy' ? 'Distribute post' : 'Ads');
     record(source ? `Updated ad #${source.id}.` : `Published ${titles.length} sample ${titles.length === 1 ? 'ad' : 'ads'}.`);
   }
 
@@ -118,8 +134,8 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
     return (
       <RowMenu label={`Actions for ad ${ad.id}`}>
         <Menu.Item onClick={() => openPublisher('edit', ad)}>Edit ad</Menu.Item>
-        <Menu.Item onClick={() => openPublisher('copy', ad)}>Distribute to cities</Menu.Item>
-        <Menu.Item disabled={ad.status !== 'Published'} onClick={() => bump(ad)}>Bump to top</Menu.Item>
+        <Menu.Item onClick={() => { setDistributionId(String(ad.id)); setPostIdSearch(String(ad.id)); navigate('Bump post'); }}>Bump post by ID</Menu.Item>
+        <Menu.Item onClick={() => openPublisher('copy', ad)}>Distribute post by ID</Menu.Item>
         <Menu.Divider />
         <Menu.Label>Change status</Menu.Label>
         {adStatuses.filter((value) => value !== ad.status).map((value) => (
@@ -145,7 +161,7 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
               </Link>
               <Breadcrumbs visibleFrom="sm" className={styles.headerCrumbs} separator={<FiChevronRight size={13} />}>
                 <Text size="sm" c="dimmed">Administration</Text>
-                <Text size="sm" fw={600} truncate>{screen}</Text>
+                <Text size="sm" fw={600} truncate>{pageLabel(screen)}</Text>
               </Breadcrumbs>
             </Group>
             <Group gap="xs" wrap="nowrap">
@@ -154,8 +170,8 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
                 <Menu.Dropdown>
                   <Menu.Label>Go to a page</Menu.Label>
                   <TextInput autoFocus aria-label="Find a page" placeholder="Search pages" onChange={(event) => setNavigationQuery(event.currentTarget.value)} />
-                  {navigation.filter(([name]) => name.toLowerCase().includes(navigationQuery.toLowerCase())).map(([name, Icon]) =>
-                    <Menu.Item key={name} leftSection={<Icon />} onClick={() => { navigate(name); setNavigationQuery(''); }}>{name}</Menu.Item>
+                  {navigation.filter(([name]) => pageLabel(name).toLowerCase().includes(navigationQuery.toLowerCase())).map(([name, Icon]) =>
+                    <Menu.Item key={name} leftSection={<Icon />} onClick={() => { navigate(name); setNavigationQuery(''); }}>{pageLabel(name)}</Menu.Item>
                   )}
                 </Menu.Dropdown>
               </Menu>
@@ -177,8 +193,8 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
 
           <AppShell.Section grow component={ScrollArea}>
             {navigation.map(([name, Icon]) => (
-              <NavLink key={name} label={name} leftSection={<Icon size={17} />} active={screen === name} onClick={() => navigate(name)}
-                component="button" type="button" aria-current={screen === name ? 'page' : undefined}
+              <NavLink key={name} label={pageLabel(name)} leftSection={<Icon size={17} />} active={screen === name} onClick={() => { setMenuOpen(false); setQuery(''); setStatus(''); setAdPage(1); setMessage(''); }}
+                component={Link} href={adminRoutes[name]} aria-current={screen === name ? 'page' : undefined}
                 rightSection={name === 'Reports' && openReports > 0 ? <Badge size="xs" color="orange" variant="light">{openReports}</Badge> : undefined} />
             ))}
           </AppShell.Section>
@@ -190,8 +206,8 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
             <Button type="button" onClick={() => { record(`Ended user preview for @${previewUser}.`); setPreviewUser(''); }}>End preview</Button>
           </div>}
           <div className={styles.heading}>
-            <div><h1>{screen}</h1><p>{screen === 'Overview' ? 'Manage listings, accounts, and media across all markets.' : screen === 'Publish' ? 'Prepare ads and choose where they should appear.' : ''}</p></div>
-            {(screen === 'Overview' || screen === 'Ads') && <Button className={styles.primary} type="button" onClick={() => openPublisher('create')}>+ Create ad</Button>}
+            <div><h1>{pageLabel(screen)}</h1><p>{screen === 'Overview' ? 'Manage listings, accounts, and media across all markets.' : screen === 'Publish' ? 'Prepare ads and choose where they should appear.' : ''}</p></div>
+            {(screen === 'Overview' || screen === 'Ads') && <Button className={styles.primary} leftSection={<FiPlus size={15} />} type="button" onClick={() => openPublisher('create')}>Create ad</Button>}
           </div>
           {message && <Alert role="status" color="indigo" mb="md" withCloseButton onClose={() => setMessage('')}>{message}</Alert>}
 
@@ -233,8 +249,8 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
               <SegmentedControl aria-label="Ad view" value={adView} onChange={setAdView} data={['List', 'Gallery']} />
             </div>
             <ul className={adView === 'Gallery' ? 'post-list post-gallery' : 'post-list'}>
-              {filteredAds.map((ad) => {
-                const image = initialMedia.find(({ adId }) => adId === ad.id);
+              {filteredAds.slice((Math.min(adPage, Math.max(1, Math.ceil(filteredAds.length / 50))) - 1) * 50, Math.min(adPage, Math.max(1, Math.ceil(filteredAds.length / 50))) * 50).map((ad) => {
+                const image = media.find(({ adId }) => adId === ad.id);
                 const location = ad.targets.length === 1 ? cityNames.get(ad.targets[0]) : `${ad.targets.length} cities`;
                 return (
                   <PostCard
@@ -253,7 +269,7 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
                 );
               })}
             </ul>
-            {!filteredAds.length && <p className={styles.empty}>No ads match these filters.</p>}
+            {!filteredAds.length ? <EmptyState kind="search" title="No matching ads" description="Search by ad ID, title or owner, or reset your filters to see all ads." action="Reset filters" onAction={() => { setQuery(''); setStatus(''); setAdPage(1); }} /> : <PostPagination page={Math.min(adPage, Math.ceil(filteredAds.length / 50))} total={Math.ceil(filteredAds.length / 50)} onChange={setAdPage} />}
           </Paper>}
 
           {screen === 'Publish' && <>
@@ -261,13 +277,18 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
               {source ? <Group gap="sm">
                 <Button variant="default" onClick={() => navigate('Ads')}>Back to ads</Button>
                 <Badge variant="light">{publisherMode === 'copy' ? 'Distributing' : 'Editing'} ad #{source.id}</Badge>
-              </Group> : <SegmentedControl aria-label="Publishing mode"
-                value={publisherMode === 'bulk' ? 'bulk' : 'create'}
-                data={[{ label: 'Single ad', value: 'create' }, { label: 'Bulk publish', value: 'bulk' }]}
-                onChange={(value) => openPublisher(value === 'bulk' ? 'bulk' : 'create')} />}
+              </Group> : <Text size="sm" c="dimmed">Create one ad and choose the cities where it should appear.</Text>}
             </div>
             <Publisher key={publisherMode + (source?.id ?? '')} locations={locations} categories={categories} mode={publisherMode} source={source} onSubmit={submitPublication} />
           </>}
+
+          {(screen === 'Bump post' || screen === 'Distribute post') && <Stack>
+            <Paper withBorder p="md" radius="md"><Stack><Title order={3} size="h4">Find a post by ID</Title><Text size="sm" c="dimmed">{screen === 'Bump post' ? 'Search for a published post to move it to the top of its city listings.' : 'Search for an existing post to add destination cities.'}</Text>
+              <form onSubmit={(event) => { event.preventDefault(); const found = ads.find((ad) => ad.id === Number(postIdSearch)); setDistributionId(found ? String(found.id) : null); setSource(found); setPublisherMode('copy'); setMessage(found ? '' : 'No post found for that ID. Check the number and try again.'); }}><Group align="end"><TextInput style={{ flex: 1 }} label="Post ID" placeholder="Enter Post ID, e.g. 1001" inputMode="numeric" value={postIdSearch} onChange={(event) => { setPostIdSearch(event.currentTarget.value); setDistributionId(null); }} required /><Button type="submit" leftSection={<FiSearch />}>Find post</Button></Group></form>
+            </Stack></Paper>
+            {selectedDistribution ? <><FoundPost ad={selectedDistribution} images={media.filter((image) => image.adId === selectedDistribution.id).map((image) => image.src)} destinations={selectedDistribution.targets.map((target) => locationLabels.get(target) ?? target)} onPreview={(src, index) => setPhoto({ id: `${selectedDistribution.id}-${index}`, name: selectedDistribution.title, src, adId: selectedDistribution.id })} onBump={screen === 'Bump post' ? () => bump(selectedDistribution) : undefined} />{screen === 'Distribute post' && <Publisher key={selectedDistribution.id + selectedDistribution.targets.join(',')} locations={locations} categories={categories} mode="copy" source={selectedDistribution} onSubmit={(request) => { setAds((items) => items.map((ad) => ad.id === selectedDistribution.id ? { ...ad, targets: [...new Set([...ad.targets, ...request.targets])], updated: dateLabel() } : ad)); record(`Added ${request.targets.length} destinations to post #${selectedDistribution.id} in this preview.`); }} />}</> : <EmptyState kind="search" title={screen === 'Bump post' ? 'Find a post to bump' : 'Find a post to distribute'} description="Enter its numeric Post ID above to load the post and review its current cities." />}
+          </Stack>}
+
 
           {screen === 'Users' && <Paper withBorder radius="md" p="md" mb="md" component="section">
             <div className={styles.toolbar}>
@@ -306,13 +327,13 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
           </Paper>}
 
           {screen === 'Media' && <Paper withBorder radius="md" p="md" mb="md" component="section">
-            <Text size="sm" c="dimmed">Browse sample images attached to ads. Select an image to see it full size.</Text>
+              <Text size="sm" c="dimmed">Browse pictures attached to ads, including new uploads. Select a picture to inspect it. Image resizing and delivery will be managed automatically by the server.</Text>
             <div className={styles.toolbar}>
               <TextInput className={styles.search} leftSection={<FiSearch size={15} />} type="search" aria-label="Search images"
                 placeholder="Search images by name or ad ID" value={query} onChange={(event) => setQuery(event.currentTarget.value)} />
             </div>
             <SimpleGrid cols={{ base: 1, xs: 2, xl: 3 }}>
-              {initialMedia.filter(({ name, adId }) => `${name} ${adId}`.toLowerCase().includes(query.trim().toLowerCase())).map((image) => (
+              {media.filter(({ name, adId }) => `${name} ${adId}`.toLowerCase().includes(query.trim().toLowerCase())).map((image) => (
                 <Paper withBorder p="sm" key={image.id}>
                   <ActionIcon className={styles.galleryPhoto} variant="light" color="gray" aria-label={'Preview ' + image.name} onClick={() => setPhoto(image)}>
                     <Image src={image.src} alt="" fill sizes="(max-width: 768px) 100vw, 360px" />
@@ -322,6 +343,7 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
                 </Paper>
               ))}
             </SimpleGrid>
+            {!media.some(({ name, adId }) => `${name} ${adId}`.toLowerCase().includes(query.trim().toLowerCase())) && <EmptyState kind="photo" title="No pictures found" description="Images added through the ad editor appear here automatically. Try a different search." action="Clear search" onAction={() => setQuery('')} />}
           </Paper>}
 
           {screen === 'Reports' && <Paper withBorder radius="md" p="md" mb="md" component="section">

@@ -1,6 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState, type FormEvent } from 'react';
+import { startPreview } from '../../member/session';
+import { SiteSelect } from '../../components/site-select';
 import styles from './auth.module.css';
 
 type Mode = 'login' | 'signup' | 'reset';
@@ -14,6 +18,26 @@ const titles = {
 export function AuthForm({ mode }: { mode: Mode }) {
   const signup = mode === 'signup';
   const reset = mode === 'reset';
+  const router = useRouter();
+  const [gender, setGender] = useState('');
+  const [message, setMessage] = useState('');
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage('');
+    if (reset) { setMessage('Password reset emails will be connected with the account backend.'); return; }
+    const data = new FormData(event.currentTarget);
+    if (signup && (!gender || data.get('password') !== data.get('confirm'))) {
+      setMessage(!gender ? 'Select your gender.' : 'The passwords do not match.');
+      return;
+    }
+    const email = String(data.get('email')).trim();
+    const username = signup ? String(data.get('username')).trim() : email.split('@')[0];
+    try {
+      startPreview(email, username, gender);
+      router.push('/myaccount');
+    } catch { setMessage('Allow browser session storage to open a preview account.'); }
+  }
 
   return (
     <main id="main" className={styles.page}>
@@ -22,6 +46,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <h1 id="auth-heading">{titles[mode]}</h1>
         </div>
         <div className={styles.content}>
+          {!reset && <p className={styles.preview}>Preview sign-in. Use sample details to explore your account.</p>}
           {!reset && (
             <>
               <button type="button" className={styles.google} disabled>
@@ -36,29 +61,21 @@ export function AuthForm({ mode }: { mode: Mode }) {
               <p className={styles.divider}>or use your email</p>
             </>
           )}
-          <form className={styles.form} onSubmit={(event) => event.preventDefault()}>
+          <form className={styles.form} method="post" onSubmit={submit}>
             {signup && (
               <>
                 <label className={styles.field}>
                   Username
-                  <input autoComplete="username" placeholder="Letters and numbers only" pattern="[A-Za-z0-9]+" required />
+                  <input name="username" autoComplete="username" placeholder="Letters and numbers only" pattern="[A-Za-z0-9]+" required />
                 </label>
-                <label className={styles.field}>
-                  Gender
-                  <select defaultValue="" required>
-                    <option value="" disabled>Select your gender</option>
-                    <option>Woman</option>
-                    <option>Man</option>
-                    <option>Nonbinary</option>
-                    <option>Another identity</option>
-                    <option>Prefer not to say</option>
-                  </select>
-                </label>
+                <SiteSelect label="Gender" name="gender" value={gender} onChange={setGender} required
+                  options={['Woman', 'Man', 'Nonbinary', 'Another identity', 'Prefer not to say'].map((label) => ({ value: label, label }))}
+                  placeholder="Select your gender" />
               </>
             )}
             <label className={styles.field}>
               Email
-              <input type="email" autoComplete={mode === 'login' ? 'username' : 'email'} placeholder="you@example.com" required />
+              <input name="email" type="email" autoComplete={mode === 'login' ? 'username' : 'email'} placeholder="you@example.com" required />
             </label>
             {!reset && (
               <>
@@ -67,7 +84,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
                     <label htmlFor="account-password">Password</label>
                     {!signup && <Link href="/auth?mode=reset">Forgot password?</Link>}
                   </div>
-                  <input id="account-password" type="password" autoComplete={signup ? 'new-password' : 'current-password'}
+                  <input id="account-password" name="password" type="password" autoComplete={signup ? 'new-password' : 'current-password'}
                     placeholder={signup ? 'At least 8 characters' : 'Enter your password'} minLength={signup ? 8 : undefined} required />
                 </div>
                 <p className={styles.notice}>
@@ -79,7 +96,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
               <>
                 <label className={styles.field}>
                   Confirm password
-                  <input type="password" autoComplete="new-password" placeholder="Enter your password again" required />
+                  <input name="confirm" type="password" autoComplete="new-password" placeholder="Enter your password again" required />
                 </label>
                 <div className={styles.consent}>
                   <input id="account-terms" type="checkbox" required />
@@ -90,9 +107,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 </div>
               </>
             )}
-            <button className={styles.submit} type="submit" disabled>
+            <button className={styles.submit} type="submit">
               {reset ? 'Send reset link' : titles[mode]}
             </button>
+            {message && <p role="alert">{message}</p>}
             {mode === 'login' && (
               <p className={styles.legal}>
                 This site is protected by hCaptcha and its{' '}
