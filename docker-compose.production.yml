@@ -1,0 +1,14 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backpagenew-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+    # Caddy will later be the only public entry point. Keeping this local
+    # lets us test safely before moving the domain from Vercel.
+    ports:
+      - '127.0.0.1:3000:3000'
