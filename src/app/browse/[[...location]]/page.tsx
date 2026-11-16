@@ -3,11 +3,18 @@ import { notFound } from 'next/navigation';
 import { RegionArrow } from '../../../components/region-arrow';
 import { ServiceListings } from '../../../components/service-listings';
 import { PostDetail } from '../../../components/post-detail';
-import { getSamplePosts } from '../../../directory/sample-posts';
 import { countries } from '../../../directory/areas';
 import { serviceGroups } from '../../../directory/service-groups';
 
 type Place = { name: string; href: string };
+
+export async function generateMetadata({ params }: { params: Promise<{ location?: string[] }> }) {
+  const { location = [] } = await params;
+  const path = '/browse/' + location.slice(0, 3).join('/');
+  const place = countries.flatMap(country => [country, ...country.regions.flatMap(region => [region, ...region.cities])]).find(item => item.href === path);
+  const service = serviceGroups.flatMap(group => group.services).find(item => item.slug === location[3]);
+  return { title: place ? `${service ? service.name + ' in ' : ''}${place.name} Classifieds & Personal Ads` : 'Browse Cities' };
+}
 
 // City routes are mostly static. Revalidate the small dynamic listing variants
 // periodically instead of rebuilding their response for every request.
@@ -77,7 +84,7 @@ export default async function BrowsePage({
   if (postId && city && region && serviceSlug) {
     const group = serviceGroups.find(({ services }) => services.some(({ slug }) => slug === serviceSlug));
     const service = group?.services.find(({ slug }) => slug === serviceSlug);
-    if (!service || !getSamplePosts(city.name, service.name).some(({ id }) => id === postId)) notFound();
+    if (!service || !/^\d+$/.test(postId)) notFound();
     return <PostDetail city={city} region={region} service={service} postId={postId} />;
   }
   if (serviceSlug && city && region) {

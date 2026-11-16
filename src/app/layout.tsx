@@ -6,7 +6,7 @@ import '@fontsource-variable/manrope/wght.css';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'BackpageNew | Local classifieds',
+  title: { default: 'BackpageNew – Local Classifieds, Personal Ads & Backpage Alternative', template: '%s – BackpageNew Local Classifieds & Personal Ads' },
   description: 'Explore local classifieds by city or region across the United States, Canada, the United Kingdom, and Australia.',
   icons: { icon: '/brand/backpagenew-favicon.svg' },
 };

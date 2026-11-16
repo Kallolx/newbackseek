@@ -403,15 +403,18 @@ export async function buildApp() {
   app.get("/api/ads", async (req) => {
     const q = pagination
       .extend({
-        cityId: z.coerce.number().int().positive(),
+        cityId: z.coerce.number().int().positive().optional(),
+        cityHref: z.string().max(300).optional(),
         category: z.string().max(100),
         search: z.string().max(120).default(""),
       })
       .parse(req.query);
+    const cityId = q.cityId || (await sql`select id from cities where href=${q.cityHref || ''}`)[0]?.id;
+    if (!cityId) return { posts: [], page: q.page, hasMore: false };
     const rows =
       await sql`select a.id,a.title,left(a.description,240) as description,a.age,a.location,p.ranked_at,
      (select variants from media where ad_id=a.id and status='ready' and purpose='ad' order by created_at limit 1) as image
-     from placements p join ads a on a.id=p.ad_id where p.city_id=${q.cityId} and a.category_slug=${q.category} and a.status='published'
+     from placements p join ads a on a.id=p.ad_id where p.city_id=${cityId} and a.category_slug=${q.category} and a.status='published'
      and (${q.search}='' or a.search_document @@ websearch_to_tsquery('english',${q.search}))
      order by p.ranked_at desc,p.ad_id desc limit 51 offset ${(q.page - 1) * 50}`;
     return {

@@ -1,103 +1,44 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { getSamplePosts } from '../directory/sample-posts';
+import { useEffect, useState } from 'react';
+import { EmptyState } from './page-state';
 
-type Props = {
-  city: { name: string; href: string };
-  region: { name: string; href: string };
-  service: { name: string; slug: string };
-  postId: string;
-};
+type Place = { name: string; href: string };
+type Post = { id: string; title: string; description: string; age: number; location: string; phone: string; created_at: string; category_slug: string };
+type Photo = { id: string; variants: { full?: { url: string }; card?: { url: string } } };
 
-const photos = ['Photo 1', 'Photo 2', 'Photo 3', 'Photo 4', 'Photo 5'];
-const postedTime = new Intl.RelativeTimeFormat('en-US');
-
-function formatPostedTime(timestamp: string) {
-  const hours = Math.max(0, Math.floor((Date.now() - Date.parse(timestamp)) / 3_600_000));
-  return postedTime.format(-hours, 'hour');
-}
-
-export function PostDetail({ city, region, service, postId }: Props) {
-  const [favorite, setFavorite] = useState(false);
+export function PostDetail({ city, region, service, postId }: { city: Place; region: Place; service: { name: string; slug: string }; postId: string }) {
+  const [post, setPost] = useState<Post | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [recent, setRecent] = useState<Post[]>([]);
   const [photo, setPhoto] = useState(0);
-  const [shared, setShared] = useState(false);
-  const posts = getSamplePosts(city.name, service.name);
-  const post = posts.find(({ id }) => id === postId);
-  if (!post) return null;
-  const { title } = post;
-  const titleWords = title.split(' ');
-  const breadcrumbTitle = titleWords.length > 3 ? titleWords.slice(0, 3).join(' ') + '…' : title;
-
-  return (
-    <main id="main" className="shell browse-page post-detail">
-      <nav className="browse-crumbs" aria-label="Breadcrumb">
-        <Link href={city.href}>{city.name}</Link><span aria-hidden="true"> › </span>
-        <Link href={city.href + '/' + service.slug}>{service.name}</Link><span aria-hidden="true"> › </span>
-        <strong aria-current="page" aria-label={title} title={title}>{breadcrumbTitle}</strong>
-      </nav>
-      <h1>{title}</h1>
-      <div className="post-meta">
-        <p>Posted: <time dateTime={post.postedAt} suppressHydrationWarning>{formatPostedTime(post.postedAt)}</time></p>
-        <button className="favorite-button" type="button" aria-pressed={favorite} onClick={() => setFavorite(!favorite)}>
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill={favorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8">
-            <path d="M12 20.5 4.6 13a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8Z" />
-          </svg>
-          {favorite ? 'Saved to Favorites' : 'Save to Favorites'}
-        </button>
-      </div>
-      <div className="post-gallery-viewer">
-        <button type="button" aria-label="Previous photo" onClick={() => setPhoto((photo + photos.length - 1) % photos.length)}>‹</button>
-        <div className="post-main-photo">
-          <div className="post-photo-placeholder">
-            {photos[photo]}
-          </div>
-          <small>{photo + 1} / {photos.length}</small>
-        </div>
-        <button type="button" aria-label="Next photo" onClick={() => setPhoto((photo + 1) % photos.length)}>›</button>
-      </div>
-      <div className="post-thumbnails">
-        {photos.map((label, index) => (
-          <button key={label} type="button" aria-label={label} aria-pressed={photo === index} onClick={() => setPhoto(index)} />
-        ))}
-      </div>
-      <dl className="post-facts">
-        <div><dt>Age</dt><dd>{post.age}</dd></div>
-        <div><dt>Location</dt><dd>{city.name}, {region.name}</dd></div>
-        <div><dt>Orientation</dt><dd>Not specified</dd></div>
-        <div><dt>Looking for</dt><dd>{service.name}</dd></div>
-      </dl>
-      <section className="post-description">
-        <h2>About this post</h2>
-        <p>{post.description}</p>
-        <p>I’m based in {city.name} and usually available on weekday evenings or Saturday afternoons. A quick introduction is a great way to start.</p>
-        <p>When you reach out, tell me a little about yourself and include a day and time that works for you.</p>
-        <h2>Sample contact details</h2>
-        <p>Email: <a href="mailto:hello@example.com">hello@example.com</a><br />
-          Phone: <a href="tel:+12025550142">+1 (202) 555-0142</a></p>
-      </section>
-      <div className="post-actions">
-        <span>[AD ID: {postId.replace('post-', '')}]</span>
-        <button type="button" onClick={async () => {
-          if (navigator.share) await navigator.share({ title, url: window.location.href });
-          else { await navigator.clipboard.writeText(window.location.href); setShared(true); }
-        }}>{shared ? '[Link copied]' : '[Share]'}</button>
-        <button className="report-ad" type="button" onClick={() => window.alert('Report submission will be available when reporting is connected.')}>[Report this ad]</button>
-      </div>
-      <section className="recent-posts">
-        <h2>Recent Ads by Other Users</h2>
-        {posts.filter(({ id }) => id !== postId).slice(0, 8).map(({ id, title, age }) => (
-          <article key={id}>
-            <div className="recent-post-thumbnail" aria-hidden="true" />
-            <div>
-              <Link className="recent-post-title" href={city.href + '/' + service.slug + '/' + id}>{title}</Link>
-              <small>{age}yo · {city.name}</small>
-            </div>
-          </article>
-        ))}
-        <Link href={city.href + '/' + service.slug}>More ads around {city.name} ›</Link>
-      </section>
-    </main>
-  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    fetch(`/api/ads/${postId}`, { signal: controller.signal, cache: 'no-store' }).then(async response => {
+      if (!response.ok) throw new Error(response.status === 404 ? 'This ad is no longer available.' : 'Unable to load this ad.');
+      const data = await response.json();
+      if (data.post.category_slug !== service.slug || !data.cities.some((place: Place) => place.href === city.href)) throw new Error('This ad is not available in this category or city.');
+      setPost(data.post); setPhotos(data.images);
+      const feed = await fetch(`/api/ads?cityHref=${encodeURIComponent(city.href)}&category=${encodeURIComponent(service.slug)}`, { signal: controller.signal, cache: 'no-store' });
+      if (feed.ok) setRecent((await feed.json()).posts.filter((item: Post) => String(item.id) !== postId).slice(0, 8));
+    }).catch(cause => { if (cause.name !== 'AbortError') setError(cause.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [postId, city.href, service.slug]);
+  if (loading) return <main id="main" className="shell browse-page"><p role="status">Loading ad…</p></main>;
+  if (!post || error) return <main id="main" className="shell browse-page"><EmptyState title="Ad unavailable" description={error || 'This ad is no longer available.'} href={city.href + '/' + service.slug} action="Browse ads" /></main>;
+  const hours = Math.max(0, Math.floor((Date.now() - Date.parse(post.created_at)) / 3600000));
+  return <main id="main" className="shell browse-page post-detail">
+    <nav className="browse-crumbs"><Link href={city.href}>{city.name}</Link> › <Link href={city.href + '/' + service.slug}>{service.name}</Link></nav>
+    <h1>{post.title}</h1><p>Posted: {hours === 1 ? '1 hour ago' : `${hours} hours ago`}</p>
+    {photos.length > 0 && <><div className="post-gallery-viewer"><button type="button" aria-label="Previous photo" onClick={() => setPhoto((photo + photos.length - 1) % photos.length)}>‹</button><div className="post-main-photo"><img src={photos[photo].variants.full?.url} alt={post.title} style={{ maxWidth: '100%', height: 'auto' }} /><small>{photo + 1} / {photos.length}</small></div><button type="button" aria-label="Next photo" onClick={() => setPhoto((photo + 1) % photos.length)}>›</button></div></>}
+    <dl className="post-facts"><div><dt>Age</dt><dd>{post.age}</dd></div><div><dt>Location</dt><dd>{post.location || `${city.name}, ${region.name}`}</dd></div></dl>
+    <section className="post-description"><h2>About this post</h2><p style={{ whiteSpace: 'pre-wrap' }}>{post.description}</p>{post.phone && <p>Phone: <a href={`tel:${post.phone}`}>{post.phone}</a></p>}</section>
+    <div className="post-actions"><span>[AD ID: {postId}]</span><button type="button" onClick={async () => { try { if (navigator.share) await navigator.share({ title: post.title, url: window.location.href }); else { await navigator.clipboard.writeText(window.location.href); setMessage('Link copied.'); } } catch {} }}>Share</button><button type="button" onClick={async () => { const reason = window.prompt('Why are you reporting this ad?'); if (!reason) return; const response = await fetch('/api/reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ adId: Number(postId), reason }) }); setMessage(response.ok ? 'Report submitted.' : 'Please sign in to report this ad.'); }}>Report this ad</button></div>{message && <p role="status">{message}</p>}
+    {recent.length > 0 && <section className="recent-posts"><h2>Recent Ads by Other Users</h2>{recent.map(item => <article key={item.id}><Link href={`${city.href}/${service.slug}/${item.id}`}>{item.title}</Link></article>)}</section>}
+  </main>;
 }

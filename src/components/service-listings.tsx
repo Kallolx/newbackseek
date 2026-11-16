@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { getSamplePosts } from '../directory/sample-posts';
+import { EmptyState } from './page-state';
 import { PostCard } from './post-card';
 import { PostPagination } from './post-pagination';
 
@@ -20,6 +20,11 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const dropdown = useRef<HTMLDivElement>(null);
   const [accepted, setAccepted] = useState(false);
+  const [ageReady, setAgeReady] = useState(false);
+  const [posts, setPosts] = useState<{ id: string; title: string; description: string; age: number; image?: { card?: { url: string } } }[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [gallery, setGallery] = useState(false);
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
@@ -28,8 +33,24 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
   const locked = dating && !accepted;
 
   useEffect(() => {
-    if (locked) dialog.current?.showModal();
-  }, [locked]);
+    try { setAccepted(sessionStorage.getItem('bpn-adult-confirmed') === 'yes'); } catch {}
+    setAgeReady(true);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true); setError('');
+    fetch(`/api/ads?cityHref=${encodeURIComponent(city.href)}&category=${encodeURIComponent(service.slug)}&search=${encodeURIComponent(search)}&page=${page}`, { signal: controller.signal, cache: 'no-store' })
+      .then(async response => { if (!response.ok) throw new Error('Unable to load listings. Please try again.'); return response.json(); })
+      .then(data => { setPosts(data.posts); setHasMore(data.hasMore); })
+      .catch(cause => { if (cause.name !== 'AbortError') setError(cause.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [city.href, service.slug, search, page]);
+
+  useEffect(() => {
+    if (ageReady && locked) dialog.current?.showModal();
+  }, [locked, ageReady]);
 
   useEffect(() => {
     function closeOnOutsideClick(event: MouseEvent) {
@@ -46,13 +67,7 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
     };
   }, []);
 
-  const examples = getSamplePosts(city.name, service.name);
-  const matching = examples.filter(({ title, description }) =>
-    (title + ' ' + description + ' ' + city.name).toLowerCase().includes(search.toLowerCase()),
-  );
-  const pageSize = 10;
-  const pageCount = Math.ceil(matching.length / pageSize);
-  const visiblePosts = matching.slice((page - 1) * pageSize, page * pageSize);
+  const pageCount = page + (hasMore ? 1 : 0);
 
   return (
     <>
@@ -63,7 +78,7 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
           <h2 id="dating-warning-title">Adults 18+ only</h2>
           <p>These listings may contain mature content. Continue only if you are 18 or older.</p>
           <p className="dating-notice">Illegal activity is prohibited.</p>
-          <button type="button" onClick={() => { dialog.current?.close(); setAccepted(true); }}>
+          <button type="button" onClick={() => { try { sessionStorage.setItem('bpn-adult-confirmed', 'yes'); } catch {} dialog.current?.close(); setAccepted(true); }}>
             I am 18 or older
           </button>
           <Link href={city.href}>Exit to categories</Link>
@@ -116,16 +131,16 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
               onChange={(event) => { setQuery(event.target.value); if (!event.target.value) { setSearch(''); setPage(1); } }} />
             <button type="submit">Search</button>
           </form>
-          <p className="listing-note">Sample posts</p>
-          {matching.length ? (
+          {loading ? <p role="status">Loading listings…</p> : error ? <p role="alert">{error}</p> : posts.length ? (
             <ul className={gallery ? 'post-list post-gallery' : 'post-list'}>
-              {visiblePosts.map((post) => (
-                <PostCard key={post.id} title={post.title} label={post.breadcrumb} description={post.description}
+              {posts.map((post) => (
+                <PostCard key={post.id} title={post.title} label={city.name} description={post.description}
+                  thumbnail={post.image?.card?.url ? <img src={post.image.card.url} alt="" width={480} height={320} loading="lazy" /> : undefined}
                   details={'Age: ' + post.age} href={city.href + '/' + service.slug + '/' + post.id} />
               ))}
             </ul>
-          ) : <p role="status">No posts match your search.</p>}
-          {matching.length > 0 && <PostPagination page={page} total={pageCount} onChange={setPage} />}
+          ) : <EmptyState title={search ? 'No matching ads' : 'No ads here yet'} description={search ? 'Try another keyword.' : 'Published ads in this city and category will appear here.'} />}
+          {!loading && (posts.length > 0 || page > 1) && <PostPagination page={page} total={pageCount} onChange={setPage} />}
         </section>
       )}
     </>

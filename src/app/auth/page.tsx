@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { AuthForm } from './auth-form';
 
-export const metadata: Metadata = { title: 'Account | BackpageNew' };
+export const metadata: Metadata = { title: 'Account' };
 
 export default async function AuthPage({
   searchParams,
