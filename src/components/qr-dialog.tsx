@@ -4,39 +4,18 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { FiCheck, FiCopy, FiDownload, FiShare2, FiX } from 'react-icons/fi';
 
+// Replace this single path with the Cloudflare R2 public URL when media storage is enabled.
+const QR_IMAGE_URL = '/brand/backpagenew-qr.svg';
+const SITE_URL = 'https://backpagenew.com/';
+
 export function QrDialog({ onClose }: { onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const [url, setUrl] = useState('');
-  const [qr, setQr] = useState('');
+  const [url, setUrl] = useState(SITE_URL);
   const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(true);
 
   useEffect(() => {
-    const siteUrl = window.location.origin + '/';
-    setUrl(siteUrl);
+    setUrl(window.location.origin + '/');
     dialog.current?.showModal();
-    let active = true;
-
-    async function createQr() {
-      try {
-        const { default: QRCode } = await import('qrcode');
-        const canvas = document.createElement('canvas');
-        await QRCode.toCanvas(canvas, siteUrl, {
-          width: 1024,
-          margin: 4,
-          errorCorrectionLevel: 'H',
-          color: { dark: '#071d4d', light: '#ffffff' },
-        });
-        if (active) setQr(canvas.toDataURL('image/png'));
-      } catch {
-        if (active) setMessage('Could not generate the QR code. Please close and try again.');
-      } finally {
-        if (active) setBusy(false);
-      }
-    }
-
-    void createQr();
-    return () => { active = false; };
   }, []);
 
   function close() {
@@ -46,8 +25,8 @@ export function QrDialog({ onClose }: { onClose: () => void }) {
 
   async function share() {
     try {
-      const bytes = Uint8Array.from(atob(qr.split(',')[1]), (character) => character.charCodeAt(0));
-      const file = new File([bytes], 'backpage-new-qr.png', { type: 'image/png' });
+      const image = await fetch(QR_IMAGE_URL).then((response) => response.blob());
+      const file = new File([image], 'backpage-new-qr.svg', { type: 'image/svg+xml' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ title: 'BackpageNew', text: url, files: [file] });
       } else if (navigator.share) {
@@ -84,12 +63,12 @@ export function QrDialog({ onClose }: { onClose: () => void }) {
       </div>
       <p>Scan to open the site.</p>
       <div className="qr-image">
-        {qr ? <Image src={qr} alt={'QR code for ' + url} width={260} height={260} unoptimized /> : <span>{busy ? 'Creating QR code…' : 'QR code unavailable'}</span>}
+        <Image src={QR_IMAGE_URL} alt={'QR code for ' + SITE_URL} width={260} height={260} priority unoptimized />
       </div>
       <p className="qr-url">{url}</p>
       <div className="qr-actions">
-        {qr && <a href={qr} download="backpage-new-qr.png"><FiDownload aria-hidden="true" />Download PNG</a>}
-        <button type="button" disabled={!qr || busy} onClick={() => void share()}><FiShare2 aria-hidden="true" />Share</button>
+        <a href={QR_IMAGE_URL} download="backpage-new-qr.svg"><FiDownload aria-hidden="true" />Download QR</a>
+        <button type="button" onClick={() => void share()}><FiShare2 aria-hidden="true" />Share</button>
         <button type="button" onClick={() => void copy()}>{message.startsWith('Site link copied') ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />}Copy link</button>
       </div>
       <p className="qr-feedback" role="status">{message}</p>
