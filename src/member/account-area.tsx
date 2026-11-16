@@ -23,7 +23,7 @@ export function AccountArea({ section }: { section: string[] }) {
   const router = useRouter();
   useEffect(() => { if (ready && !member) router.replace('/auth'); }, [ready, member, router]);
   if (!ready) return <main id="main" className={'shell ' + styles.page}><p className={styles.intro}>Opening your account…</p></main>;
-  if (!member) { router.replace('/auth'); return <main id="main" className={'shell ' + styles.page}><p className={styles.intro}>Taking you to sign in…</p></main>; }
+  if (!member) return <main id="main" className={'shell ' + styles.page}><p className={styles.intro}>Taking you to sign in…</p></main>;
   const current = section[0] ?? '';
   return (
     <main id="main" className={'shell ' + styles.page}>
