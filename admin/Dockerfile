@@ -14,7 +14,7 @@ COPY . .
 WORKDIR /app/admin
 RUN npm run build
 FROM node:24-bookworm-slim AS runner
-WORKDIR /app/admin
+WORKDIR /app/admin/admin
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3001 HOSTNAME=0.0.0.0
 RUN groupadd --system --gid 1001 nextjs && useradd --system --uid 1001 --gid nextjs nextjs
 COPY --from=builder --chown=nextjs:nextjs /app/public ./public
