@@ -21,7 +21,9 @@ services:
   migrate:
     build: .
     env_file: .env
-    command: [npm, run, migrate]
+    command: [sh, -c, 'npm run migrate && node src/seed.mjs']
+    volumes:
+      - ../src/directory:/src/directory:ro
     depends_on:
       db:
         condition: service_healthy

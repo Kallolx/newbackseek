@@ -21,7 +21,7 @@ From backend/: `docker compose --env-file .env -f compose.yml up --build -d`
 
 PostgreSQL and Valkey have no published ports. The API binds only to 127.0.0.1:4000. Migrations run transactionally before services start. Database and queue files persist in named volumes. Do not delete these volumes during upgrades.
 
-Run directory seed from the repository root with backend dependencies installed and DATABASE_URL pointing to the database: `node --env-file=backend/.env backend/src/seed.mjs`. For container deployment, copy the src/directory source files into the migration image first or run this command from a one-off repository container; the backend image intentionally contains no frontend source.
+The migration service imports the existing city/category directory automatically through a read-only source mount. Re-running it is safe. For local execution from the repository root with DATABASE_URL pointing to the database, run `node --env-file=backend/.env backend/src/seed.mjs`.
 
 Create the first admin with ADMIN_EMAIL, ADMIN_USERNAME and ADMIN_PASSWORD environment variables, then run `node --env-file-if-exists=.env src/create-admin.mjs`. There are no default administrator credentials. Remove the bootstrap password from your environment afterward.
 
