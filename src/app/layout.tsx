@@ -8,6 +8,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'BackpageNew | Local classifieds',
   description: 'Explore local classifieds by city or region across the United States, Canada, the United Kingdom, and Australia.',
+  icons: { icon: '/icon.svg' },
 };
 
 export default function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
