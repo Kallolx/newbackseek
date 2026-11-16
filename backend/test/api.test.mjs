@@ -6,6 +6,8 @@ test('API permissions and ad lifecycle',{skip:process.env.INTEGRATION_TEST!=='1'
  const app=await buildApp();
  const headers={origin:process.env.SITE_ORIGIN};
  const call=(method,url,payload,cookie)=>app.inject({method,url,payload,headers:{...headers,...(cookie?{cookie}:{})}});
+ const adminHeaders={origin:process.env.ADMIN_ORIGIN,'x-backpagenew-app':'admin'};
+ const adminCall=(method,url,payload,cookie)=>app.inject({method,url,payload,headers:{...adminHeaders,...(cookie?{cookie}:{})}});
  try {
   assert.equal((await call('GET','/api/ready')).statusCode,200);
   assert.equal((await call('GET','/api/admin/users')).statusCode,401);
@@ -22,13 +24,20 @@ test('API permissions and ad lifecycle',{skip:process.env.INTEGRATION_TEST!=='1'
   const ad=create.json().post;
   assert.equal((await call('GET','/api/ads/'+ad.id)).statusCode,404);
   await sql`update users set role='admin' where id=${user.id}`;
-  assert.equal((await call('POST','/api/admin/ads/'+ad.id+'/status',{status:'published'},cookie)).statusCode,200);
+  assert.equal((await call('GET','/api/admin/users',undefined,cookie)).statusCode,404);
+  assert.equal((await call('POST','/api/auth/login',{email:'test@example.com',password:'long-example-password'})).statusCode,401);
+  const adminLogin=await adminCall('POST','/api/admin/auth/login',{email:'test@example.com',password:'long-example-password'});
+  assert.equal(adminLogin.statusCode,200,adminLogin.body);
+  const adminCookie=adminLogin.headers['set-cookie'].split(';')[0];
+  assert.match(adminCookie,/bpn-admin-session=/);
+  assert.equal((await adminCall('GET','/api/admin/users',undefined,adminCookie)).statusCode,200);
+  assert.equal((await adminCall('POST','/api/admin/ads/'+ad.id+'/status',{status:'published'},adminCookie)).statusCode,200);
   const feed=await call('GET','/api/ads?cityId='+city.id+'&category=test');
   assert.equal(feed.statusCode,200,feed.body);assert.equal(feed.json().posts.length,1);
-  assert.equal((await call('POST','/api/admin/ads/'+ad.id+'/bump',{},cookie)).statusCode,200);
-  assert.equal((await call('POST','/api/admin/ads/'+ad.id+'/distribute',{cityIds:[Number(city.id)]},cookie)).statusCode,200);
+  assert.equal((await adminCall('POST','/api/admin/ads/'+ad.id+'/bump',{},adminCookie)).statusCode,200);
+  assert.equal((await adminCall('POST','/api/admin/ads/'+ad.id+'/distribute',{cityIds:[Number(city.id)]},adminCookie)).statusCode,200);
   assert.equal((await call('GET','/api/ads/'+ad.id)).statusCode,200);
-  assert.equal((await call('POST','/api/auth/logout',{},cookie)).statusCode,200);
-  assert.equal((await call('GET','/api/auth/me',undefined,cookie)).statusCode,401);
+  assert.equal((await adminCall('POST','/api/auth/logout',{},adminCookie)).statusCode,200);
+  assert.equal((await adminCall('GET','/api/auth/me',undefined,adminCookie)).statusCode,401);
  }finally{await app.close();}
 });

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { adminRoutes } from './admin-routes';
 import { ActionIcon, Alert, AppShell, Avatar, Badge, Box, Breadcrumbs, Burger, Button, Group, Menu, Modal, NativeSelect, NavLink, Paper, ScrollArea, SegmentedControl, SimpleGrid, Stack, Table, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
-import { FiActivity, FiBell, FiChevronRight, FiExternalLink, FiFileText, FiFlag, FiGrid, FiImage, FiMoreHorizontal, FiPlus, FiSearch, FiUsers } from 'react-icons/fi';
+import { FiActivity, FiBell, FiChevronRight, FiExternalLink, FiFileText, FiFlag, FiGrid, FiImage, FiLogOut, FiMoreHorizontal, FiPlus, FiSearch, FiUsers } from 'react-icons/fi';
 import { Monitoring } from './monitoring';
 import { PostCard } from '../../components/post-card';
 import { useState, type FormEvent } from 'react';
@@ -72,6 +72,10 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
     setStatus('');
     setAdPage(1);
     setMessage('');
+  }
+  async function signOut() {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => undefined);
+    window.location.assign(window.location.hostname.startsWith('admin.') ? '/login' : '/auth');
   }
 
   function openPublisher(mode: typeof publisherMode, ad?: Ad) {
@@ -183,8 +187,8 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
                 </Menu.Dropdown>
               </Menu>
               <Menu position="bottom-end">
-                <Menu.Target><Button variant="subtle" color="dark" px={4} leftSection={<Avatar size="sm" color="indigo">DA</Avatar>} aria-label="Demo administrator"><Text visibleFrom="sm" size="sm">Demo admin</Text></Button></Menu.Target>
-                <Menu.Dropdown><Menu.Label>Demo administrator</Menu.Label><Menu.Item component={Link} href="/" leftSection={<FiExternalLink />}>Public site</Menu.Item></Menu.Dropdown>
+                <Menu.Target><Button variant="subtle" color="dark" px={4} leftSection={<Avatar size="sm" color="indigo">AD</Avatar>} aria-label="Administrator menu"><Text visibleFrom="sm" size="sm">Administrator</Text></Button></Menu.Target>
+                <Menu.Dropdown><Menu.Label>Administrator</Menu.Label><Menu.Item component="a" href="https://backpagenew.com" leftSection={<FiExternalLink />}>Public site</Menu.Item><Menu.Item color="red" leftSection={<FiLogOut />} onClick={() => void signOut()}>Log out</Menu.Item></Menu.Dropdown>
               </Menu>
             </Group>
           </Group>
@@ -198,7 +202,7 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
                 rightSection={name === 'Reports' && openReports > 0 ? <Badge size="xs" color="orange" variant="light">{openReports}</Badge> : undefined} />
             ))}
           </AppShell.Section>
-          <Button component={Link} href="/" variant="white" color="dark" leftSection={<FiExternalLink />}>View public site</Button>
+          <Button component="a" href="https://backpagenew.com" variant="white" color="dark" leftSection={<FiExternalLink />}>View public site</Button>
         </AppShell.Navbar>
         <AppShell.Main id="main">
           <Box className={styles.content}>

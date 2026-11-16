@@ -8,5 +8,28 @@ backpagenew.com, www.backpagenew.com {
     Referrer-Policy "strict-origin-when-cross-origin"
   }
 
-  reverse_proxy frontend:3000
+  @api path /api/*
+  handle @api {
+    reverse_proxy api:4000 {
+      header_up X-Backpage-App "public"
+    }
+  }
+  handle { reverse_proxy frontend:3000 }
+}
+
+admin.backpagenew.com {
+  encode zstd gzip
+  header {
+    -Server
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "no-referrer"
+  }
+  @api path /api/*
+  handle @api {
+    reverse_proxy api:4000 {
+      header_up X-Backpage-App "admin"
+    }
+  }
+  handle { reverse_proxy admin:3001 }
 }

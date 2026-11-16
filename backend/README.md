@@ -4,7 +4,7 @@ This service is separate from the current frontend preview. It includes session 
 
 ## Configuration
 
-Copy `.env.example` to `.env`, replace every placeholder and keep the file outside Git. Use one random database password in both DB_PASSWORD and DATABASE_URL (URL-encode special characters in the URL). Set NODE_ENV=production and SITE_ORIGIN=https://backpagenew.com on the VPS.
+Copy `.env.example` to `.env`, replace every placeholder and keep the file outside Git. Use one random database password in both DB_PASSWORD and DATABASE_URL (URL-encode special characters in the URL). Set NODE_ENV=production, SITE_ORIGIN=https://backpagenew.com and ADMIN_ORIGIN=https://admin.backpagenew.com on the VPS.
 
 Use two R2 buckets:
 
@@ -17,7 +17,7 @@ R2 storage alone does not resize images. The worker produces 160/480/1280-pixel 
 
 ## Start isolated services
 
-From backend/: `docker compose --env-file .env -f compose.yml up --build -d`
+From backend/: `docker compose --env-file .env -f compose.yml up --build -d`. For the production stack run from the repository root: `docker compose --env-file backend/.env --profile backend --profile admin -f docker-compose.production.yml up --build -d`.
 
 PostgreSQL and Valkey have no published ports. The API binds only to 127.0.0.1:4000. Migrations run transactionally before services start. Database and queue files persist in named volumes. Do not delete these volumes during upgrades.
 
@@ -27,7 +27,13 @@ Create the first admin with ADMIN_EMAIL, ADMIN_USERNAME and ADMIN_PASSWORD envir
 
 Health: GET /api/health; dependency readiness: GET /api/ready. Public feed: GET /api/ads?cityId=1&category=appliances&page=1. Each result contains at most 50 summaries and a hasMore flag. Search uses a PostgreSQL full-text index. Placements share one ad and one set of images across cities. Deep offset pages should migrate to cursor pagination when traffic/data warrants it.
 
-All mutation requests require Origin matching SITE_ORIGIN, including API clients/tests. Sessions use opaque tokens hashed in PostgreSQL and HttpOnly same-site cookies. Admin actions require a server-side role check. Impersonated sessions cannot use admin routes, and can return through /api/account/impersonation/stop.
+All mutation requests require an allowed site Origin, including API clients/tests. Sessions use opaque tokens hashed in PostgreSQL and HttpOnly same-site cookies. Public and administrator sessions use separate host-only cookie names; `/api/admin/*` is only accepted from the admin reverse proxy and still requires a server-side administrator role check. Impersonated sessions cannot use admin routes, and can return through `/api/account/impersonation/stop`.
+
+## Separate admin application
+
+`admin/` is an independently built Next application that reuses the existing admin screen source rather than copying it. It runs only in the `admin` Compose profile on port 3001. Caddy routes `admin.backpagenew.com` to that container and adds the trusted admin context header for its API proxy. Add a proxied Cloudflare `A` record for `admin` pointing to the VPS before enabling the profile. Keep the admin subdomain behind Cloudflare Access before granting anyone administrator credentials.
+
+The first administrator is intentionally created only from the command line using `create-admin.mjs`; public registration cannot create one, and public login rejects administrator accounts. Use `https://admin.backpagenew.com/login` to sign in once DNS, Caddy, API and the admin container are live.
 
 ## Production cutover checklist
 

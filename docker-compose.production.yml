@@ -13,6 +13,86 @@ services:
     ports:
       - '127.0.0.1:3000:3000'
 
+  admin:
+    build:
+      context: .
+      dockerfile: admin/Dockerfile
+    container_name: backpagenew-admin
+    restart: unless-stopped
+    profiles: ['admin']
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+    ports:
+      - '127.0.0.1:3001:3001'
+
+  db:
+    image: postgres:18
+    profiles: ['backend']
+    env_file: ./backend/.env
+    environment:
+      POSTGRES_DB: backpagenew
+      POSTGRES_USER: backpagenew
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U backpagenew']
+      interval: 5s
+      retries: 12
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    profiles: ['backend']
+    command: [valkey-server, --appendonly, 'yes', --maxmemory-policy, noeviction]
+    volumes:
+      - queue_data:/data
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ./backend
+    profiles: ['backend']
+    env_file: ./backend/.env
+    command: [sh, -c, 'npm run migrate && node src/seed.mjs']
+    volumes:
+      - ./src/directory:/src/directory:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./backend
+    container_name: backpagenew-api
+    restart: unless-stopped
+    profiles: ['backend']
+    env_file: ./backend/.env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_started
+    ports:
+      - '127.0.0.1:4000:4000'
+
+  worker:
+    build:
+      context: ./backend
+    container_name: backpagenew-worker
+    restart: unless-stopped
+    profiles: ['backend']
+    env_file: ./backend/.env
+    command: [npm, run, worker]
+    mem_limit: 768m
+    cpus: 1
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_started
+
   caddy:
     image: caddy:2.10-alpine
     container_name: backpagenew-caddy
@@ -30,3 +110,5 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  postgres_data:
+  queue_data:

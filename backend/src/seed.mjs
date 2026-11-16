@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { sql } from './db.mjs';
 const locations=JSON.parse(await readFile(new URL('../../src/directory/reference-locations.json',import.meta.url),'utf8'));
-const {serviceGroups}=await import('../../src/directory/service-groups.ts');
+// This source is maintained by the public directory. It contains a literal data export;
+// evaluating its trusted repository content keeps city/category labels in one place.
+const categorySource = await readFile(new URL('../../src/directory/service-groups.ts', import.meta.url), 'utf8');
+const serviceGroups = Function(`"use strict"; return (${categorySource.replace(/^export const serviceGroups\s*=\s*/, '').replace(/;\s*$/, '')});`)();
 const slug=name=>name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 try {
  await sql.begin(async tx=>{

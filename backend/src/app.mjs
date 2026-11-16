@@ -19,8 +19,11 @@ const adInput = z.object({ title: z.string().trim().min(5).max(140), description
  location: z.string().max(200).default(''), phone: z.string().max(40).default(''),
  cityIds: z.array(z.number().int().positive()).min(1).max(1000), mediaIds: z.array(uuid).max(12).default([]) });
 const fail = (statusCode, message) => Object.assign(new Error(message), { statusCode });
-const cookieName = config.NODE_ENV === 'production' ? '__Host-session' : 'session';
 const cookieOptions = { path: '/', httpOnly: true, secure: config.NODE_ENV === 'production', sameSite: 'lax', maxAge: 604800 };
+const appContext = req => req.headers['x-backpagenew-app'] === 'admin' ? 'admin' : 'public';
+const sessionCookie = req => config.NODE_ENV === 'production'
+  ? appContext(req) === 'admin' ? '__Host-bpn-admin-session' : '__Host-bpn-session'
+  : appContext(req) === 'admin' ? 'bpn-admin-session' : 'bpn-session';
 
 export async function buildApp() {
  const app = Fastify({ logger: { redact: ['req.headers.cookie', 'req.headers.authorization', 'password', 'password_hash'] }, bodyLimit: 65536 });
@@ -29,23 +32,28 @@ export async function buildApp() {
  await app.register(rateLimit, { max: 120, timeWindow: '1 minute', redis });
  app.addHook('onRequest', async (req, reply) => {
    reply.header('Cache-Control', 'no-store');
-   if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.headers.origin !== config.SITE_ORIGIN)
+   if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && ![config.SITE_ORIGIN, config.ADMIN_ORIGIN].includes(req.headers.origin || ''))
      throw fail(403, 'Request origin is not allowed');
  });
  app.decorateRequest('user', null);
  async function member(req) {
-   const session = req.cookies[cookieName];
+   const session = req.cookies[sessionCookie(req)];
    if (!session) throw fail(401, 'Please log in');
    const [user] = await sql`select u.id,u.email,u.username,u.role,s.actor_id from sessions s join users u on u.id=s.user_id
      where s.token_hash=${digest(session)} and s.expires_at>now() and u.status='active'`;
    if (!user) throw fail(401, 'Please log in');
    req.user = user;
  }
- async function admin(req) { await member(req); if (req.user.role !== 'admin' || req.user.actor_id) throw fail(403, 'Administrator access required'); }
- async function session(reply, userId, actorId = null) {
+ async function admin(req) {
+   if (appContext(req) !== 'admin') throw fail(404, 'Not found');
+   await member(req);
+   if (req.user.role !== 'admin' || req.user.actor_id) throw fail(403, 'Administrator access required');
+ }
+ async function session(reply, userId, actorId = null, context = 'public') {
    const secret = token();
    await sql`insert into sessions (token_hash,user_id,actor_id,expires_at) values (${digest(secret)},${userId},${actorId},now()+interval '7 days')`;
-   reply.setCookie(cookieName, secret, cookieOptions);
+   const name = config.NODE_ENV === 'production' ? context === 'admin' ? '__Host-bpn-admin-session' : '__Host-bpn-session' : context === 'admin' ? 'bpn-admin-session' : 'bpn-session';
+   reply.setCookie(name, secret, cookieOptions);
  }
  app.setErrorHandler((error, req, reply) => {
    if (error instanceof z.ZodError) return reply.code(400).send({ error: 'Invalid input', fields: error.flatten() });
@@ -66,13 +74,23 @@ export async function buildApp() {
    const input = z.object({ email: z.email().toLowerCase(), password: z.string().min(1).max(128) }).parse(req.body);
    const [user] = await sql`select * from users where email=${input.email} and status='active'`;
    const valid = await verifyPassword(input.password, user?.password_hash || await hashPassword('dummy-password'));
-   if (!user || !valid) throw fail(401, 'Incorrect email or password');
+   if (!user || !valid || user.role !== 'member') throw fail(401, 'Incorrect email or password');
    await session(reply, user.id); return { user: { id: user.id, email: user.email, username: user.username, role: user.role } };
+ });
+ app.post('/api/admin/auth/login', { config: { rateLimit: { max: 5, timeWindow: '15 minutes' } } }, async (req, reply) => {
+   if (appContext(req) !== 'admin') throw fail(404, 'Not found');
+   const input = z.object({ email: z.email().toLowerCase(), password: z.string().min(1).max(128) }).parse(req.body);
+   const [user] = await sql`select * from users where email=${input.email} and status='active' and role='admin'`;
+   const valid = await verifyPassword(input.password, user?.password_hash || await hashPassword('dummy-password'));
+   if (!user || !valid) throw fail(401, 'Incorrect administrator email or password');
+   await session(reply, user.id, null, 'admin');
+   return { user: { id: user.id, email: user.email, username: user.username, role: user.role } };
  });
  app.get('/api/auth/me', { preHandler: member }, async req => ({ user: req.user }));
  app.post('/api/auth/logout', async (req, reply) => {
-   if (req.cookies[cookieName]) await sql`delete from sessions where token_hash=${digest(req.cookies[cookieName])}`;
-   reply.clearCookie(cookieName, { path: '/', secure: cookieOptions.secure }); return { ok: true };
+   const name = sessionCookie(req);
+   if (req.cookies[name]) await sql`delete from sessions where token_hash=${digest(req.cookies[name])}`;
+   reply.clearCookie(name, { path: '/', secure: cookieOptions.secure }); return { ok: true };
  });
  app.get('/api/locations', async req => {
    const q = z.object({ country: z.string().max(10).default(''), region: z.string().max(100).default('') }).parse(req.query);
@@ -191,8 +209,8 @@ export async function buildApp() {
    if(!req.user.actor_id) throw fail(400,'No impersonation session');
    const [actor]=await sql`select id from users where id=${req.user.actor_id} and role='admin' and status='active'`;
    if(!actor) throw fail(403,'Administrator unavailable');
-   await sql`delete from sessions where token_hash=${digest(req.cookies[cookieName])}`;
-   await session(reply,actor.id);return {ok:true};
+   await sql`delete from sessions where token_hash=${digest(req.cookies[sessionCookie(req)])}`;
+   await session(reply,actor.id,null,appContext(req));return {ok:true};
  });
  app.patch('/api/admin/reports/:id', {preHandler:admin},async req=>{
    const {status}=z.object({status:z.enum(['resolved','dismissed'])}).parse(req.body);
