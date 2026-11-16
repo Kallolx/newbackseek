@@ -1,95 +1,48 @@
 'use client';
 
-import { useMemo, useSyncExternalStore } from 'react';
-import { getSamplePosts } from '../directory/sample-posts';
+import { useCallback, useEffect, useState } from 'react';
 
 export type MemberPost = {
-  id: string;
-  title: string;
-  description: string;
-  descriptionHtml?: string;
-  age: number;
-  location: string;
-  phone: string;
-  cityName: string;
-  cityHref: string;
-  category: string;
-  service: string;
-  images: string[];
-  status: 'Published' | 'Paused';
-  sample: boolean;
-  createdAt: string;
+  id: string; title: string; description: string; descriptionHtml?: string; age: number; location: string; phone: string;
+  cityName: string; cityHref: string; category: string; service: string; images: string[];
+  status: 'Published' | 'Paused' | 'Pending' | 'Rejected'; sample: false; createdAt: string;
 };
 export type MemberSession = {
-  email: string;
-  username: string;
-  gender: string;
-  posts: MemberPost[];
-  verificationRequested?: boolean;
+  id: string; email: string; username: string; emailVerified: boolean; posts: MemberPost[]; verificationRequested?: boolean;
 };
 
-const key = 'backpagenew-member-preview-v1';
-const eventName = 'backpagenew-member-change';
-const emptySubscribe = () => () => {};
-const serverSnapshot = () => null;
-
-function read() {
-  try { return sessionStorage.getItem(key); } catch { return null; }
+function publicImage(variants: unknown) {
+  if (!variants || typeof variants !== 'object') return [];
+  const values = Object.values(variants as Record<string, unknown>);
+  return values.filter((value): value is string => typeof value === 'string').slice(0, 1);
 }
-
-function subscribe(callback: () => void) {
-  window.addEventListener(eventName, callback);
-  window.addEventListener('storage', callback);
-  return () => {
-    window.removeEventListener(eventName, callback);
-    window.removeEventListener('storage', callback);
+function mapPost(post: Record<string, unknown>): MemberPost {
+  const status = String(post.status || 'pending');
+  return {
+    id: String(post.id), title: String(post.title), description: String(post.description), age: Number(post.age || 0),
+    location: String(post.location || ''), phone: String(post.phone || ''), cityName: String(post.city_name || 'Selected city'), cityHref: String(post.city_href || '#'),
+    category: String(post.category_slug || ''), service: String(post.category_slug || ''), images: publicImage(post.image),
+    status: status === 'published' ? 'Published' : status === 'paused' ? 'Paused' : status === 'rejected' ? 'Rejected' : 'Pending', sample: false, createdAt: String(post.created_at || ''),
   };
 }
 
 export function useMember() {
-  const ready = useSyncExternalStore(emptySubscribe, () => true, () => false);
-  const raw = useSyncExternalStore(subscribe, read, serverSnapshot);
-  const member = useMemo((): MemberSession | null => {
-    if (!raw) return null;
+  const [member, setMember] = useState<MemberSession | null>(null);
+  const [ready, setReady] = useState(false);
+  const refresh = useCallback(async () => {
     try {
-      const data = JSON.parse(raw);
-      return typeof data.email === 'string' && typeof data.username === 'string' && Array.isArray(data.posts) ? data : null;
-    } catch { return null; }
-  }, [raw]);
-  return { member, ready };
+      const me = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+      if (!me.ok) { setMember(null); return; }
+      const { user } = await me.json();
+      const ads = await fetch('/api/account/ads', { credentials: 'same-origin', cache: 'no-store' });
+      const data = ads.ok ? await ads.json() : { posts: [] };
+      setMember({ id: user.id, email: user.email, username: user.username, emailVerified: Boolean(user.email_verified_at), posts: (data.posts || []).map(mapPost) });
+    } finally { setReady(true); }
+  }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
+  return { member, ready, refresh };
 }
 
-export function saveMember(member: MemberSession) {
-  sessionStorage.setItem(key, JSON.stringify(member));
-  window.dispatchEvent(new Event(eventName));
-}
-
-export function logOut() {
-  sessionStorage.removeItem(key);
-  window.dispatchEvent(new Event(eventName));
-}
-
-export function startPreview(email: string, username: string, gender: string) {
-  const samples = getSamplePosts('Auburn', 'Women Seeking Men');
-  const images = ['/admin/coffee.webp', '/admin/sofa.webp', '/admin/camera.webp', '/admin/room.webp'];
-  const posts: MemberPost[] = Array.from({ length: 12 }, (_, index) => {
-    const sample = samples[index % samples.length];
-    return {
-      id: 'sample-' + (1001 + index),
-      title: index < samples.length ? sample.title : ['A relaxed weekend meetup', 'Good conversation over coffee', 'Exploring the neighborhood'][index - samples.length],
-      description: sample.description,
-      age: sample.age,
-      location: 'Near downtown',
-      phone: '+1 (202) 555-0142',
-      cityName: 'Auburn',
-      cityHref: '/browse/us/alabama/auburn',
-      category: 'Dating',
-      service: 'Women Seeking Men',
-      images: [images[index % images.length]],
-      status: 'Published',
-      sample: true,
-      createdAt: sample.postedAt,
-    };
-  });
-  saveMember({ email, username, gender, posts });
+export async function logOut() {
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
 }

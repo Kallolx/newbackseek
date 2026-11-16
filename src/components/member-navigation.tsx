@@ -11,7 +11,7 @@ export function MemberNavigation() {
     <nav className="header-member-nav" aria-label="Main navigation">
       {member ? <>
         <Link href="/myaccount">My account</Link>
-        <button type="button" onClick={() => { logOut(); router.replace('/auth'); }}>Logout</button>
+        <button type="button" onClick={async () => { await logOut(); router.replace('/auth'); router.refresh(); }}>Logout</button>
       </> : <Link href="/post">Post an Ad</Link>}
     </nav>
   );

@@ -8,11 +8,11 @@ import { FiMapPin, FiInfo, FiImage, FiShield, FiUploadCloud, FiX } from 'react-i
 import { SiteSelect } from '../components/site-select';
 import { countries } from '../directory/areas';
 import { serviceGroups } from '../directory/service-groups';
-import { saveMember, type MemberSession, type MemberPost } from './session';
+import { type MemberSession } from './session';
 import styles from './member.module.css';
 import { DescriptionEditor } from './description-editor';
 
-async function preparePhoto(file: File): Promise<string> {
+async function preparePhoto(file: File): Promise<{ preview: string; file: File }> {
   if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) throw new Error('Choose JPG, PNG, WebP or AVIF images.');
   if (file.size > 5 * 1024 * 1024) throw new Error('Each picture must be under 5 MB.');
   const bitmap = await createImageBitmap(file);
@@ -24,7 +24,8 @@ async function preparePhoto(file: File): Promise<string> {
   if (!context) { bitmap.close(); throw new Error('Could not prepare this image.'); }
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  return canvas.toDataURL('image/webp', 0.75);
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Could not prepare this image.')), 'image/webp', 0.75));
+  return { preview: URL.createObjectURL(blob), file: new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' }) };
 }
 
 export function MemberPostForm({ member }: { member: MemberSession }) {
@@ -36,7 +37,7 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
   const [serviceSlug, setService] = useState('');
   const [description, setDescription] = useState('');
   const [descriptionHtml, setDescriptionHtml] = useState('');
-  const [pictures, setPictures] = useState<string[]>([]);
+  const [pictures, setPictures] = useState<{ preview: string; file: File }[]>([]);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [photoError, setPhotoError] = useState('');
@@ -55,15 +56,14 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
     busy.current = true;
     setProcessing(true);
     try {
-      const prepared: string[] = [];
+      const prepared: { preview: string; file: File }[] = [];
       for (const file of files) prepared.push(await preparePhoto(file));
-      if ([...pictures, ...prepared].join('').length > 2_000_000) throw new Error('These pictures are too large for the preview. Choose fewer or smaller images.');
       setPictures((previous) => [...previous, ...prepared]);
     } catch (cause) { setPhotoError(cause instanceof Error ? cause.message : 'Could not open this image. Try another file.'); }
     finally { busy.current = false; setProcessing(false); if (fileInput.current) fileInput.current.value = ''; }
   }
 
-  function publish(event: FormEvent<HTMLFormElement>) {
+  async function publish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
     if (!country || !region || !city || !group || !service) { setError('Choose your country, state or region, city, category and subcategory.'); return; }
@@ -76,13 +76,38 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
     if (!title || !location || !phone || description.trim().length < 30 || description.length > 2950 || !Number.isInteger(age) || age < 18 || age > 120) {
       setError('Complete all required fields. Use an age of 18 or over and a description between 30 and 2950 characters.'); return;
     }
-    const post: MemberPost = {
-      id: new Date().getTime().toString(), title, description: description.trim(), descriptionHtml, age, location, phone,
-      cityName: city.name, cityHref: city.href, category: group.name, service: service.name,
-      images: pictures, status: 'Published', sample: false, createdAt: new Date().toISOString(),
-    };
-    try { saveMember({ ...member, posts: [post, ...member.posts] }); router.push('/myaccount'); }
-    catch { setError('This tab has run out of preview storage. Remove a picture or use smaller files and try again. Your form is still here.'); }
+    setProcessing(true);
+    try {
+      const locationsResponse = await fetch(`/api/locations?country=${encodeURIComponent(country.code)}&region=${encodeURIComponent(region.name)}`, { credentials: 'same-origin' });
+      const locations = await locationsResponse.json();
+      const selectedCity = locations.cities?.find((item: { href: string }) => item.href === city.href);
+      if (!selectedCity) throw new Error('That city is unavailable. Please choose it again.');
+      const mediaIds: string[] = [];
+      for (const picture of pictures) {
+        const create = await fetch('/api/media/uploads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bytes: picture.file.size, contentType: picture.file.type, purpose: 'ad' }) });
+        const upload = await create.json();
+        if (!create.ok) throw new Error(upload.error || 'Could not prepare an image upload.');
+        const put = await fetch(upload.url, { method: 'PUT', headers: { 'content-type': picture.file.type }, body: picture.file });
+        if (!put.ok) throw new Error('Could not upload an image.');
+        const complete = await fetch(`/api/media/${upload.id}/complete`, { method: 'POST', credentials: 'same-origin' });
+        if (!complete.ok) throw new Error('Could not finish an image upload.');
+        let ready = false;
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 750));
+          const statusResponse = await fetch(`/api/media/${upload.id}`, { credentials: 'same-origin', cache: 'no-store' });
+          const status = await statusResponse.json();
+          if (status.status === 'ready') { ready = true; break; }
+          if (status.status === 'failed') throw new Error('An image could not be processed. Please choose another picture.');
+        }
+        if (!ready) throw new Error('Image processing is taking longer than expected. Please try again in a moment.');
+        mediaIds.push(upload.id);
+      }
+      const response = await fetch('/api/account/ads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, cityIds: [Number(selectedCity.id)], mediaIds }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not submit your ad.');
+      router.replace('/myaccount'); router.refresh();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not submit your ad.'); }
+    finally { setProcessing(false); }
   }
 
   return <div className={styles.formWidth}>
@@ -120,17 +145,17 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
           <button className={styles.secondary} type="button" disabled={processing || pictures.length >= 6} onClick={() => fileInput.current?.click()}>{processing ? 'Preparing pictures…' : 'Choose pictures'}</button>
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden aria-label="Upload ad pictures" onChange={(event) => void addPictures(Array.from(event.target.files ?? []))} />
         </div>
-        {pictures.length > 0 && <div className={styles.photos}>{pictures.map((src, index) => <div key={src + index}><Image src={src} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />{index === 0 && <span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove picture ' + (index + 1)} onClick={() => setPictures((previous) => previous.filter((_, item) => item !== index))}><FiX /></button></div>)}</div>}
-        <p className={styles.help}>Pictures are prepared automatically. Use sample photos in this preview.</p>
+        {pictures.length > 0 && <div className={styles.photos}>{pictures.map((picture, index) => <div key={picture.preview}><Image src={picture.preview} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />{index === 0 && <span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove picture ' + (index + 1)} onClick={() => setPictures((previous) => previous.filter((_, item) => item !== index))}><FiX /></button></div>)}</div>}
+        <p className={styles.help}>Pictures are prepared automatically and optimized after upload.</p>
         {photoError && <p className={styles.error} role="alert">{photoError}</p>}
       </section>
       <section className={styles.section} aria-labelledby="post-privacy-heading">
         <h2 id="post-privacy-heading"><FiShield aria-hidden="true" /> Privacy & legal</h2>
         <label className={styles.check}><input type="checkbox" required /><span>I am 18 or older. I have permission to publish this content and agree to the <Link href="/terms">Terms of Service</Link> and <Link href="/privacy">Privacy Policy</Link>.</span></label>
-        <p className={styles.notice}>Preview only. Your ad and pictures are saved in this browser tab and are not posted publicly. Closing the tab or logging out removes this preview account.</p>
+        <p className={styles.notice}>Your listing is sent for review. Pictures are optimized securely after upload and only approved ads appear publicly.</p>
       </section>
       {error && <p className={styles.error} role="alert">{error}</p>}
-      <div className={styles.publish}><Link href="/myaccount">Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>Publish preview ad</button></div>
+      <div className={styles.publish}><Link href="/myaccount">Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{processing ? 'Submitting…' : 'Submit ad for review'}</button></div>
     </form>
   </div>;
 }

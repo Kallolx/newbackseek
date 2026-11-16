@@ -1,5 +1,3 @@
-import { PageLoader } from '../../components/page-state';
-
 export default function Loading() {
-  return <main id="main" className="shell"><PageLoader /></main>;
+  return <main id="main" className="shell"><p className="account-opening">Opening your account…</p></main>;
 }

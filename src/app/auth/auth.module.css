@@ -113,5 +113,6 @@
 .legal a { text-decoration: underline; }
 .switch { margin: 17px 0 0; text-align: center; }
 .switch a, .fieldHeading a, .consent a { text-decoration: underline; }
-.preview { margin-bottom: 12px; font-size: 12px; color: #68748a; }
 .submit { cursor: pointer; }
+.form :global(.turnstile-widget) { min-height: 65px; }
+.form :global(.security-error) { color: #9a311d; font-size: 13px; }
