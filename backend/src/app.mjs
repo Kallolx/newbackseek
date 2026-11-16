@@ -43,6 +43,9 @@ const cookieOptions = {
 };
 const googleStateCookie =
   config.NODE_ENV === "production" ? "__Host-bpn-google-state" : "bpn-google-state";
+const adminGoogleStateCookie =
+  config.NODE_ENV === "production" ? "__Host-bpn-admin-google-state" : "bpn-admin-google-state";
+const adminGoogleRedirectUri = new URL("/api/admin/auth/google/callback", config.ADMIN_ORIGIN).toString();
 const googleClient = config.GOOGLE_CLIENT_ID
   ? new OAuth2Client(config.GOOGLE_CLIENT_ID)
   : null;
@@ -317,8 +320,10 @@ export async function buildApp() {
         .object({
           email: z.email().toLowerCase(),
           password: z.string().min(1).max(128),
+          captchaToken: z.string().min(1).max(4096),
         })
         .parse(req.body);
+      await verifyCaptcha(input.captchaToken, req);
       const [user] =
         await sql`select * from users where email=${input.email} and status='active' and role='admin'`;
       const valid = await verifyPassword(
@@ -338,6 +343,38 @@ export async function buildApp() {
       };
     },
   );
+  app.get("/api/admin/auth/google/start", async (req, reply) => {
+    if (appContext(req) !== "admin" || !googleClient || !config.GOOGLE_CLIENT_SECRET)
+      throw fail(503, "Google sign-in is not configured");
+    const state = token();
+    reply.setCookie(adminGoogleStateCookie, state, { path: "/", httpOnly: true, secure: config.NODE_ENV === "production", sameSite: "lax", maxAge: 600 });
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    url.search = new URLSearchParams({ client_id: config.GOOGLE_CLIENT_ID, redirect_uri: adminGoogleRedirectUri, response_type: "code", scope: "openid email profile", state, prompt: "select_account" }).toString();
+    return reply.redirect(url.toString());
+  });
+  app.get("/api/admin/auth/google/callback", async (req, reply) => {
+    if (appContext(req) !== "admin") throw fail(404, "Not found");
+    const query = z.object({ code: z.string().min(1), state: z.string().min(1) }).parse(req.query);
+    const expectedState = req.cookies[adminGoogleStateCookie];
+    reply.clearCookie(adminGoogleStateCookie, { path: "/", secure: cookieOptions.secure });
+    if (!expectedState || digest(expectedState) !== digest(query.state)) return reply.redirect(303, `${config.ADMIN_ORIGIN}/login?error=google_state`);
+    try {
+      const tokenResponse = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ code: query.code, client_id: config.GOOGLE_CLIENT_ID, client_secret: config.GOOGLE_CLIENT_SECRET, redirect_uri: adminGoogleRedirectUri, grant_type: "authorization_code" }) });
+      const tokenPayload = await tokenResponse.json();
+      if (!tokenResponse.ok || !tokenPayload.id_token) throw new Error("Google token exchange failed");
+      const ticket = await googleClient.verifyIdToken({ idToken: tokenPayload.id_token, audience: config.GOOGLE_CLIENT_ID });
+      const profile = ticket.getPayload();
+      if (!profile?.sub || !profile.email || !profile.email_verified) throw new Error("Google email is not verified");
+      const [user] = await sql`select id,email,username,role,google_subject from users where email=${profile.email} and status='active' and role='admin'`;
+      if (!user || (user.google_subject && user.google_subject !== profile.sub)) return reply.redirect(303, `${config.ADMIN_ORIGIN}/login?error=not_authorized`);
+      if (!user.google_subject) await sql`update users set google_subject=${profile.sub},email_verified_at=coalesce(email_verified_at,now()) where id=${user.id}`;
+      await session(reply, user.id, null, "admin");
+      return reply.redirect(303, `${config.ADMIN_ORIGIN}/admin`);
+    } catch (error) {
+      req.log.warn({ err: error }, "Administrator Google sign-in failed");
+      return reply.redirect(303, `${config.ADMIN_ORIGIN}/login?error=google_failed`);
+    }
+  });
   app.get("/api/auth/me", { preHandler: member }, async (req) => ({
     user: req.user,
   }));
