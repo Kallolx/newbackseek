@@ -1,96 +1,22 @@
 'use client';
 
-import Image from 'next/image';
-import { useRef, useState } from 'react';
-import { FiCheck, FiCopy, FiDownload, FiShare2, FiX } from 'react-icons/fi';
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import { IoQrCodeOutline } from 'react-icons/io5';
 
+const QrDialog = dynamic(() => import('./qr-dialog').then(({ QrDialog }) => QrDialog), {
+  ssr: false,
+});
+
 export function HeaderQr() {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const [url, setUrl] = useState('');
-  const [qr, setQr] = useState('');
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function open() {
-    const siteUrl = window.location.origin + '/';
-    setUrl(siteUrl);
-    setMessage('');
-    dialog.current?.showModal();
-    if (qr) return;
-    setBusy(true);
-    try {
-      const { default: QRCode } = await import('qrcode');
-      const canvas = document.createElement('canvas');
-      await QRCode.toCanvas(canvas, siteUrl, {
-        width: 1024,
-        margin: 4,
-        errorCorrectionLevel: 'H',
-        color: { dark: '#071d4d', light: '#ffffff' },
-      });
-
-      setQr(canvas.toDataURL('image/png'));
-    } catch {
-      setMessage('Could not generate the QR code. Please close and try again.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function share() {
-    try {
-      const bytes = Uint8Array.from(atob(qr.split(',')[1]), (character) => character.charCodeAt(0));
-      const file = new File([bytes], 'backpage-new-qr.png', { type: 'image/png' });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ title: 'BackpageNew', text: url, files: [file] });
-      } else if (navigator.share) {
-        await navigator.share({ title: 'BackpageNew', url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setMessage('Site link copied. You can also download the QR image.');
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return;
-      setMessage('Sharing is unavailable here. Use Download PNG to save the QR code.');
-    }
-  }
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setMessage('Site link copied.');
-    } catch {
-      setMessage('Copy is unavailable here. Select and copy the site link below the QR code.');
-    }
-  }
+  const [open, setOpen] = useState(false);
 
   return (
     <>
-      <button className="header-qr-button" type="button" aria-label="Open site QR code" aria-haspopup="dialog" onClick={() => void open()}>
+      <button className="header-qr-button" type="button" aria-label="Open site QR code" aria-haspopup="dialog" onClick={() => setOpen(true)}>
         <IoQrCodeOutline size={22} aria-hidden="true" />
       </button>
-      <dialog ref={dialog} className="qr-dialog" aria-labelledby="qr-heading"
-        onClick={(event) => {
-          if (event.target !== event.currentTarget) return;
-          const bounds = event.currentTarget.getBoundingClientRect();
-          if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.current?.close();
-        }}>
-        <div className="qr-dialog-heading">
-          <h2 id="qr-heading">Share BackpageNew</h2>
-          <button type="button" aria-label="Close QR code" onClick={() => dialog.current?.close()}><FiX size={20} /></button>
-        </div>
-        <p>Scan to open the site.</p>
-        <div className="qr-image">
-          {qr ? <Image src={qr} alt={'QR code for ' + url} width={260} height={260} unoptimized /> : <span>{busy ? 'Creating QR code…' : 'QR code unavailable'}</span>}
-        </div>
-        <p className="qr-url">{url}</p>
-        <div className="qr-actions">
-          {qr && <a href={qr} download="backpage-new-qr.png"><FiDownload aria-hidden="true" />Download PNG</a>}
-          <button type="button" disabled={!qr || busy} onClick={() => void share()}><FiShare2 aria-hidden="true" />Share</button>
-          <button type="button" onClick={() => void copy()}>{message.startsWith('Site link copied') ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />}Copy link</button>
-        </div>
-        <p className="qr-feedback" role="status">{message}</p>
-      </dialog>
+      {open && <QrDialog onClose={() => setOpen(false)} />}
     </>
   );
 }

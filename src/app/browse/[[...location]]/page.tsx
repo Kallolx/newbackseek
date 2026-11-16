@@ -9,6 +9,10 @@ import { serviceGroups } from '../../../directory/service-groups';
 
 type Place = { name: string; href: string };
 
+// City routes are mostly static. Revalidate the small dynamic listing variants
+// periodically instead of rebuilding their response for every request.
+export const revalidate = 3600;
+
 const allCities = countries.flatMap((country) =>
   country.regions.flatMap((region) => region.cities),
 );
@@ -34,7 +38,7 @@ function LocationLinks({ places }: { places: Place[] }) {
     <ul className="location-links">
       {places.map((place) => (
         <li key={place.href}>
-          <Link href={place.href}><RegionArrow />{place.name}</Link>
+          <Link href={place.href} prefetch={false}><RegionArrow />{place.name}</Link>
         </li>
       ))}
     </ul>

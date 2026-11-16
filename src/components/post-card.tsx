@@ -21,13 +21,13 @@ export function PostCard({ title, label, description, details, href, thumbnail, 
   return (
     <li>
       {href
-        ? <Link className="post-thumbnail" href={href} aria-label={'View ' + title}>{image}</Link>
+        ? <Link className="post-thumbnail" href={href} prefetch={false} aria-label={'View ' + title}>{image}</Link>
         : <div className="post-thumbnail">{image}</div>}
       <div className="post-copy">
         <div className="post-card-heading">
           <div>
             <p className="post-breadcrumb">{label}</p>
-            <h2>{href ? <Link href={href}>{title}</Link> : title}</h2>
+            <h2>{href ? <Link href={href} prefetch={false}>{title}</Link> : title}</h2>
           </div>
           {actions}
         </div>
