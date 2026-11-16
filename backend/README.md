@@ -1,6 +1,6 @@
 # Backend setup
 
-This service is separate from the current frontend preview. It includes session authentication, member ads, 50-item public feeds, media uploads, an image worker, reports, verification submissions, administrator lists, status changes, impersonation, bumping, distribution and audit records. Frontend forms and admin screens still require API integration before production cutover.
+This service powers the public BackpageNew account flows: opaque cookie sessions, email/password registration and login, Cloudflare Turnstile validation, Zoho email verification, Google OAuth, member ads, media uploads, an image worker, reports, private verification submissions, administrator lists, status changes, impersonation, bumping, distribution and audit records.
 
 ## Configuration
 
@@ -37,7 +37,7 @@ The first administrator is intentionally created only from the command line usin
 
 ## Production cutover checklist
 
-Complete real frontend integrations before routing public /api requests here. Replace sessionStorage preview login and posts; connect list/gallery feeds, upload progress, reports and all admin actions. Configure email verification, password reset delivery, Google OAuth and CAPTCHA server validation before accepting public registrations. These external integrations are not enabled by this starter.
+The public registration, login, Google sign-in, email verification, account listings, ad submission and private verification-photo flows use the API. Password-reset delivery, public feed loading, reports, and all remaining admin-screen actions should be completed before a broad public launch.
 
 Add a Caddy /api/* reverse proxy to the API only after integration tests pass. Keep account/admin/API responses uncached at Cloudflare; cache public browse pages with publish/edit invalidation. Review public registration abuse protection, retention for private verification documents, database backups and restore testing before launch. PostgreSQL running on one VPS needs recoverable backups even when images live in R2.
 
