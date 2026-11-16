@@ -1,13 +1,12 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { Turnstile } from '../../../src/components/turnstile';
 
 export default function AdminLogin() {
   const router = useRouter();
-  const params = useSearchParams();
-  const [message, setMessage] = useState(params.get('error') ? 'Google sign-in was not authorized for this administrator account.' : '');
+  const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) {
