@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function PostAdPage() {
-  redirect('/myaccount/post');
+  redirect('/auth?next=/myaccount/post');
 }

@@ -15,6 +15,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const reset = mode === 'reset';
   const router = useRouter();
   const searchParams = useSearchParams();
+  const destination = searchParams.get('next') === '/myaccount/post' ? '/myaccount/post' : '/myaccount';
   const [gender, setGender] = useState('');
   const [captchaToken, setCaptchaToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -40,7 +41,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Unable to continue right now.');
-      router.replace(signup ? '/myaccount?email=pending' : '/myaccount');
+      router.replace(signup ? `${destination}?email=pending` : destination);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to continue right now.');
@@ -71,6 +72,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </form>
       </div>
     </section>
-    <p className={styles.switch}>{mode === 'login' ? <>Don&apos;t have an account yet? <Link href="/auth?mode=signup">Create an account</Link></> : mode === 'signup' ? <>Already have an account? <Link href="/auth"><strong>Log in here</strong></Link></> : <Link href="/auth">Back to log in</Link>}</p>
+    <p className={styles.switch}>{mode === 'login' ? <>Don&apos;t have an account yet? <Link href={destination === '/myaccount/post' ? '/auth?mode=signup&next=/myaccount/post' : '/auth?mode=signup'}>Create an account</Link></> : mode === 'signup' ? <>Already have an account? <Link href={destination === '/myaccount/post' ? '/auth?next=/myaccount/post' : '/auth'}><strong>Log in here</strong></Link></> : <Link href="/auth">Back to log in</Link>}</p>
   </main>;
 }
