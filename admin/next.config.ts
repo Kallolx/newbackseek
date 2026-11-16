@@ -4,12 +4,12 @@ const config: NextConfig = {
   output: 'standalone', poweredByHeader: false,
   experimental: { externalDir: true },
   // Shared admin screens live one directory up. Use the repository as the
-  // Turbopack root, but make every import use this app's single React copy.
+  // Turbopack root and its single dependency graph for every React import.
   turbopack: {
     root: path.resolve(__dirname, '..'),
     resolveAlias: {
-      react: './admin/node_modules/react',
-      'react-dom': './admin/node_modules/react-dom',
+      react: './node_modules/react',
+      'react-dom': './node_modules/react-dom',
     },
   },
 };

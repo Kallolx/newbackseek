@@ -1,12 +1,15 @@
 # syntax=docker/dockerfile:1
 FROM node:24-bookworm-slim AS dependencies
-WORKDIR /app/admin
-COPY admin/package.json admin/package-lock.json ./
+WORKDIR /app
+COPY package.json package-lock.json ./
 RUN npm ci
 FROM node:24-bookworm-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY --from=dependencies /app/admin/node_modules ./admin/node_modules
+# The isolated admin project reuses UI screens from ../src. Install the root
+# dependency graph once so both the standalone shell and reused screens resolve
+# the same React, Mantine, editor, chart, and icon packages.
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 WORKDIR /app/admin
 RUN npm run build
