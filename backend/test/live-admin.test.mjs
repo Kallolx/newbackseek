@@ -1,13 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 test('live administration and public authentication lifecycle',{skip:process.env.INTEGRATION_TEST!=='1'},async()=>{
- const {sql}=await import('../src/db.mjs');const {hashPassword}=await import('../src/security.mjs');const {buildApp}=await import('../src/app.mjs');
+ const {sql}=await import('../src/db.mjs');const {hashPassword,token,digest}=await import('../src/security.mjs');const {buildApp}=await import('../src/app.mjs');
  // This suite must only run in the isolated disposable database.
  const [database]=await sql`select current_database() as name`;assert.equal(database.name,'bpn_test');
  const app=await buildApp();
  const call=(method,url,payload,cookie,context='public')=>app.inject({method,url,payload,headers:{origin:context==='admin'?process.env.ADMIN_ORIGIN:process.env.SITE_ORIGIN,'x-backpagenew-app':context,...(cookie?{cookie}:{})}});
  const cookieOf=response=>response.headers['set-cookie'].split(';')[0];
- const password='a-strong-regression-password';
+ let password='a-strong-regression-password';
  const signIn=(email,context='public')=>call('POST',context==='admin'?'/api/admin/auth/login':'/api/auth/login',{email,password,captchaToken:'test-only'},undefined,context);
  try{
   assert.equal((await call('GET','/api/admin/users')).statusCode,404);
@@ -41,6 +41,13 @@ test('live administration and public authentication lifecycle',{skip:process.env
   const report=(await adminCall('GET','/api/admin/reports')).json().items[0];assert.equal(report.reason,'A test review request');
   assert.equal((await adminCall('PATCH',`/api/admin/reports/${report.id}`,{status:'resolved'})).statusCode,200);
   const member=register.json().user;
+  const resetToken=token();await sql`insert into password_resets(token_hash,user_id,expires_at) values(${digest(resetToken)},${member.id},now()+interval '30 minutes')`;
+  const oldPassword=password;password='a-new-regression-password';
+  const reset=await call('POST','/api/auth/reset-password',{token:resetToken,password,captchaToken:'test-only'});assert.equal(reset.statusCode,200,reset.body);
+  assert.equal((await call('GET','/api/auth/me',undefined,memberCookie)).statusCode,401,'password reset revokes existing sessions');
+  assert.equal((await call('POST','/api/auth/reset-password',{token:resetToken,password,captchaToken:'test-only'})).statusCode,400,'password reset tokens are single-use');
+  assert.equal((await call('POST','/api/auth/login',{email:'member@example.com',password:oldPassword,captchaToken:'test-only'})).statusCode,401);
+  memberCookie=cookieOf(await signIn('member@example.com'));
   const [image]=await sql`insert into media(owner_id,object_key,expected_bytes,content_type,purpose,status) values(${member.id},'test/private-photo',123,'image/jpeg','verification','ready') returning id`;
   await call('POST','/api/account/verification',{mediaId:image.id,notes:'Test private review'},memberCookie);
   const verification=(await adminCall('GET','/api/admin/verifications')).json().items[0];assert.ok(verification.id);

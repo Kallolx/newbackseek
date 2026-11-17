@@ -40,3 +40,9 @@ export async function sendVerificationEmail({ email, username, verificationToken
 function escapeHtml(value) {
   return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character]);
 }
+
+export async function sendPasswordResetEmail({email,resetToken}) {
+ if(!transporter||!email)throw new Error('Password reset email is not configured');
+ const url=new URL('/auth',config.SITE_ORIGIN);url.searchParams.set('mode','newpassword');url.searchParams.set('token',resetToken);
+ await transporter.sendMail({from:config.EMAIL_FROM,to:email,subject:'Reset your BackpageNew password',text:`Reset your password using this link:\n${url}\n\nThis link expires in 30 minutes and can only be used once. If you did not request it, ignore this email.`,html:`<p>Reset your BackpageNew password:</p><p><a href="${url}">Choose a new password</a></p><p>This link expires in 30 minutes and can only be used once. If you did not request it, ignore this email.</p>`});
+}

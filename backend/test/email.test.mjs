@@ -11,11 +11,13 @@ test('verification delivery addresses the registered user and includes the verif
   const sent = [];
   const transport = mock.method(nodemailer, 'createTransport', () => ({ sendMail: async message => { sent.push(message); } }));
   try {
-    const { sendVerificationEmail } = await import('../src/email.mjs');
+    const { sendVerificationEmail, sendPasswordResetEmail } = await import('../src/email.mjs');
     await sendVerificationEmail({ email: 'newuser@example.com', username: 'NewUser', verificationToken: 'test-token' });
     assert.equal(sent[0].to, 'newuser@example.com');
     assert.match(sent[0].text, /https:\/\/backpagenew.com\/api\/auth\/verify-email\?token=test-token/);
     await assert.rejects(sendVerificationEmail({ username: 'MissingEmail', verificationToken: 'test-token' }), /recipient is required/);
     assert.equal(sent.length, 1);
+    await sendPasswordResetEmail({email:'newuser@example.com',resetToken:'reset-test-token'});
+    assert.equal(sent[1].to,'newuser@example.com');assert.match(sent[1].text,/mode=newpassword/);assert.match(sent[1].text,/token=reset-test-token/);
   } finally { transport.mock.restore(); }
 });

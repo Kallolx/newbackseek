@@ -15,7 +15,7 @@ import { sql, audit } from "./db.mjs";
 import { token, digest, hashPassword, verifyPassword } from "./security.mjs";
 import { redis, images } from "./queue.mjs";
 import { s3, storageReady } from "./storage.mjs";
-import { emailReady, sendVerificationEmail } from "./email.mjs";
+import { emailReady, sendVerificationEmail, sendPasswordResetEmail } from "./email.mjs";
 import { adminManagement } from "./admin-routes.mjs";
 
 const id = z.string().regex(/^\d+$/);
@@ -322,6 +322,20 @@ export async function buildApp() {
     if (req.user.email_verified_at) return { ok: true, alreadyVerified: true };
     await issueVerification(req.user);
     return { ok: true };
+  });
+  app.post('/api/auth/request-password-reset',{config:{rateLimit:{max:5,timeWindow:'1 hour'}}},async(req)=>{
+    const input=z.object({email:z.email().toLowerCase(),captchaToken:z.string().min(1).max(4096)}).parse(req.body);
+    await verifyCaptcha(input.captchaToken,req);
+    if(!emailReady())throw fail(503,'Email delivery is temporarily unavailable. Please try again later.');
+    const [user]=await sql`select id,email from users where email=${input.email} and role='member' and status='active'`;
+    if(user){const resetToken=token();await sql.begin(async tx=>{await tx`delete from password_resets where user_id=${user.id}`;await tx`insert into password_resets(token_hash,user_id,expires_at) values(${digest(resetToken)},${user.id},now()+interval '30 minutes')`;});await sendPasswordResetEmail({email:user.email,resetToken});}
+    return {ok:true};
+  });
+  app.post('/api/auth/reset-password',{config:{rateLimit:{max:10,timeWindow:'15 minutes'}}},async(req)=>{
+    const input=z.object({token:z.string().min(30).max(100),password:z.string().min(12).max(128),captchaToken:z.string().min(1).max(4096)}).parse(req.body);
+    await verifyCaptcha(input.captchaToken,req);const hash=await hashPassword(input.password);
+    await sql.begin(async tx=>{const [reset]=await tx`delete from password_resets where token_hash=${digest(input.token)} and expires_at>now() returning user_id`;if(!reset)throw fail(400,'This reset link has expired or was already used. Request a new link.');const changed=await tx`update users set password_hash=${hash},email_verified_at=coalesce(email_verified_at,now()) where id=${reset.user_id} and role='member' and status='active' returning id`;if(!changed.length)throw fail(400,'This account is unavailable');await tx`delete from sessions where user_id=${reset.user_id}`;await tx`delete from password_resets where user_id=${reset.user_id}`;});
+    return {ok:true};
   });
   app.post(
     "/api/admin/auth/login",
