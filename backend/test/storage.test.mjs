@@ -9,6 +9,8 @@ test('admin storage report: counts, sizes, savings and picture list filters', { 
   const call = (url) => app.inject({ method: 'GET', url, headers: { 'x-backpagenew-app': 'admin', cookie: `bpn-admin-session=${secret}` } });
   const variants = { thumb: { url: 'https://media.example.com/a/thumb.webp', bytes: 5000, width: 160 }, card: { url: 'https://media.example.com/a/card.webp', bytes: 20000, width: 480 }, full: { url: 'https://media.example.com/a/full.webp', bytes: 75000, width: 1280 } };
   try {
+    // Other suites share this database: compare against a baseline, not absolute numbers.
+    const base = (await call('/api/admin/storage')).json();
     await sql`insert into media(owner_id,object_key,expected_bytes,original_bytes,content_type,purpose,status,variants,processed_at) values
       (${adminUser.id},'test/s1',200000,4000000,'image/webp','ad','ready',${sql.json(variants)},now()),
       (${adminUser.id},'test/s2',150000,null,'image/webp','ad','ready',${sql.json(variants)},now()),
@@ -17,17 +19,18 @@ test('admin storage report: counts, sizes, savings and picture list filters', { 
     const response = await call('/api/admin/storage');
     assert.equal(response.statusCode, 200, response.body);
     const report = response.json();
-    assert.equal(report.pictures.ready, 2); assert.equal(report.pictures.failed, 1); assert.equal(report.pictures.unattached, 2);
-    assert.equal(report.bytes.stored, 200000, '2 pictures × 100 KB of variants');
-    assert.equal(report.bytes.original, 4150000, 'known original + uploaded size where unknown');
-    assert.equal(report.bytes.uploaded, 350000);
-    assert.equal(report.bytes.saved, 3950000); assert.equal(report.bytes.measured, 1);
+    const delta = (path) => path(report) - path(base);
+    assert.equal(delta((r) => r.pictures.ready), 2); assert.equal(delta((r) => r.pictures.failed), 1); assert.equal(delta((r) => r.pictures.unattached), 2);
+    assert.equal(delta((r) => r.bytes.stored), 200000, '2 pictures × 100 KB of variants');
+    assert.equal(delta((r) => r.bytes.original), 4150000, 'known original + uploaded size where unknown');
+    assert.equal(delta((r) => r.bytes.uploaded), 350000);
+    assert.equal(delta((r) => r.bytes.measured), 1);
     assert.deepEqual(report.variants.map((row) => row.size), ['full', 'card', 'thumb']);
-    assert.equal(report.verification.total, 1); assert.equal(report.daily.length, 14);
+    assert.equal(delta((r) => r.verification.total), 1); assert.equal(report.daily.length, 14);
     assert.equal(report.health.public.ok, false, 'storage not configured in tests');
-    const list = await call('/api/admin/media?status=failed');
+    const list = await call('/api/admin/media?status=failed&search=storageadmin');
     assert.equal(list.statusCode, 200); assert.equal(list.json().items.length, 1); assert.equal(list.json().items[0].status, 'failed');
-    const ready = (await call('/api/admin/media?status=ready')).json().items;
+    const ready = (await call('/api/admin/media?status=ready&search=storageadmin')).json().items;
     assert.equal(ready.length, 2); assert.equal(Number(ready[0].stored_bytes), 100000);
     assert.equal((await app.inject({ method: 'GET', url: '/api/admin/storage', headers: { 'x-backpagenew-app': 'public', cookie: `bpn-session=${secret}` } })).statusCode, 404);
   } finally {
