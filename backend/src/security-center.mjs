@@ -90,13 +90,24 @@ export async function syncEdge(settings) {
       failure = entry;
     } else {
       const ruleset = entry.body.result;
-      for (const [index, rule] of wanted.entries()) {
+      const base = `/zones/${zone}/rulesets/${ruleset.id}/rules`;
+      let placed = 0; // rules of ours already in place, so new ones land at the top in order
+      for (const rule of wanted) {
         const existing = (ruleset.rules || []).find((item) => item.ref === rule.ref || item.description === rule.description);
-        const base = `/zones/${zone}/rulesets/${ruleset.id}/rules`;
         let result = { ok: true };
-        if (rule.expression && existing) result = await cloudflare(`${base}/${existing.id}`, { method: 'PATCH', body: JSON.stringify({ ...rule, position: { index: index + 1 } }) });
-        else if (rule.expression) result = await cloudflare(base, { method: 'POST', body: JSON.stringify({ ...rule, position: { index: index + 1 } }) });
-        else if (existing) result = await cloudflare(`${base}/${existing.id}`, { method: 'DELETE' });
+        if (rule.expression && existing) {
+          // Updating keeps the rule where it is: no position (a stale position can be out of range).
+          result = await cloudflare(`${base}/${existing.id}`, { method: 'PATCH', body: JSON.stringify(rule) });
+          placed += 1;
+        } else if (rule.expression) {
+          // Index is 1-based and must not exceed the number of rules + 1.
+          const index = Math.min(placed + 1, (ruleset.rules || []).length + 1);
+          result = await cloudflare(base, { method: 'POST', body: JSON.stringify({ ...rule, position: { index } }) });
+          ruleset.rules = [...(ruleset.rules || []), { ref: rule.ref }];
+          placed += 1;
+        } else if (existing) {
+          result = await cloudflare(`${base}/${existing.id}`, { method: 'DELETE' });
+        }
         if (!result.ok) { failure = result; break; }
       }
     }
