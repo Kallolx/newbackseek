@@ -50,6 +50,6 @@ test('country gate, Cloudflare-only origin and admin security settings', { skip:
     await sql`update security_settings set geo_enabled=false,protect_admin=false,allowlist='{}',updated_by=null where id=1`;
     await sql`delete from sessions where user_id=${adminUser.id}`; await sql`delete from audit_events where actor_id=${adminUser.id}`; await sql`delete from users where id=${adminUser.id}`;
     await app.close(); await sql.end();
-    const { redis, images } = await import('../src/queue.mjs'); await images.close(); await redis.quit();
+    const { redis, images } = await import('../src/queue.mjs'); await images.close().catch(() => {}); if (redis.status !== 'end') await redis.quit().catch(() => {});
   }
 });
