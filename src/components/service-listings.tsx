@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { EmptyState } from './page-state';
+import { FeedbackToast } from './toast';
 import { PostCard } from './post-card';
 import { PostPagination } from './post-pagination';
 
@@ -131,7 +132,7 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
               onChange={(event) => { setQuery(event.target.value); if (!event.target.value) { setSearch(''); setPage(1); } }} />
             <button type="submit">Search</button>
           </form>
-          {loading ? <p role="status">Loading listings…</p> : error ? <p role="alert">{error}</p> : posts.length ? (
+          {loading ? <p role="status">Loading listings…</p> : error ? <><FeedbackToast message={error} /><EmptyState title="Listings could not load" description="Please refresh to try again." /></> : posts.length ? (
             <ul className={gallery ? 'post-list post-gallery' : 'post-list'}>
               {posts.map((post) => (
                 <PostCard key={post.id} title={post.title} label={city.name} description={post.description}
