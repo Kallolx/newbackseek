@@ -9,4 +9,5 @@ export const adminRoutes = {
   Reports: '/admin/reports',
   Verification: '/admin/verification',
   'System health': '/admin/system-health',
+  Security: '/admin/security',
 } as const;

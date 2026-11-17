@@ -1,0 +1,7 @@
+[Unit]
+Description=Refresh the Cloudflare-only origin lock
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /srv/backpagenew/app/ops/security/cloudflare-origin-lock.sh

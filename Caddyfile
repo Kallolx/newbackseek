@@ -3,11 +3,36 @@ backpagenew.com, www.backpagenew.com {
   @adminPages path /admin /admin/*
   redir @adminPages https://admin.backpagenew.com{uri} 302
 
+  # Country blocking / Cloudflare-only gate (settings live in the admin panel).
+  @internal path /api/internal/*
+  handle @internal {
+    respond 404
+  }
+  @gated not path /_next/static/* /api/internal/*
+  forward_auth @gated api:4000 {
+    uri /api/internal/geo-gate
+    header_up X-Gate-App public
+    lb_try_duration 5s
+    lb_try_interval 250ms
+  }
+  # Do not advertise the software stack.
+  header {
+    -Via
+    -X-Powered-By
+    -X-Nextjs-Cache
+    -X-Nextjs-Prerender
+    -X-Nextjs-Stale-Time
+    -X-Nextjs-Matched-Path
+    defer
+  }
+
   header {
     -Server
     X-Content-Type-Options "nosniff"
     X-Frame-Options "SAMEORIGIN"
     Referrer-Policy "strict-origin-when-cross-origin"
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
   }
 
   handle_path /_next/static/* {
@@ -43,11 +68,36 @@ backpagenew.com, www.backpagenew.com {
 
 admin.backpagenew.com {
   encode zstd gzip
+
+  # Country blocking / Cloudflare-only gate (settings live in the admin panel).
+  @internal path /api/internal/*
+  handle @internal {
+    respond 404
+  }
+  @gated not path /_next/static/* /api/internal/*
+  forward_auth @gated api:4000 {
+    uri /api/internal/geo-gate
+    header_up X-Gate-App admin
+    lb_try_duration 5s
+    lb_try_interval 250ms
+  }
+  # Do not advertise the software stack.
+  header {
+    -Via
+    -X-Powered-By
+    -X-Nextjs-Cache
+    -X-Nextjs-Prerender
+    -X-Nextjs-Stale-Time
+    -X-Nextjs-Matched-Path
+    defer
+  }
   header {
     -Server
     X-Content-Type-Options "nosniff"
     X-Frame-Options "DENY"
     Referrer-Policy "no-referrer"
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Robots-Tag "noindex, nofollow"
   }
   handle_path /_next/static/* {
     root * /srv/static/admin

@@ -1,0 +1,13 @@
+[Unit]
+Description=Allow only Cloudflare to reach the BackpageNew web ports
+After=docker.service network-online.target
+Wants=network-online.target
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /srv/backpagenew/app/ops/security/cloudflare-origin-lock.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target docker.service

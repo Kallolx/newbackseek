@@ -17,6 +17,7 @@ import { redis, images } from "./queue.mjs";
 import { s3, storageReady } from "./storage.mjs";
 import { emailReady, sendVerificationEmail, sendPasswordResetEmail } from "./email.mjs";
 import { adminManagement } from "./admin-routes.mjs";
+import { securityCenter, startupEdgeSync } from "./security-center.mjs";
 
 const id = z.string().regex(/^\d+$/);
 const uuid = z.uuid();
@@ -55,6 +56,8 @@ const adminGoogleRedirectUri = new URL("/api/admin/auth/google/callback", config
 const googleClient = config.GOOGLE_CLIENT_ID
   ? new OAuth2Client(config.GOOGLE_CLIENT_ID)
   : null;
+// The origin only accepts traffic from Cloudflare, which sets CF-Connecting-IP.
+const clientIp = (req) => String(req.headers["cf-connecting-ip"] || req.ip);
 const appContext = (req) =>
   req.headers["x-backpagenew-app"] === "admin" ? "admin" : "public";
 const sessionCookie = (req) =>
@@ -81,7 +84,9 @@ export async function buildApp() {
   });
   await app.register(cookie);
   await app.register(helmet);
-  await app.register(rateLimit, { max: 120, timeWindow: "1 minute", redis });
+  // Requests arrive through Cloudflare and Caddy; key limits by the real visitor,
+  // not the proxy (otherwise every visitor shares one limit).
+  await app.register(rateLimit, { max: 240, timeWindow: "1 minute", redis, keyGenerator: (req) => clientIp(req) });
   app.addHook("onRequest", async (req, reply) => {
     reply.header("Cache-Control", "no-store");
     if (
@@ -141,7 +146,7 @@ export async function buildApp() {
     const body = new URLSearchParams({
       secret: config.TURNSTILE_SECRET_KEY,
       response: captchaToken,
-      remoteip: req.ip,
+      remoteip: clientIp(req),
     });
     let result;
     try {
@@ -652,6 +657,8 @@ export async function buildApp() {
     return { ok: true };
   });
   adminManagement(app, { admin, fail });
+  securityCenter(app, { admin, fail });
+  app.addHook("onReady", async () => { void startupEdgeSync(); });
   app.get("/api/admin/health/system", { preHandler: admin }, async () => {
     const start = performance.now();
     await sql`select 1`;

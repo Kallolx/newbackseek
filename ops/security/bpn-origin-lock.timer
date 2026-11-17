@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh the Cloudflare address list daily
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1d
+Unit=bpn-origin-lock-refresh.service
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target
