@@ -37,7 +37,11 @@ The first administrator is intentionally created only from the command line usin
 
 ## Production cutover checklist
 
-The public registration, login, Google sign-in, email verification, account listings, ad submission and private verification-photo flows use the API. Password-reset delivery, public feed loading, reports, and all remaining admin-screen actions should be completed before a broad public launch.
+Public registration, login, Google sign-in, email verification, password reset, account listings, feeds, reports, ad submission and private verification photos use the API. Registration does not create a login session. Password resets revoke existing sessions and use a single-use 30-minute token.
+
+The admin uses live paginated database records. It supports publishing/editing, Post ID lookup, bumping/distribution, suspension/restoration, account and ad deletion, public media deletion, reports and private verification review. Account/ad deletion is recoverable soft deletion; image deletion removes the R2 objects. Administrators cannot delete themselves or other administrators through member menus. Support sign-in uses a one-minute, single-use handoff to the public host.
+
+Run the full database lifecycle regression in isolated disposable services with `docker compose -p bpn-admin-regression -f backend/compose.test.yml up --build --abort-on-container-exit --exit-code-from tests`. Remove those test containers afterward with the same project/file and `down --remove-orphans`. These services never use the production environment or database. Run `node --test tests/session.test.cjs` from the repository root for shared session/logout race checks.
 
 Add a Caddy /api/* reverse proxy to the API only after integration tests pass. Keep account/admin/API responses uncached at Cloudflare; cache public browse pages with publish/edit invalidation. Review public registration abuse protection, retention for private verification documents, database backups and restore testing before launch. PostgreSQL running on one VPS needs recoverable backups even when images live in R2.
 
