@@ -1,0 +1,27 @@
+.page { min-width: 0; }
+.section { padding: 16px; }
+.sectionIcon { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: #eef3fb; color: #254677; }
+.status { padding: 4px 14px; }
+.statusRow { display: flex; align-items: center; gap: 10px; padding: 11px 0; min-width: 0; }
+.statusRow + .statusRow { border-top: 1px solid #edf0f5; }
+.statusIcon { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; background: #f2f5fa; color: #3a5683; }
+.statusText { flex: 1; min-width: 0; }
+.statusText > * { overflow-wrap: anywhere; }
+.vpnRow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 8px; background: #f5f7fb; }
+.okLine { display: flex; align-items: center; gap: 6px; }
+.alert :global(.mantine-Alert-message) { font-size: 13px; }
+.stats { display: grid; gap: 0; }
+.statRow { display: flex; justify-content: space-between; gap: 12px; padding: 9px 2px; border-bottom: 1px solid #edf0f5; }
+.statRow:last-child { border-bottom: 0; }
+.saveBar { position: sticky; bottom: 16px; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid #dfe5ee; border-radius: 14px; background: #ffffffee; backdrop-filter: blur(6px); box-shadow: 0 8px 28px #0f1b3224; }
+.saveNote { display: flex; align-items: center; gap: 5px; min-width: 0; }
+
+@media (width < 62em) {
+  .section { padding: 14px; }
+  /* Sit just above the floating mobile admin bar (72px tall, 12px from the bottom). */
+  .saveBar { bottom: calc(94px + env(safe-area-inset-bottom)); }
+}
+@media (width < 30em) {
+  .saveBar { padding: 8px 8px 8px 12px; }
+  .saveNote { flex: 1; line-height: 1.3; }
+}

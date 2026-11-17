@@ -22,5 +22,6 @@ export const config = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_REDIRECT_URI: z.url().optional(),
   CLOUDFLARE_API_TOKEN: z.string().optional(),
+  ADMIN_VPN_IP: z.union([z.ipv4(), z.literal('')]).optional(),
   CLOUDFLARE_ZONE_ID: z.string().regex(/^[a-f0-9]{32}$/).optional().or(z.literal('').transform(() => undefined)),
 }).parse(process.env);

@@ -27,12 +27,22 @@ export function isAllowlisted(allow, ip) {
 /** Returns why a request must be refused ('direct', a country code, 'T1', 'XX'), or '' to allow it. */
 export function decide(settings, { ip, country, app, viaCloudflare }) {
   if (settings.cloudflareOnly && !viaCloudflare) return 'direct';
-  if (!settings.geoEnabled || isAllowlisted(settings.allow, ip)) return '';
+  if (isAllowlisted(settings.allow, ip)) return '';
+  // VPN-only admin panel: nobody outside the allowlist reaches it, from any country.
+  if (app === 'admin' && settings.adminAllowlistOnly) return 'admin';
+  if (!settings.geoEnabled) return '';
   if (app === 'admin' && !settings.protectAdmin) return '';
   if (settings.blockTor && country === 'T1') return 'T1';
   if (settings.blockUnknown && (!country || country === 'XX')) return 'XX';
   if (country && settings.blockedCountries.includes(country)) return country;
   return '';
+}
+
+/** Cloudflare WAF expression that keeps the admin host for allowlisted addresses only. */
+export function adminLockExpression(settings, { admin }) {
+  const allow = settings.allowlist.filter(validCidr);
+  if (!settings.adminAllowlistOnly || !allow.length || !admin || !/^[a-z0-9.-]+$/.test(admin)) return '';
+  return `(http.host eq "${admin}" and not ip.src in {${allow.join(' ')}})`;
 }
 
 /** Cloudflare WAF expression for the same policy ('' when no edge rule is needed). */

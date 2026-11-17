@@ -6,7 +6,7 @@
 //     covered too.
 //  2. The origin gate (Caddy forward_auth -> GET /api/internal/geo-gate). Works
 //     without a token and also refuses traffic that did not come through Cloudflare.
-import { decide, edgeExpression, buildAllowList, isAllowlisted, validCidr } from './geo-policy.mjs';
+import { decide, edgeExpression, adminLockExpression, buildAllowList, isAllowlisted, validCidr } from './geo-policy.mjs';
 import { z } from 'zod';
 import { sql, audit } from './db.mjs';
 import { config } from './config.mjs';
@@ -15,6 +15,8 @@ import { redis } from './queue.mjs';
 const CF_API = 'https://api.cloudflare.com/client/v4';
 const RULE_REF = 'bpn_geo_block';
 const RULE_DESCRIPTION = 'BackpageNew country blocking (managed from the admin panel; edits here are overwritten)';
+const LOCK_REF = 'bpn_admin_lock';
+const LOCK_DESCRIPTION = 'BackpageNew admin panel: allowlisted addresses only (managed from the admin panel)';
 const host = (url) => { try { return url ? new URL(url).hostname : ''; } catch { return ''; } };
 const siteHost = host(config.SITE_ORIGIN);
 const adminHost = host(config.ADMIN_ORIGIN);
@@ -30,12 +32,13 @@ export const settingsInput = z.object({
   blockUnknown: z.boolean(),
   protectAdmin: z.boolean(),
   cloudflareOnly: z.boolean(),
+  adminAllowlistOnly: z.boolean().default(false),
   allowlist: z.array(cidr).max(50),
 });
 
 const shape = (row) => ({
   geoEnabled: row.geo_enabled, blockedCountries: row.blocked_countries, blockTor: row.block_tor,
-  blockUnknown: row.block_unknown, protectAdmin: row.protect_admin, cloudflareOnly: row.cloudflare_only,
+  blockUnknown: row.block_unknown, protectAdmin: row.protect_admin, cloudflareOnly: row.cloudflare_only, adminAllowlistOnly: row.admin_allowlist_only,
   allowlist: row.allowlist, edge: { configured: edgeConfigured(), status: edgeConfigured() ? row.edge_status : 'not_configured', message: row.edge_message, syncedAt: row.edge_synced_at },
   updatedAt: row.updated_at,
 });
@@ -70,29 +73,39 @@ async function cloudflare(path, init = {}) {
 export async function syncEdge(settings) {
   if (!edgeConfigured()) return { status: 'not_configured', message: 'Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID to enable edge blocking.' };
   const zone = encodeURIComponent(config.CLOUDFLARE_ZONE_ID);
-  const expression = edgeExpression(settings, { site: siteHost, admin: adminHost, media: mediaHost });
-  const rule = { ref: RULE_REF, description: RULE_DESCRIPTION, expression, action: 'block', enabled: true };
-  let result;
+  const hosts = { site: siteHost, admin: adminHost, media: mediaHost };
+  // Rules this panel owns. Other custom rules in the zone are never touched.
+  const wanted = [
+    { ref: LOCK_REF, description: LOCK_DESCRIPTION, expression: adminLockExpression(settings, hosts) },
+    { ref: RULE_REF, description: RULE_DESCRIPTION, expression: edgeExpression(settings, hosts) },
+  ].map((rule) => ({ ...rule, action: 'block', enabled: true }));
+  const active = wanted.filter((rule) => rule.expression);
+  const phase = `/zones/${zone}/rulesets/phases/http_request_firewall_custom/entrypoint`;
+  let failure = null;
   try {
-    const entry = await cloudflare(`/zones/${zone}/rulesets/phases/http_request_firewall_custom/entrypoint`);
+    const entry = await cloudflare(phase);
     if (entry.status === 404) {
-      result = expression ? await cloudflare(`/zones/${zone}/rulesets/phases/http_request_firewall_custom/entrypoint`, { method: 'PUT', body: JSON.stringify({ rules: [rule] }) }) : { ok: true };
+      if (active.length) { const created = await cloudflare(phase, { method: 'PUT', body: JSON.stringify({ rules: active }) }); if (!created.ok) failure = created; }
     } else if (!entry.ok) {
-      result = entry;
+      failure = entry;
     } else {
       const ruleset = entry.body.result;
-      const existing = (ruleset.rules || []).find((item) => item.ref === RULE_REF || item.description === RULE_DESCRIPTION);
-      if (expression && existing) result = await cloudflare(`/zones/${zone}/rulesets/${ruleset.id}/rules/${existing.id}`, { method: 'PATCH', body: JSON.stringify({ ...rule, position: { index: 1 } }) });
-      else if (expression) result = await cloudflare(`/zones/${zone}/rulesets/${ruleset.id}/rules`, { method: 'POST', body: JSON.stringify({ ...rule, position: { index: 1 } }) });
-      else if (existing) result = await cloudflare(`/zones/${zone}/rulesets/${ruleset.id}/rules/${existing.id}`, { method: 'DELETE' });
-      else result = { ok: true };
+      for (const [index, rule] of wanted.entries()) {
+        const existing = (ruleset.rules || []).find((item) => item.ref === rule.ref || item.description === rule.description);
+        const base = `/zones/${zone}/rulesets/${ruleset.id}/rules`;
+        let result = { ok: true };
+        if (rule.expression && existing) result = await cloudflare(`${base}/${existing.id}`, { method: 'PATCH', body: JSON.stringify({ ...rule, position: { index: index + 1 } }) });
+        else if (rule.expression) result = await cloudflare(base, { method: 'POST', body: JSON.stringify({ ...rule, position: { index: index + 1 } }) });
+        else if (existing) result = await cloudflare(`${base}/${existing.id}`, { method: 'DELETE' });
+        if (!result.ok) { failure = result; break; }
+      }
     }
   } catch (error) {
     return { status: 'error', message: 'Cloudflare could not be reached: ' + (error.name === 'TimeoutError' ? 'timed out' : error.message) };
   }
-  if (result.ok) return { status: expression ? 'active' : 'off', message: expression ? 'Cloudflare blocks these visitors before they reach the server.' : 'No edge rule is needed for the current settings.' };
-  const reason = result.body?.errors?.map((error) => error.message).join('; ') || `HTTP ${result.status}`;
-  return { status: 'error', message: result.status === 403 || result.status === 401 ? 'The Cloudflare token lacks permission (needs Zone → WAF → Edit for this zone).' : 'Cloudflare rejected the rule: ' + reason };
+  if (!failure) return { status: active.length ? 'active' : 'off', message: active.length ? 'Cloudflare blocks these visitors before they reach the server.' : 'No edge rule is needed for the current settings.' };
+  const reason = failure.body?.errors?.map((error) => error.message).join('; ') || `HTTP ${failure.status}`;
+  return { status: 'error', message: failure.status === 403 || failure.status === 401 ? 'The Cloudflare token lacks permission (needs Zone → Zone WAF → Edit for this zone).' : 'Cloudflare rejected the rule: ' + reason };
 }
 
 async function recordEdge(outcome) {
@@ -129,7 +142,7 @@ export function securityCenter(app, { admin, fail }) {
     const settings = await loadSettings(true);
     const { allow, ...publicSettings } = settings;
     const you = viewer(req);
-    return { settings: publicSettings, you: { ...you, allowlisted: isAllowlisted(settings.allow, you.ip) }, hosts: { site: siteHost, admin: adminHost, media: mediaHost }, stats: await stats() };
+    return { settings: publicSettings, you: { ...you, allowlisted: isAllowlisted(settings.allow, you.ip), vpn: Boolean(config.ADMIN_VPN_IP && you.ip === config.ADMIN_VPN_IP) }, vpnIp: config.ADMIN_VPN_IP || '', hosts: { site: siteHost, admin: adminHost, media: mediaHost }, stats: await stats() };
   });
 
   app.put('/api/admin/security', { preHandler: admin }, async (req) => {
@@ -138,9 +151,10 @@ export function securityCenter(app, { admin, fail }) {
     input.allowlist = [...new Set(input.allowlist)];
     const you = viewer(req);
     const preview = { ...input, allow: buildAllowList(input.allowlist) };
-    if (decide(preview, { ...you, app: 'admin', viaCloudflare: true })) throw fail(409, 'These settings would lock you out of the admin panel. Add your IP to the allowlist first, or leave the admin panel unblocked.');
+    if (input.adminAllowlistOnly && !input.allowlist.length) throw fail(400, 'Add at least one allowlisted address (such as the admin VPN) before limiting the admin panel to the allowlist.');
+    if (decide(preview, { ...you, app: 'admin', viaCloudflare: true })) throw fail(409, 'These settings would lock you out of the admin panel. Connect through the admin VPN or add your IP to the allowlist first.');
     await sql.begin(async (tx) => {
-      await tx`update security_settings set geo_enabled=${input.geoEnabled},blocked_countries=${input.blockedCountries},block_tor=${input.blockTor},block_unknown=${input.blockUnknown},protect_admin=${input.protectAdmin},cloudflare_only=${input.cloudflareOnly},allowlist=${input.allowlist},updated_by=${req.user.id},updated_at=now() where id=1`;
+      await tx`update security_settings set geo_enabled=${input.geoEnabled},blocked_countries=${input.blockedCountries},block_tor=${input.blockTor},block_unknown=${input.blockUnknown},protect_admin=${input.protectAdmin},cloudflare_only=${input.cloudflareOnly},admin_allowlist_only=${input.adminAllowlistOnly},allowlist=${input.allowlist},updated_by=${req.user.id},updated_at=now() where id=1`;
       await audit(tx, req.user.id, 'security.settings', 'security', { ...input, ip: you.ip, country: you.country });
     });
     const settings = await loadSettings(true);

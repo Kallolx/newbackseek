@@ -8,3 +8,6 @@ next-env.d.ts
 !**/.env.example
 .vercel/
 artifacts/
+
+# Device VPN profiles and other secrets — never commit
+.private/

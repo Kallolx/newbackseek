@@ -35,6 +35,16 @@ test('country gate, Cloudflare-only origin and admin security settings', { skip:
     assert.equal((await gate(cf('BD', '203.0.113.9'), 'admin')).statusCode, 204);
     assert.equal((await gate(cf('BD', '192.0.2.50'), 'admin')).statusCode, 403);
 
+    // VPN-only admin panel: refused unless the saver is allowlisted; then strangers are refused.
+    assert.equal((await adminCall('PUT', '/api/admin/security', { ...settings, adminAllowlistOnly: true, allowlist: [] }, cf('US', '198.51.100.20'))).statusCode, 400);
+    assert.equal((await adminCall('PUT', '/api/admin/security', { ...settings, adminAllowlistOnly: true, allowlist: ['192.0.2.10'] }, cf('US', '198.51.100.20'))).statusCode, 409);
+    const vpnOnly = await adminCall('PUT', '/api/admin/security', { ...settings, adminAllowlistOnly: true, allowlist: ['192.0.2.10', '203.0.113.0/24'] }, cf('US', '192.0.2.10'));
+    assert.equal(vpnOnly.statusCode, 200, vpnOnly.body);
+    assert.equal((await gate(cf('US', '192.0.2.10'), 'admin')).statusCode, 204);
+    assert.equal((await gate(cf('US', '198.51.100.99'), 'admin')).statusCode, 403);
+    assert.equal((await gate(cf('US', '198.51.100.99'))).statusCode, 204, 'public site unaffected');
+    await adminCall('PUT', '/api/admin/security', { ...settings, protectAdmin: true, allowlist: ['203.0.113.0/24'] }, cf('BD', '203.0.113.9'));
+
     const bad = await adminCall('PUT', '/api/admin/security', { ...settings, allowlist: ['0.0.0.0/0'] }, cf('US'));
     assert.equal(bad.statusCode, 400);
     const view = await adminCall('GET', '/api/admin/security', undefined, cf('BD', '203.0.113.9'));
@@ -47,7 +57,7 @@ test('country gate, Cloudflare-only origin and admin security settings', { skip:
     const b = await app.inject({ method: 'GET', url: '/api/health', headers: { 'cf-connecting-ip': '198.51.100.2' } });
     assert.equal(a.headers['x-ratelimit-remaining'], b.headers['x-ratelimit-remaining']);
   } finally {
-    await sql`update security_settings set geo_enabled=false,protect_admin=false,allowlist='{}',updated_by=null where id=1`;
+    await sql`update security_settings set geo_enabled=false,protect_admin=false,admin_allowlist_only=false,allowlist='{}',updated_by=null where id=1`;
     await sql`delete from sessions where user_id=${adminUser.id}`; await sql`delete from audit_events where actor_id=${adminUser.id}`; await sql`delete from users where id=${adminUser.id}`;
     await app.close(); await sql.end();
     const { redis, images } = await import('../src/queue.mjs'); await images.close().catch(() => {}); if (redis.status !== 'end') await redis.quit().catch(() => {});
