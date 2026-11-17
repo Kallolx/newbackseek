@@ -22,7 +22,6 @@ test('country gate, Cloudflare-only origin and admin security settings', { skip:
     const saved = await adminCall('PUT', '/api/admin/security', settings, cf('US', '198.51.100.20'));
     assert.equal(saved.statusCode, 200, saved.body);
     assert.equal(saved.json().settings.edge.status, 'not_configured');
-    await new Promise((resolve) => setTimeout(resolve, 5100)); // gate cache
     assert.equal((await gate(cf('BD'))).statusCode, 403);
     assert.equal((await gate(cf('T1'))).statusCode, 403);
     assert.equal((await gate(cf('US'))).statusCode, 204);
@@ -33,7 +32,6 @@ test('country gate, Cloudflare-only origin and admin security settings', { skip:
     assert.equal(lockout.statusCode, 409, lockout.body);
     const withAllow = await adminCall('PUT', '/api/admin/security', { ...settings, protectAdmin: true, allowlist: ['203.0.113.0/24'] }, cf('BD', '203.0.113.9'));
     assert.equal(withAllow.statusCode, 200, withAllow.body);
-    await new Promise((resolve) => setTimeout(resolve, 5100));
     assert.equal((await gate(cf('BD', '203.0.113.9'), 'admin')).statusCode, 204);
     assert.equal((await gate(cf('BD', '192.0.2.50'), 'admin')).statusCode, 403);
 
@@ -49,8 +47,9 @@ test('country gate, Cloudflare-only origin and admin security settings', { skip:
     const b = await app.inject({ method: 'GET', url: '/api/health', headers: { 'cf-connecting-ip': '198.51.100.2' } });
     assert.equal(a.headers['x-ratelimit-remaining'], b.headers['x-ratelimit-remaining']);
   } finally {
-    await sql`update security_settings set geo_enabled=false,protect_admin=false,allowlist='{}' where id=1`;
+    await sql`update security_settings set geo_enabled=false,protect_admin=false,allowlist='{}',updated_by=null where id=1`;
     await sql`delete from sessions where user_id=${adminUser.id}`; await sql`delete from audit_events where actor_id=${adminUser.id}`; await sql`delete from users where id=${adminUser.id}`;
     await app.close(); await sql.end();
+    const { redis, images } = await import('../src/queue.mjs'); await images.close(); await redis.quit();
   }
 });
