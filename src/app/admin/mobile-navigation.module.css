@@ -1,5 +1,5 @@
 .bar { display:none; }
-.sheet { height:max-content !important;max-height:min(350px,70dvh) !important;flex:0 0 auto !important;border-radius:24px 24px 0 0;padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
+.sheet { width:100%;height:max-content !important;max-height:min(350px,70dvh) !important;flex:0 0 100% !important;border-radius:24px 24px 0 0;padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
 .sheetHeader { padding:14px 18px 8px;min-height:44px; }
 .sheetBody { padding:8px 18px 12px; }
 .shortcut { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 6px;border:1px solid #e7ecf5;border-radius:12px;color:#51617b; }
