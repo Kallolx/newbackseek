@@ -7,6 +7,9 @@
 #   sudo sh cloudflare-origin-lock.sh          apply / refresh
 #   sudo sh cloudflare-origin-lock.sh remove   undo (emergency)
 set -eu
+# Never run two copies at once (boot service and timer can fire together).
+exec 9>/run/bpn-origin-lock.lock
+flock 9
 CHAIN=BPN-CF-ONLY
 IFACE="${BPN_PUBLIC_IFACE:-eth0}"
 # Published at https://www.cloudflare.com/ips-v4 (used if the download fails).
