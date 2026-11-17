@@ -314,7 +314,9 @@ sudo docker exec app-db-1 pg_dump -U backpagenew -d backpagenew -Fc > "$F" && ch
 # migrate has its OWN image: always build it with api/worker or new migrations will not run
 $C build frontend admin migrate api worker
 $C up -d db
-$C up -d --force-recreate frontend admin migrate api worker
+# --no-deps: without it Compose also recreates the database (a few seconds of downtime).
+$C up -d --no-deps --force-recreate migrate
+$C up -d --no-deps --force-recreate frontend admin api worker
 $C up -d --force-recreate caddy   # only when Caddyfile changed
 $C ps
 ~~~
@@ -386,6 +388,14 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - Rate limits key on CF-Connecting-IP (real visitor), not the proxy address.
 - Never print or commit the Cloudflare token.
 - Admin VPN (Admin → VPN page): WireGuard on the VPS, UDP 51820, clients 10.66.66.0/24, full tunnel via the New York IP (ADMIN_VPN_IP in backend/.env). Devices live in table vpn_devices (migration 011); ops/security/vpn-sync.sh (bpn-vpn-sync.service) applies them to wg0 every 5 s and reports status into vpn_server. Client private keys are shown once in the page and never stored. wg0.conf holds only [Interface]; never add peers by hand (the sync removes them). Server setup: sudo sh ops/security/vpn-setup.sh.
+
+## 12c. Public page speed
+
+- Ads lists and ad pages are server-rendered with their data (ISR, tag public-ads). The site server reads the API at API_INTERNAL_URL (http://api:4000). After any successful write to /api/account/ads or /api/admin/{ads,users,media}, the API calls http://frontend:3000/bpn-internal/revalidate with REVALIDATE_SECRET (backend/.env, shared with the frontend through Compose). /bpn-internal is hidden by Caddy. 60 s time-based fallback.
+- If the site server cannot reach the API, pages still render and the browser loads the data itself.
+- 40 ads per page. Feeds use placements_public_feed_idx; placements.category_slug/published are copies kept exact by triggers (migration 012). Never update those columns by hand.
+- The API caches public reads briefly (backend/src/public-cache.mjs), clears them on every write, and serves the last good answer if the database errors.
+- Adult listings are in the HTML but hidden by CSS until 18+ is confirmed (html[data-adult=yes], set by an inline head script from sessionStorage).
 
 ## 13. Important pitfalls
 
