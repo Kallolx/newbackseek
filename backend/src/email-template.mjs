@@ -7,7 +7,7 @@ export function accountEmail({origin,title,preheader,greeting,description,button
  <body style="margin:0;padding:0;background:#f2f5fa;font-family:Arial,Helvetica,sans-serif;color:#233650;">
  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f5fa;"><tr><td align="center" style="padding:32px 14px;">
- <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;">
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;table-layout:fixed;">
  <tr><td align="center" style="padding:8px 24px 26px;"><a href="${home}" style="text-decoration:none;"><img src="${home}/brand/backpage-new-logo.png" width="198" alt="BackpageNew" style="display:block;width:198px;max-width:100%;height:auto;border:0;"></a></td></tr>
  <tr><td style="background:#ffffff;border:1px solid #e0e7f1;border-top:4px solid #17356b;border-radius:12px;padding:34px 28px;">
  <p style="margin:0 0 14px;font-size:11px;font-weight:bold;letter-spacing:1.5px;color:#bd3544;text-transform:uppercase;">YOUR BACKPAGENEW ACCOUNT</p>

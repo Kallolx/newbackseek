@@ -180,6 +180,9 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
   .site-toast { padding:11px 13px !important; font-size:12px !important; gap:9px !important; border-radius:9px !important; }
   .site-toast [data-icon] svg { width:16px; height:16px; }
 }
+@media(width < 62em) {
+  body:has(nav[aria-label="Mobile admin navigation"]) [data-sonner-toaster][data-y-position="bottom"] { bottom:calc(100px + env(safe-area-inset-bottom)) !important; }
+}
 .header-member-nav button { border: 0; background: none; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
 .header-member-nav > * + * { position: relative; margin-left: 1px; }
 .header-member-nav > * + *::before { content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 1px; height: 13px; background: #d3d7df; }

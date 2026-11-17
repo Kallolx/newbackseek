@@ -12,6 +12,7 @@ import { adminApi,useAdminResource } from './live-api';
 import { Publisher,type PublishRequest } from './publisher';
 import { FoundPost } from './found-post';
 import { Monitoring } from './monitoring';
+import { AdminMobileNavigation } from './mobile-navigation';
 import { PostCard } from '../../components/post-card';
 import { PostPagination } from '../../components/post-pagination';
 import { EmptyState } from '../../components/page-state';
@@ -76,5 +77,5 @@ export function AdminDashboard({locations,categories}:{locations:LocationCountry
   {(screen==='Bump post'||screen==='Distribute post')&&<Stack><Paper withBorder p="md" radius="md"><form onSubmit={lookup}><Group align="end"><TextInput label="Find a post by ID" placeholder="Enter Post ID" value={postId} onChange={event=>setPostId(event.currentTarget.value)} style={{flex:1}} required/><Button type="submit" loading={finding} leftSection={<FiSearch/>}>Find post</Button></Group></form></Paper>{finding?<LoadingRows/>:found?<><FoundPost ad={found} images={found.images||[]} destinations={found.targets.map(target=>countriesByCity.get(target)||target)} onPreview={src=>setPhoto(src)} onBump={screen==='Bump post'?()=>void bump(found):undefined}/>{screen==='Distribute post'&&<Publisher key={found.id+found.targets.join(',')} source={found} locations={locations} categories={categories} mode="copy" onSubmit={publication}/>}</>:<EmptyState kind="search" title="Find an existing post" description="Enter its numeric Post ID to see its details and destinations."/>}</Stack>}
   <Modal opened={Boolean(photo)} onClose={()=>setPhoto('')} title="Image preview" centered size="lg">{photo&&<img src={photo} alt="Selected image" style={{width:'100%',height:'auto',maxHeight:'75vh',objectFit:'contain'}}/>}</Modal>
   <Modal opened={Boolean(confirm)} onClose={()=>{if(!busy)setConfirm(null);}} title={confirm?.title} centered><Stack><Text size="sm">{confirm?.description}</Text><Group justify="flex-end"><Button variant="default" disabled={busy} onClick={()=>setConfirm(null)}>Cancel</Button><Button color={/delete|suspend|reject|pause/i.test(confirm?.title||'')?'red':'indigo'} loading={busy} onClick={async()=>{if(confirm&&await action(confirm.run,'Action completed.'))setConfirm(null);}}>Confirm action</Button></Group></Stack></Modal>
-  </Box></AppShell.Main></AppShell></div>;
+  </Box></AppShell.Main></AppShell><AdminMobileNavigation onCreate={()=>setSource(undefined)}/></div>;
 }

@@ -80,4 +80,5 @@ body:has(.admin) > :global(.footer) { display: none; }
 
 @media (width < 62em) {
   .admin .sidebar { width: min(245px, 80vw); box-shadow: 8px 0 24px #101c3626; }
+  .admin :global(.mantine-AppShell-main) { padding-bottom:calc(110px + env(safe-area-inset-bottom)); }
 }

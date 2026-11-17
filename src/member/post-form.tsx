@@ -13,7 +13,7 @@ import { type MemberSession } from './session';
 import styles from './member.module.css';
 import { DescriptionEditor } from './description-editor';
 
-async function preparePhoto(file: File): Promise<{ preview: string; file: File }> {
+async function preparePhoto(file: File): Promise<File> {
   if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) throw new Error('Choose JPG, PNG, WebP or AVIF images.');
   if (file.size > 5 * 1024 * 1024) throw new Error('Each picture must be under 5 MB.');
   const bitmap = await createImageBitmap(file);
@@ -26,7 +26,7 @@ async function preparePhoto(file: File): Promise<{ preview: string; file: File }
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
   const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Could not prepare this image.')), 'image/webp', 0.75));
-  return { preview: URL.createObjectURL(blob), file: new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' }) };
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
 }
 
 export function MemberPostForm({ member }: { member: MemberSession }) {
@@ -55,13 +55,15 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
     setPhotoError('');
     if (pictures.length + files.length > 6) { setPhotoError('You can add up to 6 pictures.'); return; }
     busy.current = true;
-    setProcessing(true);
     try {
       const prepared: { preview: string; file: File }[] = [];
-      for (const file of files) prepared.push(await preparePhoto(file));
+      for (const file of files) {
+        if (!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type) || file.size > 5*1024*1024) throw new Error('Choose JPG, PNG, WebP or AVIF pictures under 5 MB.');
+        prepared.push({file,preview:URL.createObjectURL(file)});
+      }
       setPictures((previous) => [...previous, ...prepared]);
     } catch (cause) { setPhotoError(cause instanceof Error ? cause.message : 'Could not open this image. Try another file.'); }
-    finally { busy.current = false; setProcessing(false); if (fileInput.current) fileInput.current.value = ''; }
+    finally { busy.current = false; if (fileInput.current) fileInput.current.value = ''; }
   }
 
   async function publish(event: FormEvent<HTMLFormElement>) {
@@ -85,10 +87,11 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
       if (!selectedCity) throw new Error('That city is unavailable. Please choose it again.');
       const mediaIds: string[] = [];
       for (const picture of pictures) {
-        const create = await fetch('/api/media/uploads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bytes: picture.file.size, contentType: picture.file.type, purpose: 'ad' }) });
+        const uploadFile = await preparePhoto(picture.file);
+        const create = await fetch('/api/media/uploads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bytes: uploadFile.size, contentType: uploadFile.type, purpose: 'ad' }) });
         const upload = await create.json();
         if (!create.ok) throw new Error(upload.error || 'Could not prepare an image upload.');
-        const put = await fetch(upload.url, { method: 'PUT', headers: { 'content-type': picture.file.type }, body: picture.file });
+        const put = await fetch(upload.url, { method: 'PUT', headers: { 'content-type': uploadFile.type }, body: uploadFile });
         if (!put.ok) throw new Error('Could not upload an image.');
         const complete = await fetch(`/api/media/${upload.id}/complete`, { method: 'POST', credentials: 'same-origin' });
         if (!complete.ok) throw new Error('Could not finish an image upload.');

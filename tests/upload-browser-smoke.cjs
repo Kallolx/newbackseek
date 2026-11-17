@@ -1,0 +1,46 @@
+const assert=require('node:assert/strict');
+const path=require('node:path');
+const sharp=require('sharp');
+const {chromium}=require(process.env.BPN_PLAYWRIGHT_MODULE||'playwright');
+
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});
+ try{
+  const buffer=await sharp({create:{width:32,height:24,channels:3,background:'#dce7f6'}}).png().toBuffer();
+  const file=index=>({name:`selection-${index}.png`,mimeType:'image/png',buffer});
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,deviceScaleFactor:1});
+  await context.addCookies([{name:'__Host-bpn-admin-session',value:process.env.BPN_TEST_ADMIN_SESSION,domain:'admin.backpagenew.com',path:'/',secure:true,httpOnly:true}]);
+  const page=await context.newPage();
+  await page.addInitScript(()=>{window.__bitmapCalls=0;const original=window.createImageBitmap;window.createImageBitmap=function(...args){window.__bitmapCalls++;return original.apply(this,args);};});
+  const uploads=[];page.on('request',request=>{if(request.method()==='POST'&&/\/media.*(?:upload|complete)/.test(request.url()))uploads.push(request.url());});
+  await page.goto('https://admin.backpagenew.com/admin',{waitUntil:'networkidle'});
+  await page.getByRole('navigation',{name:'Mobile admin navigation'}).waitFor();
+  assert.equal(await page.getByRole('navigation',{name:'Mobile admin navigation'}).locator('a,button').count(),5);
+  await page.screenshot({path:path.join(__dirname,'../artifacts/admin-mobile-navigation.png')});
+  await page.getByRole('button',{name:'More admin pages'}).click();await page.getByRole('dialog').waitFor();
+  await page.screenshot({path:path.join(__dirname,'../artifacts/admin-more-menu.png')});await page.keyboard.press('Escape');
+  await page.goto('https://admin.backpagenew.com/admin/ad-publish',{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>document.querySelector('input[name="owner"]')?.value);
+  for(let index=0;index<6;index++)await page.getByLabel('Choose ad pictures').setInputFiles(file(index));
+  assert.equal(await page.getByAltText(/Selected picture /).count(),6);
+  assert.equal(uploads.length,0,'Selecting admin pictures must not upload or queue images');
+  assert.equal(await page.evaluate(()=>window.__bitmapCalls),0,'Selecting admin pictures must not process images');
+  await page.getByRole('region',{name:'Add pictures'}).screenshot({path:path.join(__dirname,'../artifacts/admin-picture-picker.png')});
+  await page.getByRole('button',{name:'Choose cities',exact:true}).click();
+  await page.locator('[data-sonner-toast]').first().waitFor();
+  const bounds=await page.locator('[data-sonner-toast]').first().boundingBox();
+  assert.ok(bounds.y>400,'Mobile toast must appear near the bottom');assert.ok(bounds.width<=366,'Mobile toast must stay compact');
+  await page.screenshot({path:path.join(__dirname,'../artifacts/admin-mobile-toast.png')});
+  console.log('Admin: five bottom tabs, More sheet, six sequential picture selections, zero early uploads/processing, compact bottom toast passed');
+  const member=await browser.newContext({viewport:{width:390,height:844},isMobile:true,deviceScaleFactor:1});
+  await member.addCookies([{name:'__Host-bpn-session',value:process.env.BPN_TEST_MEMBER_SESSION,domain:'backpagenew.com',path:'/',secure:true,httpOnly:true}]);
+  const publicPage=await member.newPage();const publicUploads=[];
+  await publicPage.addInitScript(()=>{window.__bitmapCalls=0;const original=window.createImageBitmap;window.createImageBitmap=function(...args){window.__bitmapCalls++;return original.apply(this,args);};});
+  publicPage.on('request',request=>{if(request.method()==='POST'&&/\/media.*(?:upload|complete)/.test(request.url()))publicUploads.push(request.url());});
+  await publicPage.goto('https://backpagenew.com/myaccount/post',{waitUntil:'networkidle'});await publicPage.getByRole('button',{name:'Choose pictures'}).waitFor();
+  for(let index=0;index<6;index++)await publicPage.getByLabel('Upload ad pictures').setInputFiles(file(index));
+  assert.equal(await publicPage.getByAltText(/Ad picture /).count(),6);
+  assert.equal(publicUploads.length,0,'Selecting public pictures must not upload images');assert.equal(await publicPage.evaluate(()=>window.__bitmapCalls),0,'Selecting public pictures must not prepare images');
+  console.log('Public: original uploader accepts six separate selections with zero early uploads or processing');
+ }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});
