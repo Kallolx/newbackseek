@@ -3,28 +3,33 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { EmptyState, PageLoader } from './page-state';
+import { EmptyState } from './page-state';
+import { ListingSkeleton } from './skeletons';
 import { FeedbackToast } from './toast';
 import { PostCard } from './post-card';
 import { PostPagination } from './post-pagination';
 
 type Service = { name: string; slug: string };
+type Post = { id: string; title: string; description: string; age: number; image?: { card?: { url: string } } | null };
 type Props = {
   city: { name: string; href: string };
   service: Service;
   groups: { name: string; services: Service[] }[];
   dating: boolean;
+  /** First page, rendered on the server so the list appears with the page. */
+  initial?: { posts: Post[]; hasMore: boolean };
 };
 
-export function ServiceListings({ city, service, groups, dating }: Props) {
+export function ServiceListings({ city, service, groups, dating, initial }: Props) {
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
   const dropdown = useRef<HTMLDivElement>(null);
   const [accepted, setAccepted] = useState(false);
   const [ageReady, setAgeReady] = useState(false);
-  const [posts, setPosts] = useState<{ id: string; title: string; description: string; age: number; image?: { card?: { url: string } } }[]>([]);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<Post[]>(initial?.posts ?? []);
+  const [hasMore, setHasMore] = useState(initial?.hasMore ?? false);
+  const [loading, setLoading] = useState(!initial);
+  const usedInitial = useRef(Boolean(initial));
   const [error, setError] = useState('');
   const [gallery, setGallery] = useState(false);
   const [query, setQuery] = useState('');
@@ -39,6 +44,8 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
   }, []);
 
   useEffect(() => {
+    // The server already rendered page 1; only fetch when the visitor changes page or searches.
+    if (usedInitial.current) { usedInitial.current = false; return; }
     const controller = new AbortController();
     setLoading(true); setError('');
     fetch(`/api/ads?cityHref=${encodeURIComponent(city.href)}&category=${encodeURIComponent(service.slug)}&search=${encodeURIComponent(search)}&page=${page}`, { signal: controller.signal, cache: 'no-store' })
@@ -132,16 +139,16 @@ export function ServiceListings({ city, service, groups, dating }: Props) {
               onChange={(event) => { setQuery(event.target.value); if (!event.target.value) { setSearch(''); setPage(1); } }} />
             <button type="submit">Search</button>
           </form>
-          {loading ? <PageLoader label="Loading listings"/> : error ? <><FeedbackToast message={error} /><EmptyState title="Listings could not load" description="Please refresh to try again." /></> : posts.length ? (
+          {loading ? <ListingSkeleton gallery={gallery} /> : error ? <><FeedbackToast message={error} /><EmptyState title="Listings could not load" description="Please refresh to try again." /></> : posts.length ? (
             <ul className={gallery ? 'post-list post-gallery' : 'post-list'}>
-              {posts.map((post) => (
+              {posts.map((post, index) => (
                 <PostCard key={post.id} title={post.title} label={city.name} description={post.description}
-                  thumbnail={post.image?.card?.url ? <img src={post.image.card.url} alt="" width={480} height={320} loading="lazy" /> : undefined}
+                  thumbnail={post.image?.card?.url ? <img src={post.image.card.url} alt="" width={480} height={320} loading={index < 4 ? 'eager' : 'lazy'} fetchPriority={index < 2 ? 'high' : 'auto'} decoding="async" /> : undefined}
                   details={'Age: ' + post.age} href={city.href + '/' + service.slug + '/' + post.id} />
               ))}
             </ul>
           ) : <EmptyState title={search ? 'No matching ads' : 'No ads here yet'} description={search ? 'Try another keyword.' : 'Published ads in this city and category will appear here.'} />}
-          {!loading && (posts.length > 0 || page > 1) && <PostPagination page={page} total={pageCount} onChange={setPage} />}
+          {!loading && (posts.length > 0 || page > 1) && <PostPagination page={page} total={pageCount} onChange={(value) => { setPage(value); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
         </section>
       )}
     </>

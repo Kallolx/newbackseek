@@ -5,6 +5,7 @@ import { ServiceListings } from '../../../components/service-listings';
 import { PostDetail } from '../../../components/post-detail';
 import { countries } from '../../../directory/areas';
 import { serviceGroups } from '../../../directory/service-groups';
+import { getAd, getFeed } from '../../../lib/public-data';
 
 type Place = { name: string; href: string };
 
@@ -16,8 +17,8 @@ export async function generateMetadata({ params }: { params: Promise<{ location?
   return { title: place ? `${service ? service.name + ' in ' : ''}${place.name} Classifieds & Personal Ads` : 'Browse Cities' };
 }
 
-// City routes are mostly static. Revalidate the small dynamic listing variants
-// periodically instead of rebuilding their response for every request.
+// City pages are static. Listing and ad pages are rendered with their data and
+// cached; the API refreshes them the moment ads change (60 s fallback).
 export const revalidate = 3600;
 
 const allCities = countries.flatMap((country) =>
@@ -85,7 +86,12 @@ export default async function BrowsePage({
     const group = serviceGroups.find(({ services }) => services.some(({ slug }) => slug === serviceSlug));
     const service = group?.services.find(({ slug }) => slug === serviceSlug);
     if (!service || !/^\d+$/.test(postId)) notFound();
-    return <PostDetail city={city} region={region} service={service} postId={postId} />;
+    const [ad, feed] = await Promise.all([getAd(postId), getFeed(city.href, service.slug)]);
+    const initial = ad === 'missing' ? { missing: true as const }
+      : ad && ad.post.category_slug === service.slug && ad.cities.some((place) => place.href === city.href)
+        ? { post: ad.post, images: ad.images, recent: (feed?.posts || []).filter((item) => String(item.id) !== postId).slice(0, 8) }
+        : ad ? { missing: true as const } : undefined;
+    return <PostDetail city={city} region={region} service={service} postId={postId} initial={initial} />;
   }
   if (serviceSlug && city && region) {
     const group = serviceGroups.find(({ services }) =>
@@ -93,6 +99,7 @@ export default async function BrowsePage({
     );
     const service = group?.services.find(({ slug }) => slug === serviceSlug);
     if (!group || !service) notFound();
+    const feed = await getFeed(city.href, service.slug);
 
     return (
       <main id="main" className="shell browse-page">
@@ -108,6 +115,7 @@ export default async function BrowsePage({
           service={service}
           groups={serviceGroups}
           dating={group.name === 'Dating' || group.name === 'Adult'}
+          initial={feed ?? undefined}
         />
       </main>
     );

@@ -8,31 +8,45 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { FiGrid, FiList } from 'react-icons/fi';
 import { EmptyState, PageLoader } from '../components/page-state';
+import { DetailSkeleton, FormSkeleton } from '../components/skeletons';
 import { Verification } from './verification';
 import { PostCard } from '../components/post-card';
 import { PostPagination } from '../components/post-pagination';
-import { useMember, type MemberSession } from './session';
+import { refreshMember, useMember, type MemberSession } from './session';
 import styles from './member.module.css';
 import { PostDetail } from '../components/post-detail';
-import { countries } from '../directory/areas';
 import { serviceGroups } from '../directory/service-groups';
 
-const MemberPostForm = dynamic(() => import('./post-form').then((module) => module.MemberPostForm), {
-  loading: () => <PageLoader label="Loading the posting form" />,
+const loadPostForm = () => import('./post-form');
+const MemberPostForm = dynamic(() => loadPostForm().then((module) => module.MemberPostForm), {
+  loading: () => <FormSkeleton />,
 });
+const formPath = /^\/myaccount\/(post|posts\/\d+\/edit)\/?$/;
+// Start the account request and the form download as soon as this code arrives,
+// in parallel, instead of one after the other after the page hydrates.
+if (typeof window !== 'undefined' && window.location.pathname.startsWith('/myaccount')) {
+  void refreshMember();
+  if (formPath.test(window.location.pathname)) { void loadPostForm(); void import('./description-editor'); }
+}
+
+function SectionSkeleton({ section }: { section: string[] }) {
+  if (section[0] === 'post' || section[2] === 'edit') return <FormSkeleton />;
+  if (section[0] === 'posts') return <DetailSkeleton crumbs={false} />;
+  return <PageLoader label="Loading your account" />;
+}
 
 export function AccountArea({ section }: { section: string[] }) {
   const { member, ready, error, postsLoading, refresh } = useMember();
   const router = useRouter();
   useEffect(() => { if (ready && !member && !error) router.replace('/auth'); }, [ready, member, error, router]);
   if (error) return <main id="main" className={'shell ' + styles.page}><EmptyState title="Account could not load" description={error} action="Retry" onAction={()=>void refresh()}/></main>;
-  if (!ready || !member) return <main id="main" className={'shell ' + styles.page}><PageLoader label="Loading your account"/></main>;
+  if (!ready || !member) return <main id="main" className={'shell ' + styles.page}><SectionSkeleton section={section} /></main>;
   const current = section[0] ?? '';
   return (
     <main id="main" className={'shell ' + styles.page}>
       <nav className={styles.menu} aria-label="Account menu">
         {[['post', 'Post an Ad'], ['verification', 'Verification'], ['settings', 'Account Settings']].map(([path, label]) => (
-          <span key={path}>[ <Link href={'/myaccount/' + path} aria-current={current === path ? 'page' : undefined}>{label}</Link> ]</span>
+          <span key={path}>[ <Link href={'/myaccount/' + path} prefetch={false} aria-current={current === path ? 'page' : undefined}>{label}</Link> ]</span>
         ))}
       </nav>
       {member.actorId && <p className={styles.notice}>Support session for @{member.username}. <button type="button" onClick={async()=>{await fetch('/api/account/impersonation/stop',{method:'POST'});window.location.replace('/auth');}}>End support session</button></p>}
@@ -77,9 +91,8 @@ function MemberDetails({ member, id,editing }: { member: MemberSession; id: stri
   const post = member.posts.find((item) => item.id === id);
   if (!post) return <EmptyState title="We couldn’t find this ad" description="It may have been removed or is no longer available in your account. Your other ads are still waiting for you." href="/myaccount" action="Back to my ads" />;
   if(editing)return <MemberPostForm key={post.id} member={member} post={post} />;
-  const place=countries.flatMap(country=>country.regions.flatMap(region=>region.cities.map(city=>({city,region})))).find(place=>place.city.href===post.cityHref);
   const service=serviceGroups.flatMap(group=>group.services).find(service=>service.slug===post.service)||{name:post.service,slug:post.service};
-  return <PostDetail account postId={id} city={place?.city||{name:post.cityName,href:post.cityHref}} region={place?.region||{name:post.cityName,href:post.cityHref}} service={service} />;
+  return <PostDetail account postId={id} city={{name:post.cityName,href:post.cityHref}} service={service} />;
 }
 
 function Settings({ member }: { member: MemberSession }) {

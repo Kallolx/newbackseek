@@ -13,6 +13,9 @@ services:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      # Server-rendered listings read the API directly on the private network.
+      API_INTERNAL_URL: http://api:4000
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-}
     # Caddy will later be the only public entry point. Keeping this local
     # lets us test safely before moving the domain from Vercel.
     ports:
@@ -98,6 +101,9 @@ services:
     restart: unless-stopped
     profiles: ['backend']
     env_file: ./backend/.env
+    environment:
+      # Tells the public site to refresh cached pages when ads change.
+      FRONTEND_INTERNAL_URL: http://frontend:3000
     depends_on:
       migrate:
         condition: service_completed_successfully

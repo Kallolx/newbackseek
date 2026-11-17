@@ -19,9 +19,11 @@ import { emailReady, sendVerificationEmail, sendPasswordResetEmail } from "./ema
 import { adminManagement } from "./admin-routes.mjs";
 import { securityCenter, startupEdgeSync } from "./security-center.mjs";
 import { vpnRoutes } from "./vpn.mjs";
+import { cached, publicDataChanged, changesPublicData } from "./public-cache.mjs";
 
 const id = z.string().regex(/^\d+$/);
 const uuid = z.uuid();
+const PUBLIC_PAGE_SIZE = 40;
 const pagination = z.object({
   page: z.coerce.number().int().min(1).max(10000).default(1),
 });
@@ -87,7 +89,9 @@ export async function buildApp() {
   await app.register(helmet);
   // Requests arrive through Cloudflare and Caddy; key limits by the real visitor,
   // not the proxy (otherwise every visitor shares one limit).
-  await app.register(rateLimit, { max: 240, timeWindow: "1 minute", redis, keyGenerator: (req) => clientIp(req) });
+  await app.register(rateLimit, { max: 240, timeWindow: "1 minute", redis, keyGenerator: (req) => clientIp(req),
+    // The site's own server (rendering pages) talks to the API directly, never via Cloudflare.
+    allowList: (req) => !req.headers["cf-connecting-ip"] && /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|::1$|::ffff:(127|10|172|192)\.)/.test(req.ip) });
   app.addHook("onRequest", async (req, reply) => {
     reply.header("Cache-Control", "no-store");
     if (
@@ -103,6 +107,7 @@ export async function buildApp() {
     if (reply.statusCode >= 500) telemetry.errors += 1;
     telemetry.latency.push(reply.elapsedTime);
     if (telemetry.latency.length > 500) telemetry.latency.shift();
+    if (reply.statusCode < 400 && changesPublicData(req)) void publicDataChanged();
   });
   app.decorateRequest("user", null);
   async function member(req) {
@@ -470,30 +475,32 @@ export async function buildApp() {
       })
       .parse(req.query);
     if (!q.cityId && !q.cityHref) return { posts: [], page: q.page, hasMore: false };
-    const cityId = q.cityId ?? null;
-    const rows =
-      await sql`select a.id,a.title,left(a.description,240) as description,a.age,a.location,p.ranked_at,
-     (select variants from media where ad_id=a.id and status='ready' and purpose='ad' order by created_at limit 1) as image
-     from placements p join ads a on a.id=p.ad_id where p.city_id=coalesce(${cityId}::bigint,(select id from cities where href=${q.cityHref || ''})) and a.category_slug=${q.category} and a.status='published'
-     and (${q.search}='' or a.search_document @@ websearch_to_tsquery('english',${q.search}))
-     order by p.ranked_at desc,p.ad_id desc limit 51 offset ${(q.page - 1) * 50}`;
-    return {
-      posts: rows.slice(0, 50),
-      page: q.page,
-      hasMore: rows.length > 50,
-    };
+    const search = q.search.trim();
+    return cached(`feed:${q.cityId ?? ""}:${q.cityHref ?? ""}:${q.category}:${search}:${q.page}`, search ? 10000 : 30000, async () => {
+      // placements_public_feed_idx answers city + category + published, newest first.
+      const rows =
+        await sql`select a.id,a.title,left(a.description,240) as description,a.age,a.location,p.ranked_at,
+       (select variants from media where ad_id=a.id and status='ready' and purpose='ad' order by created_at,id limit 1) as image
+       from placements p join ads a on a.id=p.ad_id
+       where p.city_id=coalesce(${q.cityId ?? null}::bigint,(select id from cities where href=${q.cityHref || ''}))
+         and p.category_slug=${q.category} and p.published and a.status='published'
+         and (${search}='' or a.search_document @@ websearch_to_tsquery('english',${search}))
+       order by p.ranked_at desc,p.ad_id desc limit ${PUBLIC_PAGE_SIZE + 1} offset ${(q.page - 1) * PUBLIC_PAGE_SIZE}`;
+      return { posts: rows.slice(0, PUBLIC_PAGE_SIZE), page: q.page, pageSize: PUBLIC_PAGE_SIZE, hasMore: rows.length > PUBLIC_PAGE_SIZE };
+    });
   });
   app.get("/api/ads/:id", async (req) => {
-    const [ad] =
-      await sql`select id,title,description,age,location,phone,contact_email,category_slug,created_at from ads where id=${id.parse(req.params.id)} and status='published'`;
-    if (!ad) throw fail(404, "Post not found");
-    return {
-      post: ad,
-      images:
-        await sql`select id,variants,width,height from media where ad_id=${ad.id} and status='ready' and purpose='ad' order by created_at`,
-      cities:
-        await sql`select c.* from placements p join cities c on c.id=p.city_id where p.ad_id=${ad.id}`,
-    };
+    const adId = id.parse(req.params.id);
+    const result = await cached(`ad:${adId}`, 30000, async () => {
+      const [[ad], images, cities] = await Promise.all([
+        sql`select id,title,description,age,location,phone,contact_email,category_slug,created_at from ads where id=${adId} and status='published'`,
+        sql`select id,variants,width,height from media where ad_id=${adId} and status='ready' and purpose='ad' order by created_at,id`,
+        sql`select c.* from placements p join cities c on c.id=p.city_id where p.ad_id=${adId}`,
+      ]);
+      return ad ? { post: ad, images, cities } : null;
+    });
+    if (!result) throw fail(404, "Post not found");
+    return result;
   });
   app.get("/api/account/ads", { preHandler: member }, async (req) => {
     const { page } = pagination.parse(req.query);

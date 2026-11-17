@@ -2,6 +2,7 @@ import { SiteHeader } from '../components/site-header';
 import { SiteFooter } from '../components/site-footer';
 import { SiteToaster } from '../components/toast';
 import type { Metadata } from 'next';
+import { preconnect } from 'react-dom';
 import '@fontsource-variable/inter/wght.css';
 import '@fontsource-variable/manrope/wght.css';
 import './globals.css';
@@ -13,6 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Open the connection to the picture server before the first image is needed.
+  preconnect(process.env.NEXT_PUBLIC_MEDIA_ORIGIN || 'https://media.backpagenew.com');
   return <html lang="en"><body>
     <a className="skip" href="#main">Skip to content</a>
     <SiteHeader />

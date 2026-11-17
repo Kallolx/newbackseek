@@ -4,11 +4,11 @@ backpagenew.com, www.backpagenew.com {
   redir @adminPages https://admin.backpagenew.com{uri} 302
 
   # Country blocking / Cloudflare-only gate (settings live in the admin panel).
-  @internal path /api/internal/*
+  @internal path /api/internal/* /bpn-internal/*
   handle @internal {
     respond 404
   }
-  @gated not path /_next/static/* /api/internal/*
+  @gated not path /_next/static/* /api/internal/* /bpn-internal/*
   forward_auth @gated api:4000 {
     uri /api/internal/geo-gate
     header_up X-Gate-App public
@@ -70,11 +70,11 @@ admin.backpagenew.com {
   encode zstd gzip
 
   # Country blocking / Cloudflare-only gate (settings live in the admin panel).
-  @internal path /api/internal/*
+  @internal path /api/internal/* /bpn-internal/*
   handle @internal {
     respond 404
   }
-  @gated not path /_next/static/* /api/internal/*
+  @gated not path /_next/static/* /api/internal/* /bpn-internal/*
   forward_auth @gated api:4000 {
     uri /api/internal/geo-gate
     header_up X-Gate-App admin

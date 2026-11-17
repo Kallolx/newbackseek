@@ -12,7 +12,11 @@ import { serviceGroups } from '../directory/service-groups';
 import { type MemberSession,type MemberPost } from './session';
 import { toast } from '../components/toast';
 import styles from './member.module.css';
-import { DescriptionEditor } from './description-editor';
+import dynamic from 'next/dynamic';
+import { EditorSkeleton } from '../components/skeletons';
+// The rich-text editor is the heaviest part of the form: load it separately so the
+// rest of the form appears first.
+const DescriptionEditor = dynamic(() => import('./description-editor').then((module) => module.DescriptionEditor), { loading: () => <EditorSkeleton /> });
 import { usePictureUploads, validatePicture, type PictureUpload } from './picture-uploads';
 
 type SubmitStep = { title: string; detail: string; step: number };
