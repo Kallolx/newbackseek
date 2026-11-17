@@ -1,0 +1,23 @@
+{
+ auto_https off
+}
+:3301 {
+ handle /api/* {
+  reverse_proxy api:4000 {
+   header_up X-Backpagenew-App admin
+  }
+ }
+ handle {
+  reverse_proxy admin-preview:3001
+ }
+}
+:3300 {
+ handle /api/* {
+  reverse_proxy api:4000 {
+   header_up X-Backpagenew-App public
+  }
+ }
+ handle {
+  reverse_proxy frontend-preview:3000
+ }
+}

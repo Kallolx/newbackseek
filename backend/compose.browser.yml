@@ -1,0 +1,31 @@
+services:
+  api:
+    build: .
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgres://bpn_test:test-only-password@db:5432/bpn_test
+      REDIS_URL: redis://redis:6379
+      SITE_ORIGIN: http://localhost:13300
+      ADMIN_ORIGIN: http://localhost:13301
+    volumes: ['./test:/app/test:ro']
+    command: ['sh','-c','node src/migrate.mjs && node src/server.mjs']
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+  admin-preview:
+    image: app-admin
+    environment:
+      PORT: '3001'
+      HOSTNAME: 0.0.0.0
+  frontend-preview:
+    image: app-frontend
+    environment:
+      PORT: '3000'
+      HOSTNAME: 0.0.0.0
+  proxy:
+    image: caddy:2.10-alpine
+    ports: ['127.0.0.1:3300:3300','127.0.0.1:3301:3301']
+    volumes: ['./test/browser.Caddyfile:/etc/caddy/Caddyfile:ro']
+    depends_on: [api,admin-preview,frontend-preview]
