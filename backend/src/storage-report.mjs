@@ -1,7 +1,8 @@
 // Admin storage overview: picture counts and sizes (database), real bucket usage
 // (R2 scan, cached), savings from shrinking/processing, and live health checks.
-import { HeadBucketCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { sql } from './db.mjs';
+import { DeleteObjectsCommand, HeadBucketCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { z } from 'zod';
+import { sql, audit } from './db.mjs';
 import { config } from './config.mjs';
 import { s3, storageReady } from './storage.mjs';
 import { redis, images } from './queue.mjs';
@@ -38,7 +39,70 @@ async function bucketUsage(force) {
   return value;
 }
 
-export function storageReport(app, { admin }) {
+const IN_PROGRESS = ['uploading', 'queued', 'processing'];
+const storedBytes = sql`(select coalesce(sum((v->>'bytes')::bigint),0) from jsonb_each(m.variants) e(k,v))::bigint`;
+
+export function storageReport(app, { admin, fail }) {
+  // Picture list for admins: 20 per page, filters, sorting and counts for the filter chips.
+  app.get('/api/admin/pictures', { preHandler: admin }, async (req) => {
+    const q = z.object({
+      page: z.coerce.number().int().min(1).max(10000).default(1),
+      pageSize: z.coerce.number().int().min(10).max(100).default(20),
+      search: z.string().trim().max(120).default(''),
+      status: z.enum(['', 'ready', 'processing', 'failed']).default(''),
+      placement: z.enum(['', 'in_ad', 'not_in_ad']).default(''),
+      sort: z.enum(['newest', 'oldest', 'largest', 'smallest']).default('newest'),
+    }).parse(req.query);
+    const term = '%' + q.search + '%';
+    const statusFilter = q.status === 'processing' ? sql`m.status in ${sql(IN_PROGRESS)}` : q.status ? sql`m.status=${q.status}` : sql`true`;
+    const placementFilter = q.placement === 'in_ad' ? sql`m.ad_id is not null` : q.placement === 'not_in_ad' ? sql`m.ad_id is null` : sql`true`;
+    const searchFilter = q.search ? sql`(m.id::text ilike ${term} or coalesce(a.title,'') ilike ${term} or coalesce(a.id::text,'') ilike ${term} or u.username ilike ${term})` : sql`true`;
+    const order = q.sort === 'oldest' ? sql`m.created_at asc` : q.sort === 'largest' ? sql`${storedBytes} desc, m.created_at desc` : q.sort === 'smallest' ? sql`${storedBytes} asc, m.created_at desc` : sql`m.created_at desc`;
+    const from = sql`from media m join users u on u.id=m.owner_id left join ads a on a.id=m.ad_id where m.purpose='ad'`;
+    const [items, [total], [counts]] = await Promise.all([
+      sql`select m.id,m.ad_id,m.status,m.created_at,m.expected_bytes,m.original_bytes,m.width,m.height,
+            ${storedBytes} as stored_bytes,u.username as owner,a.title,a.status as ad_status
+          ${from} and ${statusFilter} and ${placementFilter} and ${searchFilter}
+          order by ${order}, m.id limit ${q.pageSize} offset ${(q.page - 1) * q.pageSize}`,
+      sql`select count(*)::int as count ${from} and ${statusFilter} and ${placementFilter} and ${searchFilter}`,
+      sql`select count(*)::int as all,
+            count(*) filter (where m.status='ready')::int as ready,
+            count(*) filter (where m.status in ${sql(IN_PROGRESS)})::int as processing,
+            count(*) filter (where m.status='failed')::int as failed,
+            count(*) filter (where m.ad_id is not null)::int as in_ad,
+            count(*) filter (where m.ad_id is null)::int as not_in_ad
+          ${from} and ${searchFilter}`,
+    ]);
+    return { items: items.map((row) => ({ ...row, stored_bytes: Number(row.stored_bytes), expected_bytes: Number(row.expected_bytes), original_bytes: row.original_bytes == null ? null : Number(row.original_bytes) })), total: total.count, page: q.page, pageSize: q.pageSize, counts };
+  });
+
+  const ids = z.object({ ids: z.array(z.uuid()).min(1).max(100) });
+
+  // Delete several pictures: every stored size is removed from storage.
+  app.post('/api/admin/pictures/delete', { preHandler: admin }, async (req) => {
+    const { ids: wanted } = ids.parse(req.body);
+    const rows = await sql`select * from media where id in ${sql([...new Set(wanted)])} and purpose='ad'`;
+    const deletable = rows.filter((row) => !['queued', 'processing'].includes(row.status));
+    const publicKeys = deletable.flatMap((row) => Object.values(row.variants || {}).map((variant) => variant?.url).filter(Boolean).map((url) => decodeURIComponent(new URL(url).pathname.slice(1))));
+    const privateKeys = deletable.filter((row) => ['uploading', 'failed'].includes(row.status)).map((row) => row.object_key);
+    for (let i = 0; i < publicKeys.length; i += 1000) await s3.send(new DeleteObjectsCommand({ Bucket: config.R2_PUBLIC_BUCKET, Delete: { Objects: publicKeys.slice(i, i + 1000).map((Key) => ({ Key })) } }));
+    if (privateKeys.length) await s3.send(new DeleteObjectsCommand({ Bucket: config.R2_BUCKET, Delete: { Objects: privateKeys.map((Key) => ({ Key })) } }));
+    if (deletable.length) await sql.begin(async (tx) => {
+      await tx`delete from media where id in ${tx(deletable.map((row) => row.id))}`;
+      for (const row of deletable) await audit(tx, req.user.id, 'media.delete', row.id, { ad: row.ad_id, bulk: deletable.length > 1 });
+    });
+    return { deleted: deletable.length, skipped: rows.length - deletable.length, missing: wanted.length - rows.length };
+  });
+
+  // Process failed pictures again (their upload is still in private storage).
+  app.post('/api/admin/pictures/retry', { preHandler: admin }, async (req) => {
+    const { ids: wanted } = ids.parse(req.body);
+    const rows = await sql`update media set status='queued' where id in ${sql([...new Set(wanted)])} and purpose='ad' and status='failed' returning id`;
+    for (const row of rows) await images.add('process', { id: row.id }, { jobId: `${row.id}:retry:${Date.now()}` });
+    if (rows.length) await sql.begin(async (tx) => { for (const row of rows) await audit(tx, req.user.id, 'media.retry', row.id); });
+    return { queued: rows.length, skipped: wanted.length - rows.length };
+  });
+
   app.get('/api/admin/storage', { preHandler: admin }, async (req) => {
     const force = req.query?.scan === '1';
     const [[pictures], [bytes], variants, daily, [verification], [lastProcessed], counts, usage, health] = await Promise.all([

@@ -32,9 +32,25 @@ test('admin storage report: counts, sizes, savings and picture list filters', { 
     assert.equal(list.statusCode, 200); assert.equal(list.json().items.length, 1); assert.equal(list.json().items[0].status, 'failed');
     const ready = (await call('/api/admin/media?status=ready&search=storageadmin')).json().items;
     assert.equal(ready.length, 2); assert.equal(Number(ready[0].stored_bytes), 100000);
+    // New picture list: 20 per page by default, filters, counts for the chips, sorting.
+    const pics = (await call('/api/admin/pictures?search=storageadmin')).json();
+    assert.equal(pics.pageSize, 20); assert.equal(pics.total, 3);
+    assert.deepEqual({ ready: pics.counts.ready, failed: pics.counts.failed, not_in_ad: pics.counts.not_in_ad }, { ready: 2, failed: 1, not_in_ad: 3 });
+    assert.equal((await call('/api/admin/pictures?search=storageadmin&status=failed')).json().items.length, 1);
+    assert.equal((await call('/api/admin/pictures?search=storageadmin&placement=in_ad')).json().total, 0);
+    const largest = (await call('/api/admin/pictures?search=storageadmin&sort=smallest')).json().items;
+    assert.equal(largest[0].stored_bytes, 0, 'smallest first puts the failed picture (0 bytes) first');
+    assert.equal((await call('/api/admin/pictures?status=bogus')).statusCode, 400);
+    // Bulk retry re-queues only failed pictures.
+    const failedId = (await call('/api/admin/pictures?search=storageadmin&status=failed')).json().items[0].id;
+    const readyId = (await call('/api/admin/pictures?search=storageadmin&status=ready')).json().items[0].id;
+    const retry = await app.inject({ method: 'POST', url: '/api/admin/pictures/retry', payload: { ids: [failedId, readyId] }, headers: { origin: process.env.ADMIN_ORIGIN, 'x-backpagenew-app': 'admin', cookie: `bpn-admin-session=${secret}` } });
+    assert.equal(retry.statusCode, 200, retry.body); assert.deepEqual(retry.json(), { queued: 1, skipped: 1 });
+    assert.equal((await sql`select status from media where id=${failedId}`)[0].status, 'queued');
+    assert.equal((await app.inject({ method: 'POST', url: '/api/admin/pictures/delete', payload: { ids: [] }, headers: { origin: process.env.ADMIN_ORIGIN, 'x-backpagenew-app': 'admin', cookie: `bpn-admin-session=${secret}` } })).statusCode, 400);
     assert.equal((await app.inject({ method: 'GET', url: '/api/admin/storage', headers: { 'x-backpagenew-app': 'public', cookie: `bpn-session=${secret}` } })).statusCode, 404);
   } finally {
-    await sql`delete from media where owner_id=${adminUser.id}`;
+    await sql`delete from audit_events where actor_id=${adminUser.id}`; await sql`delete from media where owner_id=${adminUser.id}`;
     await sql`delete from sessions where user_id=${adminUser.id}`; await sql`delete from users where id=${adminUser.id}`;
     await app.close(); await sql.end();
     const { redis, images } = await import('../src/queue.mjs'); await images.close().catch(() => {}); if (redis.status !== 'end') await redis.quit().catch(() => {});

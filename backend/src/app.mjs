@@ -670,7 +670,7 @@ export async function buildApp() {
   adminManagement(app, { admin, fail });
   securityCenter(app, { admin, fail });
   vpnRoutes(app, { admin, fail });
-  storageReport(app, { admin });
+  storageReport(app, { admin, fail });
   app.addHook("onReady", async () => { void startupEdgeSync(); });
   app.get("/api/admin/health/system", { preHandler: admin }, async () => {
     const start = performance.now();
