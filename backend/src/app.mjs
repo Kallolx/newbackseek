@@ -262,9 +262,9 @@ export async function buildApp() {
     const expectedState = req.cookies[googleStateCookie];
     reply.clearCookie(googleStateCookie, { path: "/", secure: cookieOptions.secure });
     if (!expectedState || digest(expectedState) !== digest(query.state))
-      return reply.redirect(303, `${config.SITE_ORIGIN}/auth?error=google_state`);
+      return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?error=google_state`);
     if (!googleClient || !config.GOOGLE_CLIENT_SECRET || !config.GOOGLE_REDIRECT_URI)
-      return reply.redirect(303, `${config.SITE_ORIGIN}/auth?error=google_unavailable`);
+      return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?error=google_unavailable`);
     try {
       const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
@@ -285,15 +285,15 @@ export async function buildApp() {
       let [user] = await sql`select id,email,username,role from users where google_subject=${profile.sub} and status='active'`;
       if (!user) {
         const [existing] = await sql`select id from users where email=${profile.email}`;
-        if (existing) return reply.redirect(303, `${config.SITE_ORIGIN}/auth?error=google_account_exists`);
+        if (existing) return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?error=google_account_exists`);
         const username = await uniqueGoogleUsername(profile.email);
         [user] = await sql`insert into users (email,username,password_hash,google_subject,email_verified_at) values (${profile.email},${username},${await hashPassword(token())},${profile.sub},now()) returning id,email,username,role`;
       }
       await session(reply, user.id);
-      return reply.redirect(303, `${config.SITE_ORIGIN}/myaccount`);
+      return reply.code(303).redirect(`${config.SITE_ORIGIN}/myaccount`);
     } catch (error) {
       req.log.warn({ err: error }, "Google sign-in failed");
-      return reply.redirect(303, `${config.SITE_ORIGIN}/auth?error=google_failed`);
+      return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?error=google_failed`);
     }
   });
   app.get("/api/auth/verify-email", async (req, reply) => {
@@ -304,7 +304,7 @@ export async function buildApp() {
       await tx`update users set email_verified_at=coalesce(email_verified_at,now()) where id=${row.user_id}`;
       return true;
     });
-    return reply.redirect(303, `${config.SITE_ORIGIN}/myaccount?email=${verified ? "verified" : "invalid"}`);
+    return reply.code(303).redirect(`${config.SITE_ORIGIN}/myaccount?email=${verified ? "verified" : "invalid"}`);
   });
   app.post("/api/auth/resend-verification", { preHandler: member, config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (req) => {
     if (req.user.email_verified_at) return { ok: true, alreadyVerified: true };
@@ -357,7 +357,7 @@ export async function buildApp() {
     const query = z.object({ code: z.string().min(1), state: z.string().min(1) }).parse(req.query);
     const expectedState = req.cookies[adminGoogleStateCookie];
     reply.clearCookie(adminGoogleStateCookie, { path: "/", secure: cookieOptions.secure });
-    if (!expectedState || digest(expectedState) !== digest(query.state)) return reply.redirect(303, `${config.ADMIN_ORIGIN}/login?error=google_state`);
+    if (!expectedState || digest(expectedState) !== digest(query.state)) return reply.code(303).redirect(`${config.ADMIN_ORIGIN}/login?error=google_state`);
     try {
       const tokenResponse = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ code: query.code, client_id: config.GOOGLE_CLIENT_ID, client_secret: config.GOOGLE_CLIENT_SECRET, redirect_uri: adminGoogleRedirectUri, grant_type: "authorization_code" }) });
       const tokenPayload = await tokenResponse.json();
@@ -366,13 +366,13 @@ export async function buildApp() {
       const profile = ticket.getPayload();
       if (!profile?.sub || !profile.email || !profile.email_verified) throw new Error("Google email is not verified");
       const [user] = await sql`select id,email,username,role,google_subject from users where email=${profile.email} and status='active' and role='admin'`;
-      if (!user || (user.google_subject && user.google_subject !== profile.sub)) return reply.redirect(303, `${config.ADMIN_ORIGIN}/login?error=not_authorized`);
+      if (!user || (user.google_subject && user.google_subject !== profile.sub)) return reply.code(303).redirect(`${config.ADMIN_ORIGIN}/login?error=not_authorized`);
       if (!user.google_subject) await sql`update users set google_subject=${profile.sub},email_verified_at=coalesce(email_verified_at,now()) where id=${user.id}`;
       await session(reply, user.id, null, "admin");
-      return reply.redirect(303, `${config.ADMIN_ORIGIN}/admin`);
+      return reply.code(303).redirect(`${config.ADMIN_ORIGIN}/admin`);
     } catch (error) {
       req.log.warn({ err: error }, "Administrator Google sign-in failed");
-      return reply.redirect(303, `${config.ADMIN_ORIGIN}/login?error=google_failed`);
+      return reply.code(303).redirect(`${config.ADMIN_ORIGIN}/login?error=google_failed`);
     }
   });
   app.get("/api/auth/me", { preHandler: member }, async (req) => ({
