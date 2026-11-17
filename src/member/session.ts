@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useSyncExternalStore } from 'react';
 export type MemberPost={id:string;title:string;description:string;descriptionHtml?:string;age:number;location:string;phone:string;cityName:string;cityHref:string;category:string;service:string;images:string[];status:'Published'|'Paused'|'Pending'|'Rejected';sample:false;createdAt:string};
-export type MemberSession={id:string;email:string;username:string;emailVerified:boolean;posts:MemberPost[];actorId?:string;verificationRequested?:boolean};
+export type MemberSession={id:string;email:string;username:string;emailVerified:boolean;posts:MemberPost[];actorId?:string;verificationStatus?:string;verificationRequested?:boolean};
 type Snapshot={member:MemberSession|null;ready:boolean;error:string;postsLoading:boolean};
 const server:Snapshot={member:null,ready:false,error:'',postsLoading:false};
 let snapshot:Snapshot=server, generation=0, pending:Promise<void>|null=null;
@@ -19,7 +19,7 @@ export function refreshMember(force=false):Promise<void>{
   const {user}=await response.json();
   // Publish the identity immediately, without waiting for the ads request.
   const previous=snapshot.member;
-  if(version===generation)publish({member:{id:user.id,email:user.email,username:user.username,emailVerified:Boolean(user.email_verified_at),actorId:user.actor_id,posts:previous&&previous.id===user.id?previous.posts:[]},ready:true,error:'',postsLoading:true});
+  if(version===generation)publish({member:{id:user.id,email:user.email,username:user.username,emailVerified:Boolean(user.email_verified_at),actorId:user.actor_id,verificationStatus:user.verification_status,posts:previous&&previous.id===user.id?previous.posts:[]},ready:true,error:'',postsLoading:true});
   const ads=await fetch('/api/account/ads',{credentials:'same-origin',cache:'no-store'});
   if(!ads.ok)throw new Error('Unable to load your ads. Please retry.');
   const body=await ads.json();

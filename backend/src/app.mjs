@@ -98,7 +98,8 @@ export async function buildApp() {
     const session = req.cookies[sessionCookie(req)];
     if (!session) throw fail(401, "Please log in");
     const [user] =
-      await sql`select u.id,u.email,u.username,u.role,u.email_verified_at,s.actor_id from sessions s join users u on u.id=s.user_id
+      await sql`select u.id,u.email,u.username,u.role,u.email_verified_at,s.actor_id,
+      (select v.status from verifications v where v.user_id=u.id order by v.created_at desc limit 1) as verification_status from sessions s join users u on u.id=s.user_id
      where s.token_hash=${digest(session)} and s.expires_at>now() and u.status='active'`;
     if (!user) throw fail(401, "Please log in");
     req.user = user;
@@ -576,7 +577,11 @@ export async function buildApp() {
     const [media] =
       await sql`select id from media where id=${input.mediaId} and owner_id=${req.user.id} and purpose='verification' and status='ready'`;
     if (!media) throw fail(400, "Upload a verification photo first");
-    await sql`insert into verifications (user_id,media_id,notes) values (${req.user.id},${media.id},${input.notes})`;
+    await sql.begin(async tx=>{
+      await tx`select id from users where id=${req.user.id} for update`;
+      if((await tx`select id from verifications where user_id=${req.user.id} and status in ('pending','approved')`).length)throw fail(409,'You already have a verification request awaiting review or approval.');
+      await tx`insert into verifications (user_id,media_id,notes) values (${req.user.id},${media.id},${input.notes})`;
+    });
     return { ok: true };
   });
   adminManagement(app, { admin, fail });
@@ -598,7 +603,7 @@ export async function buildApp() {
       .enum(["bump", "distribute", "status"])
       .parse(req.params.action);
     await sql.begin(async (tx) => {
-      if (!(await tx`select id from ads where id=${adId} for update`).length)
+      if (!(await tx`select id from ads where id=${adId} and status!='deleted' for update`).length)
         throw fail(404, "Post not found");
       if (action === "bump") {
         const [post] = await tx`select status from ads where id=${adId}`;
@@ -635,6 +640,7 @@ export async function buildApp() {
     await sql.begin(async (tx) => {
       const changed = await tx`update users set status=${status} where id=${userId} and role='member' and status!='deleted' returning id`;
       if (!changed.length) throw fail(400, 'Only existing member accounts can be suspended or restored');
+      if (status === 'suspended') await tx`update ads set status='paused',updated_at=now() where owner_id=${userId} and status='published'`;
       await tx`delete from sessions where user_id=${userId}`;
       await audit(tx, req.user.id, "user.status", userId, { status });
     });

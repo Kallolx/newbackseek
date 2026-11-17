@@ -116,6 +116,8 @@ export function adminManagement(app, { admin, fail }) {
    await tx`update ads set status='deleted',updated_at=now() where owner_id=${userId}`;
    await tx`delete from sessions where user_id=${userId}`;
    await tx`delete from email_verifications where user_id=${userId}`;
+   await tx`delete from password_resets where user_id=${userId}`;
+   await tx`update verifications set status='rejected' where user_id=${userId} and status='pending'`;
    await audit(tx,req.user.id,'user.delete',userId);
   });return {ok:true};
  });

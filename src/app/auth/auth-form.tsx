@@ -45,7 +45,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Unable to continue right now.');
       if (reset) {toast.info('If this email belongs to an active member account, a reset link has been sent.');setCaptchaToken('');setCaptchaAttempt(value=>value+1);return;}
-      if (newPassword) {toast.success('Password updated. Log in with your new password.');router.replace('/auth');return;}
+      if (newPassword) {window.dispatchEvent(new Event('bpn-session-change'));toast.success('Password updated. Log in with your new password.');router.replace('/auth');return;}
       if (signup) toast[result.verificationEmailSent === false ? 'warning' : 'success'](result.verificationEmailSent === false ? 'Account created, but the email could not be sent. Log in and resend it from Account Settings.' : 'Account created. Check your inbox to verify your email, then log in.');
       window.dispatchEvent(new Event('bpn-session-change'));
       router.replace(signup ? '/auth' : destination);

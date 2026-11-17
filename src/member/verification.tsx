@@ -12,7 +12,8 @@ export function Verification({ member }: { member: MemberSession }) {
   const [photo, setPhoto] = useState<File | null>(null);
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(['pending','approved'].includes(member.verificationStatus||''));
+  useEffect(()=>{setSubmitted(['pending','approved'].includes(member.verificationStatus||''));},[member.verificationStatus]);
   const [date] = useState(() => new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
@@ -44,12 +45,12 @@ export function Verification({ member }: { member: MemberSession }) {
       const request = await fetch('/api/account/verification', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mediaId: upload.id, notes: String(details.get('additionalInformation') || '') }) });
       const result = await request.json().catch(() => ({}));
       if (!request.ok) throw new Error(result.error || 'We could not submit your request.');
-      setSubmitted(true); setPhoto(null); setUrl('');
+      setSubmitted(true); setPhoto(null); setUrl(''); window.dispatchEvent(new Event('bpn-session-change'));
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'We could not save your request. Please try again.'); }
   }
   return <section className={styles.formWidth}>
     <div className={styles.verifyHeading}><span><FiShield aria-hidden="true" /></span><div><h1>Verify your account</h1><p>A clear photo helps us confirm your profile.</p></div></div>
-    {submitted ? <div className={styles.verifySuccess} role="status"><FiCheckCircle aria-hidden="true" /><h2>Verification request submitted</h2><p>Your private photo is securely stored for review. It will never appear on a public ad.</p><button type="button" className={styles.secondary} onClick={() => setSubmitted(false)}>Review photo requirements</button></div> : <>
+    {submitted ? <div className={styles.verifySuccess} role="status"><FiCheckCircle aria-hidden="true" /><h2>{member.verificationStatus==='approved'?'Account verified':'Verification request submitted'}</h2><p>{member.verificationStatus==='approved'?'Your account verification has been approved.':'Your private photo is securely stored for review. It will never appear on a public ad.'}</p><button type="button" className={styles.secondary} onClick={() => setSubmitted(false)}>Review photo requirements</button></div> : <>
       <p className={styles.intro}>Follow the steps below to prepare your verification photo. Your verification picture is separate from your public ad pictures.</p>
       <section className={styles.verifyInstructions}><h2><span>1</span> Prepare your handwritten note</h2><p>Write these details clearly on a piece of paper:</p><ul><li>Username <strong>{member.username}</strong></li><li>Current date <strong>{date}</strong></li><li>Email <strong>{member.email}</strong></li></ul></section>
       <section className={styles.verifyInstructions}><h2><span>2</span> Take a clear photo</h2><p>Hold the note beside you. Your face, arm and the entire note should be visible. Use good lighting, no filters or edits, and write the details by hand in English.</p>

@@ -106,6 +106,7 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
       const response = await fetch('/api/account/ads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, cityIds: [Number(selectedCity.id)], mediaIds }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not submit your ad.');
+      window.dispatchEvent(new Event('bpn-session-change'));
       router.replace('/myaccount'); router.refresh();
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not submit your ad.'); }
     finally { setProcessing(false); }
