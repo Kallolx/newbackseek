@@ -11,7 +11,7 @@ backpagenew.com, www.backpagenew.com {
   @api path /api/*
   handle @api {
     reverse_proxy api:4000 {
-      header_up X-Backpage-App "public"
+        header_up X-Backpagenew-App "public"
     }
   }
   handle {
@@ -30,7 +30,7 @@ admin.backpagenew.com {
   @api path /api/*
   handle @api {
     reverse_proxy api:4000 {
-      header_up X-Backpage-App "admin"
+        header_up X-Backpagenew-App "admin"
     }
   }
   handle {
