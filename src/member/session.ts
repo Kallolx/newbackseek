@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useSyncExternalStore } from 'react';
-export type MemberPost={id:string;title:string;description:string;descriptionHtml?:string;age:number;location:string;phone:string;cityName:string;cityHref:string;category:string;service:string;images:string[];status:'Published'|'Paused'|'Pending'|'Rejected';sample:false;createdAt:string};
+export type MemberPost={id:string;title:string;description:string;descriptionHtml?:string;age:number;location:string;phone:string;cityName:string;cityHref:string;category:string;service:string;images:string[];coverImage?:string;thumbnails?:string[];status:'Published'|'Paused'|'Pending'|'Rejected';sample:false;createdAt:string};
 export type MemberSession={id:string;email:string;username:string;emailVerified:boolean;posts:MemberPost[];actorId?:string;verificationStatus?:string;verificationRequested?:boolean};
 type Snapshot={member:MemberSession|null;ready:boolean;error:string;postsLoading:boolean};
 const server:Snapshot={member:null,ready:false,error:'',postsLoading:false};
@@ -8,7 +8,7 @@ let snapshot:Snapshot=server, generation=0, pending:Promise<void>|null=null;
 const listeners=new Set<()=>void>();
 function publish(value:Snapshot){snapshot=value;listeners.forEach(listener=>listener());}
 function subscribe(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener);};}
-function image(variants:unknown):string[]{if(!variants||typeof variants!=='object')return[];const v=variants as Record<string,{url?:string}>;return v.card?.url?[v.card.url]:[];}
+function image(variants:unknown,size:'card'|'full'|'thumb'='card'):string[]{if(!variants||typeof variants!=='object')return[];const v=variants as Record<string,{url?:string}>;const url=v[size]?.url||v.card?.url||v.full?.url;return url?[url]:[];}
 export function refreshMember(force=false):Promise<void>{
  if(pending&&!force)return pending;
  const version=++generation;
@@ -23,7 +23,10 @@ export function refreshMember(force=false):Promise<void>{
   const ads=await fetch('/api/account/ads',{credentials:'same-origin',cache:'no-store'});
   if(!ads.ok)throw new Error('Unable to load your ads. Please retry.');
   const body=await ads.json();
-  const posts:MemberPost[]=body.posts.map((post:Record<string,unknown>)=>({id:String(post.id),title:String(post.title),description:String(post.description),age:Number(post.age||0),location:String(post.location||''),phone:String(post.phone||''),cityName:String(post.city_name||''),cityHref:String(post.city_href||''),category:String(post.category_slug),service:String(post.category_slug),images:image(post.image),status:post.status==='published'?'Published':post.status==='paused'?'Paused':post.status==='rejected'?'Rejected':'Pending',sample:false,createdAt:String(post.created_at)}));
+  const posts:MemberPost[]=body.posts.map((post:Record<string,unknown>)=>{
+    const pictures=Array.isArray(post.images)&&post.images.length?post.images:[post.image];
+    return {id:String(post.id),title:String(post.title),description:String(post.description),age:Number(post.age||0),location:String(post.location||''),phone:String(post.phone||''),cityName:String(post.city_name||''),cityHref:String(post.city_href||''),category:String(post.category_slug),service:String(post.category_slug),images:pictures.flatMap(value=>image(value,'full')),coverImage:image(post.image)[0]||pictures.flatMap(value=>image(value))[0],thumbnails:pictures.flatMap(value=>image(value,'thumb')),status:post.status==='published'?'Published':post.status==='paused'?'Paused':post.status==='rejected'?'Rejected':'Pending',sample:false,createdAt:String(post.created_at)};
+  });
   if(version===generation&&snapshot.member)publish({...snapshot,member:{...snapshot.member,posts},postsLoading:false});
  }catch(cause){if(version===generation)publish({...snapshot,ready:true,postsLoading:false,error:cause instanceof Error?cause.message:'Unable to load your account.'});}
  finally{if(version===generation)pending=null;}})(); pending=job;return job;

@@ -8,3 +8,7 @@ test('logout clears all shared views and a stale identity response cannot restor
 test('logout failure retains the real signed-in state and reports failure',async()=>{
  const api=setup(async url=>url==='/api/auth/logout'?response(503,{}):url==='/api/account/ads'?response(200,{posts:[]}):response(200,{user:{id:'member-2',email:'user@example.com',username:'member2'}}));await api.refreshMember();await assert.rejects(api.logOut(),/Unable to log out/);assert.equal(api.useMember().member.username,'member2');
 });
+test('member ads retain all full photos and lightweight card and thumbnail variants',async()=>{
+ const photos=[1,2,3].map(n=>({card:{url:`https://media.example.com/${n}/card.webp`},full:{url:`https://media.example.com/${n}/full.webp`},thumb:{url:`https://media.example.com/${n}/thumb.webp`}}));
+ const api=setup(async url=>url==='/api/account/ads'?response(200,{posts:[{id:1,title:'Photo check',image:photos[0],images:photos}]}):response(200,{user:{id:'member-photo',email:'user@example.com',username:'photos'}}));await api.refreshMember();const post=api.useMember().member.posts[0];assert.equal(post.images.length,3);assert.equal(post.images[2],photos[2].full.url);assert.equal(post.coverImage,photos[0].card.url);assert.deepEqual(Array.from(post.thumbnails),photos.map(photo=>photo.thumb.url));
+});

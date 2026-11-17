@@ -30,9 +30,15 @@ test('live administration and public authentication lifecycle',{skip:process.env
   const adminCall=(method,url,body)=>call(method,url,body,adminCookie,'admin');
   const [city1,city2]=await sql`insert into cities(country_code,country,region,name,href) values('us','United States','Test','First','/browse/us/test/first'),('us','United States','Test','Second','/browse/us/test/second') returning id,href`;
   await sql`insert into categories(slug,name,group_name) values('test-category','Test','Test')`;
-  const body={title:'Real regression listing',description:'This is a sufficiently detailed regression listing.',owner:'testmember',categorySlug:'test-category',cityHrefs:[city1.href]};
+  const body={title:'Real regression listing',description:'This is a sufficiently detailed regression listing.',owner:'testmember',categorySlug:'test-category',cityHrefs:[city1.href],phone:'+1 202 555 0142',contactEmail:'public-contact@example.com'};
   const publish=await adminCall('POST','/api/admin/ads',body);assert.equal(publish.statusCode,200,publish.body);const post=publish.json().post;
   const lookup=await adminCall('GET',`/api/admin/ads/${post.id}`);assert.equal(lookup.statusCode,200,lookup.body);assert.deepEqual(lookup.json().post.targets,[city1.href]);
+  assert.equal(lookup.json().post.contact_email,body.contactEmail);
+  const imageVariants=[1,2,3].map(n=>({card:{url:`https://media.example.com/${n}/card.webp`},full:{url:`https://media.example.com/${n}/full.webp`},thumb:{url:`https://media.example.com/${n}/thumb.webp`}}));
+  for(let n=0;n<imageVariants.length;n++)await sql`insert into media(owner_id,ad_id,object_key,expected_bytes,content_type,purpose,status,variants) values(${register.json().user.id},${post.id},${'test/gallery/'+n},123,'image/webp','ad','ready',${sql.json(imageVariants[n])})`;
+  const accountPhotos=await call('GET','/api/account/ads',undefined,memberCookie);assert.equal(accountPhotos.statusCode,200,accountPhotos.body);assert.equal(accountPhotos.json().posts[0].images.length,3,'account details receive every public photo');
+  const publicContact=(await call('GET',`/api/ads/${post.id}`)).json().post;assert.equal(publicContact.phone,body.phone);assert.equal(publicContact.contact_email,body.contactEmail);assert.equal(publicContact.email,undefined,'login email is never exposed as contact email');
+  await sql`delete from media where ad_id=${post.id}`;
   assert.equal((await adminCall('GET','/api/admin/ads?search=Real')).json().total,1);
   const edited=await adminCall('PATCH',`/api/admin/ads/${post.id}`,{...body,title:'Updated regression listing'});assert.equal(edited.statusCode,200,edited.body);
   assert.equal((await adminCall('POST',`/api/admin/ads/${post.id}/bump`,{})).statusCode,200);

@@ -227,7 +227,8 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 .post-facts { padding-left: 14px; border-left: 1px solid #aaa; }
 .post-facts div { display: flex; gap: 5px; margin-block: 5px; }
 .post-facts dt::after { content: ':'; }
-.post-facts dd { margin: 0; font-weight: 700; }
+.post-facts dd { margin:0;font-weight:700;min-width:0;overflow-wrap:anywhere; }
+.post-facts dt { flex-shrink:0; }
 .post-description { margin-top: 28px; font-size: 16px; line-height: 1.65; overflow-wrap: anywhere; }
 .post-description h2 { margin-block: 18px 8px; font-size: 19px; }
 .post-description p { margin-block: 14px; }

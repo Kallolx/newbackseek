@@ -75,6 +75,7 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
     const title = String(data.get('headline')).trim();
     const location = String(data.get('location')).trim();
     const phone = String(data.get('phone')).trim();
+    const contactEmail = String(data.get('contactEmail')||'').trim();
     const age = Number(data.get('age'));
     if (!title || !location || !phone || description.trim().length < 30 || description.length > 2950 || !Number.isInteger(age) || age < 18 || age > 120) {
       setError('Complete all required fields. Use an age of 18 or over and a description between 30 and 2950 characters.'); return;
@@ -106,7 +107,7 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
         if (!ready) throw new Error('Image processing is taking longer than expected. Please try again in a moment.');
         mediaIds.push(upload.id);
       }
-      const response = await fetch('/api/account/ads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, cityIds: [Number(selectedCity.id)], mediaIds }) });
+      const response = await fetch('/api/account/ads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, contactEmail, cityIds: [Number(selectedCity.id)], mediaIds }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not submit your ad.');
       window.dispatchEvent(new Event('bpn-session-change'));
@@ -139,6 +140,7 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
           <label>Age *<input name="age" type="number" required min={18} max={120} step={1} inputMode="numeric" placeholder="Your age (18+)" /></label>
           <label>Location *<input name="location" required maxLength={120} placeholder="Neighborhood or nearby area" /></label>
           <label>Phone number *<input name="phone" type="tel" required maxLength={40} autoComplete="tel" placeholder="e.g. +1 202 555 0142" /></label>
+          <label>Contact email<input name="contactEmail" type="email" maxLength={254} placeholder="Public contact email (optional)" /><small>This address will be visible on your ad.</small></label>
           <label>Contact email<input type="email" value={member.email} readOnly /><span className={styles.help}>Update this in Account Settings.</span></label>
           <div className={styles.full}><p className={styles.editorLabel}>Description *</p><DescriptionEditor onChange={(text, html) => { setDescription(text); setDescriptionHtml(html); }} /></div>
         </div>

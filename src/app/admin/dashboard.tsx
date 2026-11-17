@@ -19,14 +19,14 @@ import { EmptyState } from '../../components/page-state';
 import { toast } from '../../components/toast';
 import styles from './admin.module.css';
 
-type LiveRow={id:string;title?:string;description?:string;category_slug?:string;owner?:string;username?:string;email?:string;role?:string;status:string;targets?:string[];images?:{id:string;variants:Variants}[];variants?:Variants;age?:number;location?:string;phone?:string;updated_at?:string;created_at:string;ad_id?:string;reason?:string;notes?:string;email_verified_at?:string;ad_count?:number};
+type LiveRow={id:string;title?:string;description?:string;category_slug?:string;owner?:string;username?:string;email?:string;contact_email?:string;role?:string;status:string;targets?:string[];images?:{id:string;variants:Variants}[];variants?:Variants;age?:number;location?:string;phone?:string;updated_at?:string;created_at:string;ad_id?:string;reason?:string;notes?:string;email_verified_at?:string;ad_count?:number};
 type Variants={card?:{url:string};full?:{url:string}};
 type Listing={items:LiveRow[];total:number;page:number;pageSize:number};
 type Summary={counts:{users:number;ads:number;published:number;pending:number;media:number;reports:number;verifications:number};daily:{day:string;ads:number;users:number}[]};
 const nav=[['Overview',FiGrid],['Ads',FiFileText],['Publish',FiPlus],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['Users',FiUsers],['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['System health',FiActivity]] as const;
 type Screen=typeof nav[number][0];
 const label=(screen:string)=>screen==='Ads'?'All Ads':screen==='Publish'?'Ad Publish':screen;
-function mapAd(row:LiveRow):Ad{return{id:Number(row.id),title:row.title||'',description:row.description||'',category:row.category_slug||'',owner:row.owner||'',targets:row.targets||[],images:(row.images||[]).flatMap(image=>image.variants.card?.url?[image.variants.card.url]:[]),status:(row.status[0].toUpperCase()+row.status.slice(1)) as AdStatus,updated:row.updated_at||row.created_at,age:row.age,location:row.location,phone:row.phone,email:row.email};}
+function mapAd(row:LiveRow):Ad{return{id:Number(row.id),title:row.title||'',description:row.description||'',category:row.category_slug||'',owner:row.owner||'',targets:row.targets||[],images:(row.images||[]).flatMap(image=>image.variants.card?.url?[image.variants.card.url]:[]),status:(row.status[0].toUpperCase()+row.status.slice(1)) as AdStatus,updated:row.updated_at||row.created_at,age:row.age,location:row.location,phone:row.phone,email:row.contact_email||''};}
 function Status({value}:{value:string}){return <Badge variant="light" color={statusColor(value)} radius="sm" style={{textTransform:'capitalize'}}>{value}</Badge>;}
 function LoadingRows(){return <Stack gap="sm" aria-label="Loading records" aria-busy="true">{[0,1,2,3].map(i=><Paper key={i} withBorder p="md" radius="md"><Group wrap="nowrap"><Skeleton height={54} width={54} radius="md"/><Stack style={{flex:1}} gap={8}><Skeleton height={12} width="62%"/><Skeleton height={9} width="85%"/><Skeleton height={9} width="35%"/></Stack></Group></Paper>)}</Stack>;}
 function RowMenu({children,label:aria}:{children:React.ReactNode;label:string}){return <Menu withinPortal position="bottom-end" width={225}><Menu.Target><ActionIcon aria-label={aria} variant="subtle" color="gray" size="lg"><FiMoreHorizontal size={20}/></ActionIcon></Menu.Target><Menu.Dropdown>{children}</Menu.Dropdown></Menu>;}
@@ -50,7 +50,7 @@ export function AdminDashboard({locations,categories}:{locations:LocationCountry
  async function publication(request:PublishRequest){
   const ok=await action(async()=>{
    if(screen==='Distribute post'&&found){await adminApi(`/admin/ads/${found.id}/destinations`,{method:'POST',body:JSON.stringify({cityHrefs:request.targets})});const {post}=await adminApi<{post:LiveRow}>(`/admin/ads/${found.id}`);setFound(mapAd(post));return;}
-   const body={title:request.titles[0],description:request.description,categorySlug:request.category,owner:request.owner,cityHrefs:request.targets,age:request.age,location:request.location,phone:request.phone,mediaIds:request.mediaIds||[]};
+   const body={title:request.titles[0],description:request.description,categorySlug:request.category,owner:request.owner,cityHrefs:request.targets,age:request.age,location:request.location,phone:request.phone,contactEmail:request.email||'',mediaIds:request.mediaIds||[]};
    await adminApi(source?`/admin/ads/${source.id}`:'/admin/ads',{method:source?'PATCH':'POST',body:JSON.stringify(body)});
   },screen==='Distribute post'?'Destinations added.':source?'Ad updated.':'Ad published.');
   if(ok&&screen!=='Distribute post'){setSource(undefined);router.push(adminRoutes.Ads);}if(!ok)throw new Error('Publication was not saved. Review the message and retry.');

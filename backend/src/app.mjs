@@ -30,6 +30,7 @@ const adInput = z.object({
   age: z.number().int().min(18).max(120).optional(),
   location: z.string().max(200).default(""),
   phone: z.string().max(40).default(""),
+  contactEmail: z.union([z.email().max(254),z.literal('')]).default(''),
   cityIds: z.array(z.number().int().positive()).min(1).max(1000),
   mediaIds: z.array(uuid).max(12).default([]),
 });
@@ -471,7 +472,7 @@ export async function buildApp() {
   });
   app.get("/api/ads/:id", async (req) => {
     const [ad] =
-      await sql`select id,title,description,age,location,phone,category_slug,created_at from ads where id=${id.parse(req.params.id)} and status='published'`;
+      await sql`select id,title,description,age,location,phone,contact_email,category_slug,created_at from ads where id=${id.parse(req.params.id)} and status='published'`;
     if (!ad) throw fail(404, "Post not found");
     return {
       post: ad,
@@ -488,7 +489,8 @@ export async function buildApp() {
         await sql`select a.*,
           (select c.name from placements p join cities c on c.id=p.city_id where p.ad_id=a.id order by p.ranked_at desc limit 1) as city_name,
           (select c.href from placements p join cities c on c.id=p.city_id where p.ad_id=a.id order by p.ranked_at desc limit 1) as city_href,
-          (select variants from media m where m.ad_id=a.id and m.status='ready' and m.purpose='ad' order by m.created_at limit 1) as image
+          (select variants from media m where m.ad_id=a.id and m.status='ready' and m.purpose='ad' order by m.created_at limit 1) as image,
+          coalesce((select json_agg(m.variants order by m.created_at,m.id) from media m where m.ad_id=a.id and m.status='ready' and m.purpose='ad'),'[]') as images
           from ads a where a.owner_id=${req.user.id} and a.status!='deleted' order by a.created_at desc limit 50 offset ${(page - 1) * 50}`,
     };
   });
@@ -496,8 +498,8 @@ export async function buildApp() {
     const input = adInput.parse(req.body);
     const ad = await sql.begin(async (tx) => {
       const [ad] =
-        await tx`insert into ads (owner_id,category_slug,title,description,age,location,phone,status) values
-       (${req.user.id},${input.categorySlug},${input.title},${input.description},${input.age ?? null},${input.location},${input.phone},'pending') returning *`;
+        await tx`insert into ads (owner_id,category_slug,title,description,age,location,phone,contact_email,status) values
+       (${req.user.id},${input.categorySlug},${input.title},${input.description},${input.age ?? null},${input.location},${input.phone},${input.contactEmail},'pending') returning *`;
       await tx`insert into placements ${tx([...new Set(input.cityIds)].map((city_id) => ({ ad_id: ad.id, city_id })))}`;
       if (input.mediaIds.length) {
         const media =
