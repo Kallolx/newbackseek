@@ -1,6 +1,7 @@
 'use client';
 
 import { FeedbackToast } from '../../components/toast';
+import { adminApi } from './live-api';
 import { Accordion, Alert, Badge, Button, Checkbox, FileInput, Group, Modal, NumberInput, Paper, ScrollArea, Select, SimpleGrid, Stack, Stepper, Text, TextInput, Title } from '@mantine/core';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
@@ -10,7 +11,7 @@ import { DescriptionEditor } from '../../member/description-editor';
 import { EmptyState } from '../../components/page-state';
 import styles from './admin.module.css';
 
-export type PublishRequest = { titles: string[]; description: string; descriptionHtml?: string; category: string; owner: string; targets: string[]; age?: number; location?: string; phone?: string; email?: string; images?: string[] };
+export type PublishRequest = { titles: string[]; description: string; descriptionHtml?: string; category: string; owner: string; targets: string[]; age?: number; location?: string; phone?: string; email?: string; images?: string[]; mediaIds?:string[] };
 
 function CityPicker({ locations, selected, onChange, excluded = [] }: { locations: LocationCountry[]; selected: string[]; onChange: (ids: string[]) => void; excluded?: string[] }) {
   const [code, setCode] = useState(locations[0]?.code ?? '');
@@ -40,7 +41,7 @@ function CityPicker({ locations, selected, onChange, excluded = [] }: { location
   </Stack>;
 }
 
-export function Publisher({ locations, categories, source, mode, onSubmit }: { locations: LocationCountry[]; categories: CategoryGroup[]; source?: Ad; mode: 'create' | 'copy' | 'edit'; onSubmit: (request: PublishRequest) => void }) {
+export function Publisher({ locations, categories, source, mode, onSubmit, defaultOwner }: { locations: LocationCountry[]; categories: CategoryGroup[]; source?: Ad; mode: 'create' | 'copy' | 'edit'; onSubmit: (request: PublishRequest) => Promise<void>; defaultOwner?:string }) {
   const [step, setStep] = useState(mode === 'copy' ? 1 : 0);
   const [selected, setSelected] = useState<string[]>(mode === 'edit' ? source?.targets ?? [] : []);
   const [description, setDescription] = useState(source?.description ?? '');
@@ -48,6 +49,7 @@ export function Publisher({ locations, categories, source, mode, onSubmit }: { l
   const [group, setGroup] = useState<string | null>(categories.find((item) => item.services.some((service) => service.slug === source?.category))?.name ?? null);
   const [category, setCategory] = useState<string | null>(source?.category ?? null);
   const [images, setImages] = useState<string[]>(source?.images ?? []);
+  const [mediaIds,setMediaIds]=useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [review, setReview] = useState<PublishRequest>();
@@ -63,7 +65,7 @@ export function Publisher({ locations, categories, source, mode, onSubmit }: { l
     if (age && (age < 18 || age > 120 || !Number.isInteger(age))) { setError('Age must be a whole number between 18 and 120.'); setStep(0); return; }
     const email = String(fields.get('email') ?? '').trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Enter a valid contact email.'); setStep(0); return; }
-    return { titles, description, descriptionHtml: html, category, owner, targets: selected, age, location: String(fields.get('location') ?? ''), phone: String(fields.get('phone') ?? ''), email, images };
+    return { titles, description, descriptionHtml: html, category, owner, targets: selected, age, location: String(fields.get('location') ?? ''), phone: String(fields.get('phone') ?? ''), email, images, mediaIds };
   }
   function next() {
     setError('');
@@ -77,24 +79,35 @@ export function Publisher({ locations, categories, source, mode, onSubmit }: { l
     if (files.length > 6 || files.some((file) => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024)) { setError('Choose up to 6 JPG, PNG or WebP pictures, each under 5 MB.'); return; }
     setBusy(true);
     try {
-      const prepared: string[] = [];
-      for (const file of files) { const bitmap = await createImageBitmap(file); const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height)); const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale)); canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close(); prepared.push(canvas.toDataURL('image/webp', .75)); }
-      setImages(prepared);
+      const prepared: string[] = [], ids:string[]=[];
+      for (const file of files) {
+        const data=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Could not read image'));reader.readAsDataURL(file);});
+        const upload=await adminApi<{id:string}>('/admin/media/upload',{method:'POST',body:JSON.stringify({data,contentType:file.type})});
+        let ready=false;
+        for(let attempt=0;attempt<60;attempt++){
+          await new Promise(resolve=>setTimeout(resolve,1000));
+          const status=await adminApi<{status:string;variants?:{card?:{url:string}}}>(`/media/${upload.id}`);
+          if(status.status==='failed')throw new Error('Image processing failed. Choose another image.');
+          if(status.status==='ready'&&status.variants?.card?.url){prepared.push(status.variants.card.url);ids.push(upload.id);ready=true;break;}
+        }
+        if(!ready)throw new Error('Image processing is taking longer than expected. Check the Media page.');
+      }
+      setImages([...(source?.images||[]),...prepared]);setMediaIds(ids);
     } catch { setError('A picture could not be opened. Please try another file.'); } finally { setBusy(false); }
   }
-  return <form ref={form} className={styles.publishFlow} noValidate onSubmit={(event) => { event.preventDefault(); if (busy) return; if (step === 2 && review) onSubmit(review); else next(); }}>
+  return <form ref={form} className={styles.publishFlow} noValidate onSubmit={async(event) => { event.preventDefault(); if (busy) return; if (step === 2 && review) {setBusy(true);setError('');try{await onSubmit(review);}catch(cause){setError(cause instanceof Error?cause.message:'Unable to save.');}finally{setBusy(false);}} else next(); }}>
     <Stepper active={step} size="sm" mb="lg"><Stepper.Step label="Details" /><Stepper.Step label="Cities" /><Stepper.Step label="Review" /></Stepper>
     <div style={{ display: step === 0 ? undefined : 'none' }}><Paper withBorder p={{ base: 'sm', sm: 'lg' }} radius="md"><Stack gap="md"><div><Title order={3} size="h4">{mode === 'edit' ? 'Edit ad #' + source?.id : 'Create an ad'}</Title><Text size="sm" c="dimmed">Use the same content fields and formatting as the public site.</Text></div>
-      <TextInput label="Owner username" name="owner" defaultValue={source?.owner ?? 'admin'} placeholder="Username of the ad owner" />
+      <TextInput label="Owner username" name="owner" defaultValue={source?.owner ?? defaultOwner ?? ''} placeholder="Username of an existing account" />
       <TextInput label="Ad title" name="titles" maxLength={150} defaultValue={source?.title} placeholder="Enter a clear headline" />
       <SimpleGrid cols={{ base: 1, sm: 2 }}><Select searchable label="Category group" value={group} placeholder="Choose a category group" data={categories.map((item) => item.name)} onChange={(value) => { setGroup(value); setCategory(null); }} /><Select searchable label="Subcategory" value={category} disabled={!group} placeholder={group ? 'Choose a subcategory' : 'Choose a group first'} data={categories.find((item) => item.name === group)?.services.map((item) => ({ label: item.name, value: item.slug })) ?? []} onChange={setCategory} /></SimpleGrid>
       <div><Text size="sm" fw={500} mb={6}>Description</Text><DescriptionEditor content={source?.descriptionHtml ?? source?.description ?? ''} onChange={(text, value) => { setDescription(text); setHtml(value); }} /></div>
       <SimpleGrid cols={{ base: 1, sm: 2 }}><NumberInput label="Age (when applicable)" name="age" defaultValue={source?.age} min={18} max={120} /><TextInput label="Location / neighborhood" name="location" defaultValue={source?.location} placeholder="Public location text" /><TextInput label="Contact phone" name="phone" defaultValue={source?.phone} placeholder="Phone number" /><TextInput label="Contact email" name="email" type="email" defaultValue={source?.email} placeholder="name@example.com" /></SimpleGrid>
       <FileInput multiple accept="image/jpeg,image/png,image/webp" label="Ad pictures" description="Up to 6 pictures, 5 MB each. Processing is automatic." placeholder="Choose pictures" leftSection={<FiImage />} disabled={busy} onChange={(files) => void photos(files)} />
-      {!!images.length && <SimpleGrid cols={{ base: 3, sm: 6 }}>{images.map((src, index) => <div key={index}><Image src={src} alt={'Ad picture ' + (index + 1)} width={120} height={90} unoptimized style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 6 }} /><Button variant="subtle" size="compact-xs" onClick={() => setImages(images.filter((_, item) => item !== index))}>Remove</Button></div>)}</SimpleGrid>}
+      {!!images.length && <SimpleGrid cols={{ base: 3, sm: 6 }}>{images.map((src, index) => <div key={index}><Image src={src} alt={'Ad picture ' + (index + 1)} width={120} height={90} unoptimized style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 6 }} /><Text size="xs" c="dimmed" ta="center">Manage in Media</Text></div>)}</SimpleGrid>}
     </Stack></Paper></div>
     <div style={{ display: step === 1 ? undefined : 'none' }}><Paper withBorder p={{ base: 'sm', sm: 'lg' }} radius="md"><Stack><Title order={3} size="h4">Choose destination cities</Title>{mode === 'copy' && <Alert color="blue">Ad #{source?.id}: {source?.title}. Existing destinations are disabled. Pictures are reused rather than duplicated.</Alert>}<CityPicker locations={locations} selected={selected} onChange={setSelected} excluded={mode === 'copy' ? source?.targets : []} /></Stack></Paper></div>
-    {step === 2 && review && <Paper withBorder p="lg" radius="md"><Stack gap="md"><Title order={3} size="h4">Review your changes</Title><SimpleGrid cols={3}><div><Text size="xs" c="dimmed">Ads</Text><Text fw={700}>{review.titles.length}</Text></div><div><Text size="xs" c="dimmed">Cities per ad</Text><Text fw={700}>{selected.length}</Text></div><div><Text size="xs" c="dimmed">Placements</Text><Text fw={700}>{selected.length * review.titles.length}</Text></div></SimpleGrid><Text size="sm">Owner: @{review.owner} · {categories.flatMap((item) => item.services).find((item) => item.slug === review.category)?.name}</Text><Paper withBorder p="sm"><Text fw={600} size="sm">{review.titles[0]}</Text><Text size="sm" c="dimmed" lineClamp={3}>{review.description}</Text>{review.titles.length > 1 && <Text size="xs">Plus {review.titles.length - 1} other titles</Text>}</Paper><Text size="sm" fw={600}>Destination cities</Text><ScrollArea.Autosize mah={220}><Stack gap={7}>{all.filter((city) => selected.includes(city.id)).map((city) => <Text size="sm" key={city.id}>{city.name}<Text span size="xs" c="dimmed"> · {city.region} · {city.country}</Text></Text>)}</Stack></ScrollArea.Autosize><Alert color="blue">Preview only. Changes apply to this admin session. Public publishing and server processing will be connected with the backend.</Alert></Stack></Paper>}
+    {step === 2 && review && <Paper withBorder p="lg" radius="md"><Stack gap="md"><Title order={3} size="h4">Review your changes</Title><SimpleGrid cols={3}><div><Text size="xs" c="dimmed">Ads</Text><Text fw={700}>{review.titles.length}</Text></div><div><Text size="xs" c="dimmed">Cities per ad</Text><Text fw={700}>{selected.length}</Text></div><div><Text size="xs" c="dimmed">Placements</Text><Text fw={700}>{selected.length * review.titles.length}</Text></div></SimpleGrid><Text size="sm">Owner: @{review.owner} · {categories.flatMap((item) => item.services).find((item) => item.slug === review.category)?.name}</Text><Paper withBorder p="sm"><Text fw={600} size="sm">{review.titles[0]}</Text><Text size="sm" c="dimmed" lineClamp={3}>{review.description}</Text>{review.titles.length > 1 && <Text size="xs">Plus {review.titles.length - 1} other titles</Text>}</Paper><Text size="sm" fw={600}>Destination cities</Text><ScrollArea.Autosize mah={220}><Stack gap={7}>{all.filter((city) => selected.includes(city.id)).map((city) => <Text size="sm" key={city.id}>{city.name}<Text span size="xs" c="dimmed"> · {city.region} · {city.country}</Text></Text>)}</Stack></ScrollArea.Autosize><Text size="xs" c="dimmed">Changes are saved to the live site after you confirm.</Text></Stack></Paper>}
     <FeedbackToast message={error} />
     <Paper withBorder p="sm" radius="md" mt="md"><Group justify="space-between"><Button variant="default" leftSection={<FiArrowLeft />} disabled={step === 0 || (mode === 'copy' && step === 1)} onClick={() => setStep(step - 1)}>Back</Button><Button type="submit" loading={busy} rightSection={step === 2 ? <FiCheck /> : <FiArrowRight />}>{step === 0 ? 'Choose cities' : step === 1 ? 'Review changes' : mode === 'edit' ? 'Save changes' : mode === 'copy' ? 'Add destinations' : 'Publish ads'}</Button></Group></Paper>
   </form>;

@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { FiGrid, FiList, FiArrowLeft } from 'react-icons/fi';
-import { EmptyState } from '../components/page-state';
+import { EmptyState, PageLoader } from '../components/page-state';
 import { Verification } from './verification';
 import { PostCard } from '../components/post-card';
 import { PostPagination } from '../components/post-pagination';
@@ -16,15 +16,15 @@ import styles from './member.module.css';
 import { DescriptionEditor } from './description-editor';
 
 const MemberPostForm = dynamic(() => import('./post-form').then((module) => module.MemberPostForm), {
-  loading: () => <p className={styles.intro}>Opening the posting form…</p>,
+  loading: () => <PageLoader label="Loading the posting form" />,
 });
 
 export function AccountArea({ section }: { section: string[] }) {
-  const { member, ready } = useMember();
+  const { member, ready, error, postsLoading, refresh } = useMember();
   const router = useRouter();
-  useEffect(() => { if (ready && !member) router.replace('/auth'); }, [ready, member, router]);
-  if (!ready) return <main id="main" className={'shell ' + styles.page}><p className={styles.intro}>Opening your account…</p></main>;
-  if (!member) return <main id="main" className={'shell ' + styles.page}><p className={styles.intro}>Taking you to sign in…</p></main>;
+  useEffect(() => { if (ready && !member && !error) router.replace('/auth'); }, [ready, member, error, router]);
+  if (error) return <main id="main" className={'shell ' + styles.page}><EmptyState title="Account could not load" description={error} action="Retry" onAction={()=>void refresh()}/></main>;
+  if (!ready || !member) return <main id="main" className={'shell ' + styles.page}><PageLoader label="Loading your account"/></main>;
   const current = section[0] ?? '';
   return (
     <main id="main" className={'shell ' + styles.page}>
@@ -33,7 +33,9 @@ export function AccountArea({ section }: { section: string[] }) {
           <span key={path}>[ <Link href={'/myaccount/' + path} aria-current={current === path ? 'page' : undefined}>{label}</Link> ]</span>
         ))}
       </nav>
-      {current === '' && <MemberPosts member={member} />}
+      {member.actorId && <p className={styles.notice}>Support session for @{member.username}. <button type="button" onClick={async()=>{await fetch('/api/account/impersonation/stop',{method:'POST'});window.location.replace('/auth');}}>End support session</button></p>}
+      {!member.emailVerified && <p className={styles.notice}>Your email is not verified. Check your inbox or <Link href="/myaccount/settings">resend the verification email</Link> before posting.</p>}
+      {current === '' && (postsLoading ? <PageLoader label="Loading your ads"/> : <MemberPosts member={member} />)}
       {current === 'post' && <MemberPostForm member={member} />}
       {current === 'settings' && <Settings member={member} />}
       {current === 'verification' && <Verification member={member} />}

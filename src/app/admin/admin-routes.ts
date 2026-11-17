@@ -7,5 +7,6 @@ export const adminRoutes = {
   Users: '/admin/users',
   Media: '/admin/media',
   Reports: '/admin/reports',
+  Verification: '/admin/verification',
   'System health': '/admin/system-health',
 } as const;

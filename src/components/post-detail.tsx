@@ -3,7 +3,7 @@
 import { FeedbackToast } from './toast';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { EmptyState } from './page-state';
+import { EmptyState, PageLoader } from './page-state';
 
 type Place = { name: string; href: string };
 type Post = { id: string; title: string; description: string; age: number; location: string; phone: string; created_at: string; category_slug: string };
@@ -30,7 +30,7 @@ export function PostDetail({ city, region, service, postId }: { city: Place; reg
     }).catch(cause => { if (cause.name !== 'AbortError') setError(cause.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [postId, city.href, service.slug]);
-  if (loading) return <main id="main" className="shell browse-page"><p role="status">Loading ad…</p></main>;
+  if (loading) return <main id="main" className="shell browse-page"><PageLoader label="Loading ad"/></main>;
   if (!post || error) return <main id="main" className="shell browse-page"><EmptyState title="Ad unavailable" description={error || 'This ad is no longer available.'} href={city.href + '/' + service.slug} action="Browse ads" /></main>;
   const hours = Math.max(0, Math.floor((Date.now() - Date.parse(post.created_at)) / 3600000));
   return <main id="main" className="shell browse-page post-detail">

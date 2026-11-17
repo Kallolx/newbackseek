@@ -16,6 +16,7 @@ import { token, digest, hashPassword, verifyPassword } from "./security.mjs";
 import { redis, images } from "./queue.mjs";
 import { s3, storageReady } from "./storage.mjs";
 import { emailReady, sendVerificationEmail } from "./email.mjs";
+import { adminManagement } from "./admin-routes.mjs";
 
 const id = z.string().regex(/^\d+$/);
 const uuid = z.uuid();
@@ -61,6 +62,7 @@ const sessionCookie = (req) =>
       : "bpn-session";
 
 export async function buildApp() {
+  const telemetry = { requests: 0, errors: 0, latency: [], startedAt: new Date().toISOString() };
   const app = Fastify({
     logger: {
       redact: [
@@ -84,6 +86,12 @@ export async function buildApp() {
       )
     )
       throw fail(403, "Request origin is not allowed");
+  });
+  app.addHook("onResponse", async (req, reply) => {
+    telemetry.requests += 1;
+    if (reply.statusCode >= 500) telemetry.errors += 1;
+    telemetry.latency.push(reply.elapsedTime);
+    if (telemetry.latency.length > 500) telemetry.latency.shift();
   });
   app.decorateRequest("user", null);
   async function member(req) {
@@ -199,10 +207,12 @@ export async function buildApp() {
       await verifyCaptcha(input.captchaToken, req);
       const [user] =
         await sql`insert into users (email,username,password_hash) values (${input.email},${input.username},${await hashPassword(input.password)}) returning id,email,username,role`;
-      await session(reply, user.id);
       let verificationEmailSent = true;
       try { await issueVerification(user); }
-      catch (error) { verificationEmailSent = false; req.log.error({ err: error }, 'Verification delivery failed after account creation'); }
+      catch (error) { verificationEmailSent = false; req.log.error({ err: error }, "Verification delivery failed after account creation"); }
+      const previousSession = req.cookies[sessionCookie(req)];
+      if (previousSession) await sql`delete from sessions where token_hash=${digest(previousSession)}`;
+      reply.clearCookie(sessionCookie(req), {path:'/',secure:cookieOptions.secure});
       return reply.code(201).send({ user, verificationRequired: true, verificationEmailSent });
     },
   );
@@ -284,7 +294,7 @@ export async function buildApp() {
       const ticket = await googleClient.verifyIdToken({ idToken: tokenPayload.id_token, audience: config.GOOGLE_CLIENT_ID });
       const profile = ticket.getPayload();
       if (!profile?.sub || !profile.email || !profile.email_verified) throw new Error("Google email is not verified");
-      let [user] = await sql`select id,email,username,role from users where google_subject=${profile.sub} and status='active'`;
+      let [user] = await sql`select id,email,username,role from users where google_subject=${profile.sub} and status='active' and role='member'`;
       if (!user) {
         const [existing] = await sql`select id from users where email=${profile.email}`;
         if (existing) return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?error=google_account_exists`);
@@ -306,7 +316,7 @@ export async function buildApp() {
       await tx`update users set email_verified_at=coalesce(email_verified_at,now()) where id=${row.user_id}`;
       return true;
     });
-    return reply.code(303).redirect(`${config.SITE_ORIGIN}/myaccount?email=${verified ? "verified" : "invalid"}`);
+    return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?email=${verified ? "verified" : "invalid"}`);
   });
   app.post("/api/auth/resend-verification", { preHandler: member, config: { rateLimit: { max: 3, timeWindow: "1 hour" } } }, async (req) => {
     if (req.user.email_verified_at) return { ok: true, alreadyVerified: true };
@@ -555,29 +565,7 @@ export async function buildApp() {
     await sql`insert into verifications (user_id,media_id,notes) values (${req.user.id},${media.id},${input.notes})`;
     return { ok: true };
   });
-  app.get("/api/admin/:collection", { preHandler: admin }, async (req) => {
-    const collection = z
-      .enum(["users", "ads", "media", "reports", "verifications", "audit"])
-      .parse(req.params.collection);
-    const { page } = pagination.parse(req.query);
-    const offset = (page - 1) * 50;
-    if (collection === "users")
-      return {
-        items:
-          await sql`select id,email,username,role,status,created_at from users order by created_at desc limit 50 offset ${offset}`,
-      };
-    const table = {
-      ads: "ads",
-      media: "media",
-      reports: "reports",
-      verifications: "verifications",
-      audit: "audit_events",
-    }[collection];
-    return {
-      items:
-        await sql`select * from ${sql(table)} order by created_at desc limit 50 offset ${offset}`,
-    };
-  });
+  adminManagement(app, { admin, fail });
   app.get("/api/admin/health/system", { preHandler: admin }, async () => {
     const start = performance.now();
     await sql`select 1`;
@@ -587,6 +575,7 @@ export async function buildApp() {
       queue: await images.getJobCounts("waiting", "active", "failed"),
       uptime: process.uptime(),
       memory: process.memoryUsage(),
+      telemetry: { requests: telemetry.requests, errors: telemetry.errors, startedAt: telemetry.startedAt, p95: [...telemetry.latency].sort((a,b)=>a-b)[Math.floor(telemetry.latency.length*.95)] || 0 },
     };
   });
   app.post("/api/admin/ads/:id/:action", { preHandler: admin }, async (req) => {
@@ -597,8 +586,11 @@ export async function buildApp() {
     await sql.begin(async (tx) => {
       if (!(await tx`select id from ads where id=${adId} for update`).length)
         throw fail(404, "Post not found");
-      if (action === "bump")
+      if (action === "bump") {
+        const [post] = await tx`select status from ads where id=${adId}`;
+        if (post.status !== "published") throw fail(400, "Only published ads can be bumped");
         await tx`update placements set ranked_at=now() where ad_id=${adId}`;
+      }
       if (action === "distribute") {
         const { cityIds } = z
           .object({
@@ -627,7 +619,8 @@ export async function buildApp() {
     if (userId === req.user.id)
       throw fail(400, "You cannot suspend your own account");
     await sql.begin(async (tx) => {
-      await tx`update users set status=${status} where id=${userId}`;
+      const changed = await tx`update users set status=${status} where id=${userId} and role='member' and status!='deleted' returning id`;
+      if (!changed.length) throw fail(400, 'Only existing member accounts can be suspended or restored');
       await tx`delete from sessions where user_id=${userId}`;
       await audit(tx, req.user.id, "user.status", userId, { status });
     });
@@ -642,23 +635,28 @@ export async function buildApp() {
         await sql`select id from users where id=${userId} and status='active' and role='member'`;
       if (!user) throw fail(404, "Active member not found");
       await audit(sql, req.user.id, "user.impersonate", userId);
-      await session(reply, userId, req.user.id);
-      return { ok: true };
+      const handoff = token();
+      await sql`insert into impersonation_handoffs (token_hash,user_id,actor_id,expires_at) values (${digest(handoff)},${userId},${req.user.id},now()+interval '1 minute')`;
+      return { url: `${config.SITE_ORIGIN}/api/auth/impersonate?token=${handoff}` };
     },
   );
-  app.post(
-    "/api/account/impersonation/stop",
-    { preHandler: member },
-    async (req, reply) => {
-      if (!req.user.actor_id) throw fail(400, "No impersonation session");
-      const [actor] =
-        await sql`select id from users where id=${req.user.actor_id} and role='admin' and status='active'`;
-      if (!actor) throw fail(403, "Administrator unavailable");
-      await sql`delete from sessions where token_hash=${digest(req.cookies[sessionCookie(req)])}`;
-      await session(reply, actor.id, null, appContext(req));
-      return { ok: true };
-    },
-  );
+  app.get("/api/auth/impersonate", async (req, reply) => {
+    if (appContext(req) !== "public") throw fail(404, "Not found");
+    const value = z.string().min(30).max(100).parse(req.query.token);
+    const [handoff] = await sql`delete from impersonation_handoffs where token_hash=${digest(value)} and expires_at>now() returning *`;
+    if (!handoff) throw fail(400, "This support sign-in link has expired");
+    const [actor] = await sql`select id from users where id=${handoff.actor_id} and role='admin' and status='active'`;
+    const [user] = await sql`select id from users where id=${handoff.user_id} and role='member' and status='active'`;
+    if (!actor || !user) throw fail(403, "Support sign-in is unavailable");
+    await session(reply, user.id, actor.id);
+    return reply.code(303).redirect(`${config.SITE_ORIGIN}/myaccount`);
+  });
+  app.post("/api/account/impersonation/stop", { preHandler: member }, async (req,reply) => {
+    if (!req.user.actor_id) throw fail(400, "No support session is active");
+    await sql`delete from sessions where token_hash=${digest(req.cookies[sessionCookie(req)])}`;
+    reply.clearCookie(sessionCookie(req), {path:"/",secure:cookieOptions.secure});
+    return {ok:true};
+  });
   app.patch("/api/admin/reports/:id", { preHandler: admin }, async (req) => {
     const { status } = z
       .object({ status: z.enum(["resolved", "dismissed"]) })

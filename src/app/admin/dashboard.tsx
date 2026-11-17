@@ -1,380 +1,79 @@
 'use client';
-
 import Link from 'next/link';
-import Image from 'next/image';
-import { FeedbackToast } from '../../components/toast';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname,useRouter } from 'next/navigation';
+import { useEffect,useState } from 'react';
+import { useDebouncedValue } from '@mantine/hooks';
+import { AreaChart } from '@mantine/charts';
+import { ActionIcon,AppShell,Avatar,Badge,Box,Breadcrumbs,Burger,Button,Group,Menu,Modal,NavLink,Paper,ScrollArea,SegmentedControl,Select,SimpleGrid,Skeleton,Stack,Table,Text,TextInput,Title } from '@mantine/core';
+import { FiActivity,FiArrowUp,FiBell,FiCheck,FiChevronRight,FiEdit2,FiExternalLink,FiFileText,FiFlag,FiGrid,FiImage,FiLogOut,FiMapPin,FiMoreHorizontal,FiPause,FiPlay,FiPlus,FiRefreshCw,FiSearch,FiShield,FiTrash2,FiUserCheck,FiUsers,FiX } from 'react-icons/fi';
 import { adminRoutes } from './admin-routes';
-import { ActionIcon, Alert, AppShell, Avatar, Badge, Box, Breadcrumbs, Burger, Button, Group, Menu, Modal, NativeSelect, NavLink, Paper, ScrollArea, SegmentedControl, SimpleGrid, Stack, Table, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
-import { FiActivity, FiBell, FiChevronRight, FiExternalLink, FiFileText, FiFlag, FiGrid, FiImage, FiLogOut, FiMoreHorizontal, FiPlus, FiSearch, FiUsers } from 'react-icons/fi';
+import { adStatuses,statusColor,type Ad,type AdStatus,type CategoryGroup,type LocationCountry } from './admin-data';
+import { adminApi,useAdminResource } from './live-api';
+import { Publisher,type PublishRequest } from './publisher';
+import { FoundPost } from './found-post';
 import { Monitoring } from './monitoring';
 import { PostCard } from '../../components/post-card';
-import { useState, type FormEvent } from 'react';
-import { adStatuses, initialAds, initialMedia, initialReports, initialUsers } from './admin-data';
-import type { Ad, AdStatus, CategoryGroup, LocationCountry } from './admin-data';
-import { Publisher, type PublishRequest } from './publisher';
-import styles from './admin.module.css';
-import { EmptyState } from '../../components/page-state';
 import { PostPagination } from '../../components/post-pagination';
-import { FoundPost } from './found-post';
+import { EmptyState } from '../../components/page-state';
+import { toast } from '../../components/toast';
+import styles from './admin.module.css';
 
-const navigation = [
-  ['Overview', FiGrid], ['Ads', FiFileText], ['Publish', FiPlus],
-  ['Bump post', FiActivity], ['Distribute post', FiGrid], ['Users', FiUsers], ['Media', FiImage], ['Reports', FiFlag], ['System health', FiActivity],
-] as const;
-type Screen = typeof navigation[number][0];
-const pageLabel = (screen: Screen) => screen === 'Ads' ? 'All Ads' : screen === 'Publish' ? 'Ad Publish' : screen;
+type LiveRow={id:string;title?:string;description?:string;category_slug?:string;owner?:string;username?:string;email?:string;role?:string;status:string;targets?:string[];images?:{id:string;variants:Variants}[];variants?:Variants;age?:number;location?:string;phone?:string;updated_at?:string;created_at:string;ad_id?:string;reason?:string;notes?:string;email_verified_at?:string;ad_count?:number};
+type Variants={card?:{url:string};full?:{url:string}};
+type Listing={items:LiveRow[];total:number;page:number;pageSize:number};
+type Summary={counts:{users:number;ads:number;published:number;pending:number;media:number;reports:number;verifications:number};daily:{day:string;ads:number;users:number}[]};
+const nav=[['Overview',FiGrid],['Ads',FiFileText],['Publish',FiPlus],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['Users',FiUsers],['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['System health',FiActivity]] as const;
+type Screen=typeof nav[number][0];
+const label=(screen:string)=>screen==='Ads'?'All Ads':screen==='Publish'?'Ad Publish':screen;
+function mapAd(row:LiveRow):Ad{return{id:Number(row.id),title:row.title||'',description:row.description||'',category:row.category_slug||'',owner:row.owner||'',targets:row.targets||[],images:(row.images||[]).flatMap(image=>image.variants.card?.url?[image.variants.card.url]:[]),status:(row.status[0].toUpperCase()+row.status.slice(1)) as AdStatus,updated:row.updated_at||row.created_at,age:row.age,location:row.location,phone:row.phone,email:row.email};}
+function Status({value}:{value:string}){return <Badge variant="light" color={statusColor(value)} radius="sm" style={{textTransform:'capitalize'}}>{value}</Badge>;}
+function LoadingRows(){return <Stack gap="sm" aria-label="Loading records" aria-busy="true">{[0,1,2,3].map(i=><Paper key={i} withBorder p="md" radius="md"><Group wrap="nowrap"><Skeleton height={54} width={54} radius="md"/><Stack style={{flex:1}} gap={8}><Skeleton height={12} width="62%"/><Skeleton height={9} width="85%"/><Skeleton height={9} width="35%"/></Stack></Group></Paper>)}</Stack>;}
+function RowMenu({children,label:aria}:{children:React.ReactNode;label:string}){return <Menu withinPortal position="bottom-end" width={225}><Menu.Target><ActionIcon aria-label={aria} variant="subtle" color="gray" size="lg"><FiMoreHorizontal size={20}/></ActionIcon></Menu.Target><Menu.Dropdown>{children}</Menu.Dropdown></Menu>;}
 
-function RowMenu({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <Menu position="bottom-end" width={185} withinPortal>
-      <Menu.Target><ActionIcon variant="light" color="gray" size="lg" aria-label={label}><FiMoreHorizontal size={19} /></ActionIcon></Menu.Target>
-      <Menu.Dropdown><Menu.Label>Actions</Menu.Label>{children}</Menu.Dropdown>
-    </Menu>
-  );
-}
-
-const dateLabel = () => new Date().toLocaleDateString('en-US', { dateStyle: 'medium' });
-
-export function AdminDashboard({ locations, categories }: { locations: LocationCountry[]; categories: CategoryGroup[] }) {
-  const [navigationQuery, setNavigationQuery] = useState('');
-  const [menuOpen, setMenuOpen] = useState(false);
-  const pathname = usePathname();
-  const router = useRouter();
-  const screen: Screen = (Object.entries(adminRoutes).find(([, path]) => path === pathname)?.[0] as Screen | undefined) ?? 'Overview';
-  const [ads, setAds] = useState(initialAds);
-  const [users, setUsers] = useState(initialUsers);
-  const [reports, setReports] = useState(initialReports);
-  const [adView, setAdView] = useState('List');
-  const [photo, setPhoto] = useState<(typeof initialMedia)[number]>();
-  const [previewUser, setPreviewUser] = useState('');
-  const [message, setMessage] = useState('');
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState('');
-  const [publisherMode, setPublisherMode] = useState<'create' | 'copy' | 'edit'>('create');
-  const [source, setSource] = useState<Ad>();
-  const [reasonUser, setReasonUser] = useState('');
-  const [adPage, setAdPage] = useState(1);
-  const [distributionId, setDistributionId] = useState<string | null>(null);
-  const [postIdSearch, setPostIdSearch] = useState('');
-  const media = ads.flatMap((ad) => ad.images !== undefined ? ad.images.map((src, index) => ({ id: `${ad.id}-${index}`, name: ad.title + ' · Photo ' + (index + 1), src, adId: ad.id })) : initialMedia.filter((image) => image.adId === ad.id));
-  const selectedDistribution = ads.find((ad) => String(ad.id) === distributionId);
-  const locationLabels = new Map(locations.flatMap((country) => country.regions.flatMap((region) => region.cities.map((city) => [city.id, `${city.name} · ${region.name} · ${country.name}`]))));
-  const cityNames = new Map(locations.flatMap(({ regions }) => regions.flatMap(({ cities }) => cities.map(({ id, name }) => [id, name]))));
-  const openReports = reports.filter((report) => report.status === 'Open').length;
-  function record(action: string) {
-    setMessage(action);
-  }
-
-  function navigate(next: Screen) {
-    router.push(adminRoutes[next]);
-    setMenuOpen(false);
-    setQuery('');
-    setStatus('');
-    setAdPage(1);
-    setMessage('');
-  }
-  async function signOut() {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => undefined);
-    window.location.assign(window.location.hostname.startsWith('admin.') ? '/login' : '/auth');
-  }
-
-  function openPublisher(mode: typeof publisherMode, ad?: Ad) {
-    setPublisherMode(mode);
-    setSource(ad ? { ...ad, images: ad.images ?? initialMedia.filter((image) => image.adId === ad.id).map((image) => image.src) } : undefined);
-    if (mode === 'copy' && ad) { setDistributionId(String(ad.id)); setPostIdSearch(String(ad.id)); navigate('Distribute post'); }
-    else navigate('Publish');
-  }
-
-  function bump(ad: Ad) {
-    if (ad.status !== 'Published') {
-      setMessage('Only published ads can be bumped.');
-      return;
-    }
-    setAds((items) => [{ ...ad, bumped: true, updated: dateLabel() }, ...items.filter(({ id }) => id !== ad.id)]);
-    record(`Bumped ad #${ad.id} to the top.`);
-  }
-
-  function changeAdStatus(ad: Ad, next: AdStatus) {
-    setAds((items) => items.map((item) => item.id === ad.id ? { ...item, status: next, updated: dateLabel() } : item));
-    record(`Ad #${ad.id} moved to ${next.toLowerCase()}.`);
-  }
-
-  function lookup(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const fields = new FormData(event.currentTarget);
-    const ad = ads.find(({ id }) => id === Number(fields.get('adId')));
-    if (!ad) {
-      setMessage('No ad found for that ID.');
-      return;
-    }
-    const submitter = (event.nativeEvent as SubmitEvent).submitter;
-    if (submitter instanceof HTMLButtonElement && submitter.value === 'copy') openPublisher('copy', ad);
-    else { setDistributionId(String(ad.id)); setPostIdSearch(String(ad.id)); navigate('Bump post'); }
-  }
-
-  function submitPublication({ titles, description, category, owner, targets, ...details }: PublishRequest) {
-    setAds((items) => {
-      if (source && publisherMode === 'edit') {
-        return items.map((ad) => ad.id === source.id
-          ? { ...ad, ...details, title: titles[0], description, category, owner, targets, updated: dateLabel() }
-          : ad);
-      }
-      if (source && publisherMode === 'copy') {
-        return items.map((ad) => ad.id === source.id
-          ? { ...ad, targets: [...new Set([...ad.targets, ...targets])], updated: dateLabel() }
-          : ad);
-      }
-      const lastId = Math.max(1000, ...items.map(({ id }) => id));
-      return [...titles.map((title, index): Ad => ({
-        ...details, id: lastId + index + 1, title, description, category, owner, targets,
-        status: 'Published', updated: dateLabel(),
-      })), ...items];
-    });
-    navigate(publisherMode === 'copy' ? 'Distribute post' : 'Ads');
-    record(source ? `Updated ad #${source.id}.` : `Published ${titles.length} sample ${titles.length === 1 ? 'ad' : 'ads'}.`);
-  }
-
-  function adActions(ad: Ad) {
-    return (
-      <RowMenu label={`Actions for ad ${ad.id}`}>
-        <Menu.Item onClick={() => openPublisher('edit', ad)}>Edit ad</Menu.Item>
-        <Menu.Item onClick={() => { setDistributionId(String(ad.id)); setPostIdSearch(String(ad.id)); navigate('Bump post'); }}>Bump post by ID</Menu.Item>
-        <Menu.Item onClick={() => openPublisher('copy', ad)}>Distribute post by ID</Menu.Item>
-        <Menu.Divider />
-        <Menu.Label>Change status</Menu.Label>
-        {adStatuses.filter((value) => value !== ad.status).map((value) => (
-          <Menu.Item key={value} onClick={() => changeAdStatus(ad, value)}>{value}</Menu.Item>
-        ))}
-      </RowMenu>
-    );
-  }
-
-  const filteredAds = ads.filter((ad) =>
-    (!status || ad.status === status) && `${ad.id} ${ad.title} ${ad.owner}`.toLowerCase().includes(query.trim().toLowerCase()),
-  );
-
-  return (
-    <div className={styles.admin}>
-      <AppShell header={{ height: 64 }} navbar={{ width: 245, breakpoint: 'md', collapsed: { mobile: !menuOpen } }} padding={{ base: 'sm', md: 'xl' }}>
-        <AppShell.Header>
-          <Group h="100%" px={{ base: 'sm', md: 'lg' }} justify="space-between" wrap="nowrap">
-            <Group gap="sm" wrap="nowrap">
-              <Burger opened={menuOpen} onClick={() => setMenuOpen(!menuOpen)} hiddenFrom="md" size="sm" aria-label="Toggle admin navigation" />
-              <Link href="/admin" aria-label="BackpageNew admin">
-                <Image className={styles.logo} src="/brand/backpage-new-logo.png" alt="BackpageNew" width={150} height={50} />
-              </Link>
-              <Breadcrumbs visibleFrom="sm" className={styles.headerCrumbs} separator={<FiChevronRight size={13} />}>
-                <Text size="sm" c="dimmed">Administration</Text>
-                <Text size="sm" fw={600} truncate>{pageLabel(screen)}</Text>
-              </Breadcrumbs>
-            </Group>
-            <Group gap="xs" wrap="nowrap">
-              <Menu position="bottom-end" width={220}>
-                <Menu.Target><Button variant="default" px="sm" aria-label="Search admin pages"><FiSearch /><Text ml="xs" visibleFrom="sm" size="sm" c="dimmed">Search workspace</Text></Button></Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Label>Go to a page</Menu.Label>
-                  <TextInput autoFocus aria-label="Find a page" placeholder="Search pages" onChange={(event) => setNavigationQuery(event.currentTarget.value)} />
-                  {navigation.filter(([name]) => pageLabel(name).toLowerCase().includes(navigationQuery.toLowerCase())).map(([name, Icon]) =>
-                    <Menu.Item key={name} leftSection={<Icon />} onClick={() => { navigate(name); setNavigationQuery(''); }}>{pageLabel(name)}</Menu.Item>
-                  )}
-                </Menu.Dropdown>
-              </Menu>
-              <Menu position="bottom-end" width={230}>
-                <Menu.Target><ActionIcon variant="light" color="gray" size="lg" aria-label="Notifications"><FiBell /></ActionIcon></Menu.Target>
-                <Menu.Dropdown><Menu.Label>Notifications</Menu.Label>
-                  <Menu.Item leftSection={<FiFlag />} onClick={() => navigate('Reports')}>{openReports} open reports</Menu.Item>
-
-                </Menu.Dropdown>
-              </Menu>
-              <Menu position="bottom-end">
-                <Menu.Target><Button variant="subtle" color="dark" px={4} leftSection={<Avatar size="sm" color="indigo">AD</Avatar>} aria-label="Administrator menu"><Text visibleFrom="sm" size="sm">Administrator</Text></Button></Menu.Target>
-                <Menu.Dropdown><Menu.Label>Administrator</Menu.Label><Menu.Item component="a" href="https://backpagenew.com" leftSection={<FiExternalLink />}>Public site</Menu.Item><Menu.Item color="red" leftSection={<FiLogOut />} onClick={() => void signOut()}>Log out</Menu.Item></Menu.Dropdown>
-              </Menu>
-            </Group>
-          </Group>
-        </AppShell.Header>
-        <AppShell.Navbar p="sm" className={styles.sidebar}>
-
-          <AppShell.Section grow component={ScrollArea}>
-            {navigation.map(([name, Icon]) => (
-              <NavLink key={name} label={pageLabel(name)} leftSection={<Icon size={17} />} active={screen === name} onClick={() => { setMenuOpen(false); setQuery(''); setStatus(''); setAdPage(1); setMessage(''); }}
-                component={Link} href={adminRoutes[name]} aria-current={screen === name ? 'page' : undefined}
-                rightSection={name === 'Reports' && openReports > 0 ? <Badge size="xs" color="orange" variant="light">{openReports}</Badge> : undefined} />
-            ))}
-          </AppShell.Section>
-          <Button component="a" href="https://backpagenew.com" variant="white" color="dark" leftSection={<FiExternalLink />}>View public site</Button>
-        </AppShell.Navbar>
-        <AppShell.Main id="main">
-          <Box className={styles.content}>
-          {previewUser && <div className={styles.feedback}>Previewing member access for @{previewUser} · {ads.filter((ad) => ad.owner === previewUser).length} owned ads
-            <Button type="button" onClick={() => { record(`Ended user preview for @${previewUser}.`); setPreviewUser(''); }}>End preview</Button>
-          </div>}
-          <div className={styles.heading}>
-            <div><h1>{pageLabel(screen)}</h1><p>{screen === 'Overview' ? 'Manage listings, accounts, and media across all markets.' : screen === 'Publish' ? 'Prepare ads and choose where they should appear.' : ''}</p></div>
-            {(screen === 'Overview' || screen === 'Ads') && <Button className={styles.primary} leftSection={<FiPlus size={15} />} type="button" onClick={() => openPublisher('create')}>Create ad</Button>}
-          </div>
-          <FeedbackToast message={message} type="info" />
-
-          {screen === 'Overview' && <>
-            <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="sm" mb="lg">
-              {[
-                { label: 'Published ads', count: ads.filter((ad) => ad.status === 'Published').length, destination: 'Ads', icon: FiFileText, color: 'indigo' },
-                { label: 'Member accounts', count: users.length, destination: 'Users', icon: FiUsers, color: 'cyan' },
-                { label: 'Media assets', count: initialMedia.length, destination: 'Media', icon: FiImage, color: 'violet' },
-                { label: 'Open reports', count: openReports, destination: 'Reports', icon: FiFlag, color: 'orange' },
-              ].map(({ label, count, destination, icon: Icon, color }) => (
-                <Paper component="button" type="button" key={label} withBorder p="md" radius="md" className={styles.stat} onClick={() => navigate(destination as Screen)}>
-                  <Group justify="space-between" gap="xs"><Text size="sm" c="dimmed">{label}</Text><ThemeIcon color={color} variant="light"><Icon /></ThemeIcon></Group>
-                  <Title order={2} my={4}>{count}</Title>
-                </Paper>
-              ))}
-            </SimpleGrid>
-            <Monitoring compact />
-            <Paper withBorder radius="md" p="md" mb="md" component="section">
-              <Title order={3} size="h4" mb="xs">Quick ad actions</Title>
-              <p>Use an ad ID to bump a published ad or distribute an existing ad to more cities.</p>
-              <form className={styles.toolbar} onSubmit={lookup}>
-                <TextInput aria-label="Ad ID" name="adId" type="number" min="1" placeholder="Ad ID, e.g. 1001" required />
-                <Button type="submit" value="bump">Bump ad</Button>
-                <Button type="submit" value="copy">Distribute ad</Button>
-              </form>
-            </Paper>
-          </>}
-
-          {screen === 'System health' && <Monitoring />}
-
-          {screen === 'Ads' && <Paper withBorder radius="md" p="md" mb="md" component="section">
-            <div className={styles.toolbar}>
-              <TextInput className={styles.search} leftSection={<FiSearch size={15} />} type="search" aria-label="Search ads"
-                placeholder="Search ID, title, or owner" value={query} onChange={(event) => setQuery(event.currentTarget.value)} />
-              <NativeSelect aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}>
-                <option value="">All statuses</option>{adStatuses.map((item) => <option key={item}>{item}</option>)}
-              </NativeSelect>
-              <SegmentedControl aria-label="Ad view" value={adView} onChange={setAdView} data={['List', 'Gallery']} />
-            </div>
-            <ul className={adView === 'Gallery' ? 'post-list post-gallery' : 'post-list'}>
-              {filteredAds.slice((Math.min(adPage, Math.max(1, Math.ceil(filteredAds.length / 50))) - 1) * 50, Math.min(adPage, Math.max(1, Math.ceil(filteredAds.length / 50))) * 50).map((ad) => {
-                const image = media.find(({ adId }) => adId === ad.id);
-                const location = ad.targets.length === 1 ? cityNames.get(ad.targets[0]) : `${ad.targets.length} cities`;
-                return (
-                  <PostCard
-                    key={ad.id}
-                    title={ad.title}
-                    label={location ?? 'Location unavailable'}
-                    description={ad.description}
-                    details={`#${ad.id} · @${ad.owner} · ${ad.status}${ad.bumped ? ' · Bumped' : ''}`}
-                    actions={adActions(ad)}
-                    thumbnail={image && (
-                      <button className={styles.cardPhoto} type="button" aria-label={'Preview image for ' + ad.title} onClick={() => setPhoto(image)}>
-                        <Image src={image.src} alt="" fill sizes={adView === 'Gallery' ? '(max-width: 768px) 100vw, 360px' : '140px'} />
-                      </button>
-                    )}
-                  />
-                );
-              })}
-            </ul>
-            {!filteredAds.length ? <EmptyState kind="search" title="No matching ads" description="Search by ad ID, title or owner, or reset your filters to see all ads." action="Reset filters" onAction={() => { setQuery(''); setStatus(''); setAdPage(1); }} /> : <PostPagination page={Math.min(adPage, Math.ceil(filteredAds.length / 50))} total={Math.ceil(filteredAds.length / 50)} onChange={setAdPage} />}
-          </Paper>}
-
-          {screen === 'Publish' && <>
-            <div className={styles.toolbar}>
-              {source ? <Group gap="sm">
-                <Button variant="default" onClick={() => navigate('Ads')}>Back to ads</Button>
-                <Badge variant="light">{publisherMode === 'copy' ? 'Distributing' : 'Editing'} ad #{source.id}</Badge>
-              </Group> : <Text size="sm" c="dimmed">Create one ad and choose the cities where it should appear.</Text>}
-            </div>
-            <Publisher key={publisherMode + (source?.id ?? '')} locations={locations} categories={categories} mode={publisherMode} source={source} onSubmit={submitPublication} />
-          </>}
-
-          {(screen === 'Bump post' || screen === 'Distribute post') && <Stack>
-            <Paper withBorder p="md" radius="md"><Stack><Title order={3} size="h4">Find a post by ID</Title><Text size="sm" c="dimmed">{screen === 'Bump post' ? 'Search for a published post to move it to the top of its city listings.' : 'Search for an existing post to add destination cities.'}</Text>
-              <form onSubmit={(event) => { event.preventDefault(); const found = ads.find((ad) => ad.id === Number(postIdSearch)); setDistributionId(found ? String(found.id) : null); setSource(found); setPublisherMode('copy'); setMessage(found ? '' : 'No post found for that ID. Check the number and try again.'); }}><Group align="end"><TextInput style={{ flex: 1 }} label="Post ID" placeholder="Enter Post ID, e.g. 1001" inputMode="numeric" value={postIdSearch} onChange={(event) => { setPostIdSearch(event.currentTarget.value); setDistributionId(null); }} required /><Button type="submit" leftSection={<FiSearch />}>Find post</Button></Group></form>
-            </Stack></Paper>
-            {selectedDistribution ? <><FoundPost ad={selectedDistribution} images={media.filter((image) => image.adId === selectedDistribution.id).map((image) => image.src)} destinations={selectedDistribution.targets.map((target) => locationLabels.get(target) ?? target)} onPreview={(src, index) => setPhoto({ id: `${selectedDistribution.id}-${index}`, name: selectedDistribution.title, src, adId: selectedDistribution.id })} onBump={screen === 'Bump post' ? () => bump(selectedDistribution) : undefined} />{screen === 'Distribute post' && <Publisher key={selectedDistribution.id + selectedDistribution.targets.join(',')} locations={locations} categories={categories} mode="copy" source={selectedDistribution} onSubmit={(request) => { setAds((items) => items.map((ad) => ad.id === selectedDistribution.id ? { ...ad, targets: [...new Set([...ad.targets, ...request.targets])], updated: dateLabel() } : ad)); record(`Added ${request.targets.length} destinations to post #${selectedDistribution.id} in this preview.`); }} />}</> : <EmptyState kind="search" title={screen === 'Bump post' ? 'Find a post to bump' : 'Find a post to distribute'} description="Enter its numeric Post ID above to load the post and review its current cities." />}
-          </Stack>}
-
-
-          {screen === 'Users' && <Paper withBorder radius="md" p="md" mb="md" component="section">
-            <div className={styles.toolbar}>
-              <TextInput className={styles.search} leftSection={<FiSearch size={15} />} type="search" aria-label="Search users"
-                placeholder="Search name, email, or username" value={query} onChange={(event) => setQuery(event.currentTarget.value)} />
-            </div>
-            <Table className={styles.responsiveTable} striped highlightOnHover verticalSpacing="sm">
-              <Table.Thead><Table.Tr><Table.Th>Account</Table.Th><Table.Th>Role</Table.Th><Table.Th>Status</Table.Th><Table.Th>Actions</Table.Th></Table.Tr></Table.Thead>
-              <Table.Tbody>{users.filter((user) => `${user.id} ${user.name} ${user.email}`.toLowerCase().includes(query.trim().toLowerCase())).map((user) => (
-                <Table.Tr key={user.id}>
-                  <Table.Td data-label="Account"><Group gap="sm" wrap="nowrap"><Avatar radius="xl" color="indigo">{user.name.split(' ').map((name) => name[0]).join('')}</Avatar><Box><strong>{user.name}</strong><small>@{user.id} · {user.email}</small></Box></Group></Table.Td><Table.Td data-label="Role">{user.role}</Table.Td><Table.Td data-label="Status"><Badge variant="light" color={user.status === 'Active' ? 'teal' : 'orange'}>{user.status}</Badge></Table.Td>
-                  <Table.Td data-label="Actions"><RowMenu label={`Actions for ${user.name}`}>
-                    <Menu.Item onClick={() => { navigate('Ads'); setQuery(user.id); }}>View ads</Menu.Item>
-                    <Menu.Item onClick={() => {
-                      const next = user.status === 'Active' ? 'Suspended' : 'Active';
-                      setUsers((items) => items.map((item) => item.id === user.id ? { ...item, status: next } : item));
-                      record(`@${user.id} moved to ${next.toLowerCase()}.`);
-                    }}>{user.status === 'Active' ? 'Suspend' : 'Restore'}</Menu.Item>
-                    <Menu.Item disabled={Boolean(previewUser)} onClick={() => setReasonUser(user.id)}>Impersonate</Menu.Item>
-                  </RowMenu></Table.Td>
-                </Table.Tr>
-              ))}</Table.Tbody>
-            </Table>
-            {reasonUser && <form className={styles.feedback} onSubmit={(event) => {
-              event.preventDefault();
-              const reason = String(new FormData(event.currentTarget).get('reason')).trim();
-              if (!reason) return;
-              setPreviewUser(reasonUser);
-              record(`Started user preview for @${reasonUser}. Reason: ${reason}`);
-              setReasonUser('');
-            }}>
-              <label>Reason for previewing @{reasonUser}<TextInput name="reason" required placeholder="Support case or investigation" /></label>
-              <Button type="submit">Start demo preview</Button>
-              <Button type="button" onClick={() => setReasonUser('')}>Cancel</Button>
-            </form>}
-          </Paper>}
-
-          {screen === 'Media' && <Paper withBorder radius="md" p="md" mb="md" component="section">
-              <Text size="sm" c="dimmed">Browse pictures attached to ads, including new uploads. Select a picture to inspect it. Image resizing and delivery will be managed automatically by the server.</Text>
-            <div className={styles.toolbar}>
-              <TextInput className={styles.search} leftSection={<FiSearch size={15} />} type="search" aria-label="Search images"
-                placeholder="Search images by name or ad ID" value={query} onChange={(event) => setQuery(event.currentTarget.value)} />
-            </div>
-            <SimpleGrid cols={{ base: 1, xs: 2, xl: 3 }}>
-              {media.filter(({ name, adId }) => `${name} ${adId}`.toLowerCase().includes(query.trim().toLowerCase())).map((image) => (
-                <Paper withBorder p="sm" key={image.id}>
-                  <ActionIcon className={styles.galleryPhoto} variant="light" color="gray" aria-label={'Preview ' + image.name} onClick={() => setPhoto(image)}>
-                    <Image src={image.src} alt="" fill sizes="(max-width: 768px) 100vw, 360px" />
-                  </ActionIcon>
-                  <Text size="sm" fw={600} mt="xs">{image.name}</Text>
-                  <Text size="xs" c="dimmed">Ad #{image.adId}</Text>
-                </Paper>
-              ))}
-            </SimpleGrid>
-            {!media.some(({ name, adId }) => `${name} ${adId}`.toLowerCase().includes(query.trim().toLowerCase())) && <EmptyState kind="photo" title="No pictures found" description="Images added through the ad editor appear here automatically. Try a different search." action="Clear search" onAction={() => setQuery('')} />}
-          </Paper>}
-
-          {screen === 'Reports' && <Paper withBorder radius="md" p="md" mb="md" component="section">
-            <Title order={3} size="h4" mb="xs">Ad reports</Title>
-            <Table className={styles.responsiveTable} striped highlightOnHover verticalSpacing="sm">
-              <Table.Thead><Table.Tr><Table.Th>Report</Table.Th><Table.Th>Ad</Table.Th><Table.Th>Reason</Table.Th><Table.Th>Status</Table.Th><Table.Th>Actions</Table.Th></Table.Tr></Table.Thead>
-              <Table.Tbody>{reports.map((report) => <Table.Tr key={report.id}>
-                <Table.Td data-label="Report">{report.id}</Table.Td><Table.Td data-label="Ad"><Button type="button" onClick={() => { navigate('Ads'); setQuery(String(report.adId)); }}>#{report.adId}</Button></Table.Td>
-                <Table.Td data-label="Reason">{report.reason}</Table.Td><Table.Td data-label="Status">{report.status}</Table.Td>
-                <Table.Td data-label="Actions"><RowMenu label={`Actions for ${report.id}`}>
-                  {['Dismissed', 'Ad paused'].map((next) => <Menu.Item key={next} disabled={report.status !== 'Open'} onClick={() => {
-                    if (next === 'Ad paused') setAds((items) => items.map((ad) => ad.id === report.adId ? { ...ad, status: 'Paused', updated: dateLabel() } : ad));
-                    setReports((items) => items.map((item) => item.id === report.id ? { ...item, status: next } : item));
-                    record(`Report ${report.id} resolved: ${next.toLowerCase()}.`);
-                  }}>{next === 'Dismissed' ? 'Dismiss' : 'Pause ad'}</Menu.Item>)}
-                </RowMenu></Table.Td>
-              </Table.Tr>)}</Table.Tbody>
-            </Table>
-          </Paper>}
-
-          <Modal opened={Boolean(photo)} onClose={() => setPhoto(undefined)} title={photo?.name} size="lg" centered>
-            {photo && <Image className={styles.previewPhoto} src={photo.src} alt={photo.name} width={600} height={400} />}
-          </Modal>
-          </Box>
-        </AppShell.Main>
-      </AppShell>
-    </div>
-  );
+export function AdminDashboard({locations,categories}:{locations:LocationCountry[];categories:CategoryGroup[]}){
+ const pathname=usePathname(),router=useRouter();const screen=(Object.entries(adminRoutes).find(([,path])=>path===pathname)?.[0]||'Overview') as Screen;
+ const [opened,setOpened]=useState(false),[query,setQuery]=useState(''),[debounced]=useDebouncedValue(query,250),[status,setStatus]=useState<string|null>(null),[page,setPage]=useState(1),[view,setView]=useState('List');
+ const [source,setSource]=useState<Ad>(),[postId,setPostId]=useState(''),[found,setFound]=useState<Ad>(),[finding,setFinding]=useState(false),[busy,setBusy]=useState(false),[photo,setPhoto]=useState('');
+ const [confirm,setConfirm]=useState<{title:string;description:string;run:()=>Promise<unknown>}|null>(null);
+ const collection=screen==='Ads'?'ads':screen==='Users'?'users':screen==='Media'?'media':screen==='Reports'?'reports':screen==='Verification'?'verifications':null;
+ const list=useAdminResource<Listing>(collection?`/admin/${collection}?page=${page}&search=${encodeURIComponent(debounced)}&status=${status||''}`:'/admin/ads?page=1');
+ const summary=useAdminResource<Summary>('/admin/summary');const me=useAdminResource<{user:{id:string;username:string}}>('/auth/me');
+ useEffect(()=>{setQuery('');setStatus(null);setPage(1);setOpened(false);},[screen]);
+ const reload=()=>{list.reload();summary.reload();};
+ async function action(run:()=>Promise<unknown>,message:string){setBusy(true);try{await run();toast.success(message);reload();return true;}catch(error){toast.error(error instanceof Error?error.message:'The action failed. Please retry.');return false;}finally{setBusy(false);}}
+ async function lookup(event?:React.FormEvent){event?.preventDefault();if(!/^\d+$/.test(postId)){toast.error('Enter a numeric Post ID.');return;}setFinding(true);setFound(undefined);try{const {post}=await adminApi<{post:LiveRow}>('/admin/ads/'+postId);setFound(mapAd(post));}catch(error){toast.error((error as Error).message);}finally{setFinding(false);}}
+ async function bump(ad:Ad){if(await action(()=>adminApi(`/admin/ads/${ad.id}/bump`,{method:'POST',body:'{}'}),'Post moved to the top.'))setFound({...ad,bumped:true});}
+ const edit=(ad:Ad)=>{setSource(ad);router.push(adminRoutes.Publish);};
+ const findPage=(ad:Ad,destination:'Bump post'|'Distribute post')=>{setFound(ad);setPostId(String(ad.id));router.push(adminRoutes[destination]);};
+ async function publication(request:PublishRequest){
+  const ok=await action(async()=>{
+   if(screen==='Distribute post'&&found){await adminApi(`/admin/ads/${found.id}/destinations`,{method:'POST',body:JSON.stringify({cityHrefs:request.targets})});const {post}=await adminApi<{post:LiveRow}>(`/admin/ads/${found.id}`);setFound(mapAd(post));return;}
+   const body={title:request.titles[0],description:request.description,categorySlug:request.category,owner:request.owner,cityHrefs:request.targets,age:request.age,location:request.location,phone:request.phone,mediaIds:request.mediaIds||[]};
+   await adminApi(source?`/admin/ads/${source.id}`:'/admin/ads',{method:source?'PATCH':'POST',body:JSON.stringify(body)});
+  },screen==='Distribute post'?'Destinations added.':source?'Ad updated.':'Ad published.');
+  if(ok&&screen!=='Distribute post'){setSource(undefined);router.push(adminRoutes.Ads);}if(!ok)throw new Error('Publication was not saved. Review the message and retry.');
+ }
+ const deleteAd=(ad:Ad)=>setConfirm({title:`Delete ad #${ad.id}?`,description:'This removes the ad from every public city listing. Its record is retained for recovery and review.',run:()=>adminApi(`/admin/ads/${ad.id}`,{method:'DELETE'})});
+ const adMenu=(ad:Ad)=><RowMenu label={`Actions for ad ${ad.id}`}><Menu.Label>Current status: {ad.status}</Menu.Label><Menu.Item leftSection={<FiEdit2/>} onClick={()=>edit(ad)}>Edit ad</Menu.Item><Menu.Item leftSection={<FiArrowUp/>} onClick={()=>findPage(ad,'Bump post')}>Bump by Post ID</Menu.Item><Menu.Item leftSection={<FiMapPin/>} onClick={()=>findPage(ad,'Distribute post')}>Add destination cities</Menu.Item><Menu.Divider/>{ad.status!=='Published'&&<Menu.Item color="teal" leftSection={<FiPlay/>} onClick={()=>void action(()=>adminApi(`/admin/ads/${ad.id}/status`,{method:'POST',body:JSON.stringify({status:'published'})}),'Ad published.')}>Publish ad</Menu.Item>}{ad.status==='Published'&&<Menu.Item leftSection={<FiPause/>} onClick={()=>void action(()=>adminApi(`/admin/ads/${ad.id}/status`,{method:'POST',body:JSON.stringify({status:'paused'})}),'Ad paused.')}>Pause ad</Menu.Item>}{ad.status!=='Rejected'&&<Menu.Item color="red" leftSection={<FiX/>} onClick={()=>setConfirm({title:`Reject ad #${ad.id}?`,description:'The ad will be removed from public listings.',run:()=>adminApi(`/admin/ads/${ad.id}/status`,{method:'POST',body:JSON.stringify({status:'rejected'})})})}>Reject ad</Menu.Item>}<Menu.Divider/><Menu.Item color="red" leftSection={<FiTrash2/>} onClick={()=>deleteAd(ad)}>Delete ad</Menu.Item></RowMenu>;
+ const rows=list.data?.items||[];const countriesByCity=new Map(locations.flatMap(country=>country.regions.flatMap(region=>region.cities.map(city=>[city.id,`${city.name} · ${region.name} · ${country.name}`]))));
+ return <div className={styles.admin}><AppShell header={{height:64}} navbar={{width:245,breakpoint:'md',collapsed:{mobile:!opened}}} padding={{base:'sm',md:'xl'}}>
+  <AppShell.Header><Group h="100%" px="md" justify="space-between" wrap="nowrap"><Group wrap="nowrap"><Burger opened={opened} onClick={()=>setOpened(!opened)} hiddenFrom="md" size="sm" aria-label="Toggle navigation"/><Link href="/admin"><img className={styles.logo} src="/brand/backpage-new-logo.png" alt="BackpageNew" width={150} height={50}/></Link><Breadcrumbs visibleFrom="sm" separator={<FiChevronRight size={13}/>}><Text size="sm" c="dimmed">Administration</Text><Text size="sm" fw={600}>{label(screen)}</Text></Breadcrumbs></Group><Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" aria-label="Refresh live data" onClick={reload} loading={list.loading}><FiRefreshCw/></ActionIcon><Menu><Menu.Target><ActionIcon aria-label="Notifications" variant="light"><FiBell/></ActionIcon></Menu.Target><Menu.Dropdown><Menu.Item leftSection={<FiFlag/>} onClick={()=>router.push(adminRoutes.Reports)}>{summary.data?.counts.reports??'…'} open reports</Menu.Item><Menu.Item leftSection={<FiShield/>} onClick={()=>router.push(adminRoutes.Verification)}>{summary.data?.counts.verifications??'…'} verification requests</Menu.Item></Menu.Dropdown></Menu><Menu><Menu.Target><ActionIcon aria-label="Administrator account" variant="subtle" size="lg"><Avatar size="sm" radius="xl">{me.data?.user.username.slice(0,2).toUpperCase()||'AD'}</Avatar></ActionIcon></Menu.Target><Menu.Dropdown><Menu.Label>{me.data?.user.username||'Administrator'}</Menu.Label><Menu.Item component="a" href="https://backpagenew.com" leftSection={<FiExternalLink/>}>Public site</Menu.Item><Menu.Item color="red" leftSection={<FiLogOut/>} onClick={()=>void action(async()=>{await adminApi('/auth/logout',{method:'POST'});window.location.replace('/login');},'Logged out.')}>Log out</Menu.Item></Menu.Dropdown></Menu></Group></Group></AppShell.Header>
+  <AppShell.Navbar p="sm" className={styles.sidebar}><AppShell.Section grow component={ScrollArea}>{nav.map(([name,Icon])=><NavLink key={name} label={label(name)} component={Link} href={adminRoutes[name]} active={screen===name} leftSection={<Icon size={17}/>} onClick={()=>setOpened(false)}/>)}</AppShell.Section><Button component="a" href="https://backpagenew.com" variant="white" color="dark" leftSection={<FiExternalLink/>}>View public site</Button></AppShell.Navbar>
+  <AppShell.Main id="main"><Box className={styles.content}><Group justify="space-between" mb="lg" wrap="nowrap"><div><Title order={1} size="h2">{label(screen)}</Title><Text size="sm" c="dimmed">{screen==='Overview'?'Live account, listing and review activity.':screen==='Users'?'Manage member access and account status.':screen==='Media'?'Inspect uploaded ad images and their processing status.':''}</Text></div>{['Overview','Ads'].includes(screen)&&<Button leftSection={<FiPlus/>} onClick={()=>{setSource(undefined);router.push(adminRoutes.Publish);}}>Create ad</Button>}</Group>
+  {screen==='Overview'&&<Stack><SimpleGrid cols={{base:2,lg:4}}>{[['Published ads',summary.data?.counts.published,'Ads'],['Pending ads',summary.data?.counts.pending,'Ads'],['Member accounts',summary.data?.counts.users,'Users'],['Open reports',summary.data?.counts.reports,'Reports']].map(([name,count,destination])=><Paper key={String(name)} withBorder p="md" radius="md"><Text size="sm" c="dimmed">{name}</Text>{summary.loading?<Skeleton height={32} mt="xs"/>:<Title order={2}>{count??0}</Title>}<Button variant="subtle" size="compact-xs" mt="sm" onClick={()=>router.push(adminRoutes[destination as Screen])}>View {String(name).toLowerCase()}</Button></Paper>)}</SimpleGrid><Paper withBorder p="md" radius="md"><Title order={3} size="h4" mb="md">New ads and accounts · last 7 days</Title>{summary.loading?<Skeleton height={220}/>:summary.error?<EmptyState title="Activity could not load" description="Retry to get current figures." action="Retry" onAction={summary.reload}/>:<AreaChart h={220} data={summary.data?.daily||[]} dataKey="day" series={[{name:'ads',color:'indigo.6'},{name:'users',color:'teal.6'}]} withLegend/>}</Paper><Monitoring compact/></Stack>}
+  {screen==='System health'&&<Monitoring/>}
+  {collection&&<Paper withBorder p={{base:'sm',md:'md'}} radius="md"><Stack><Group wrap="wrap"><TextInput style={{flex:1,minWidth:180}} leftSection={<FiSearch/>} placeholder={screen==='Ads'?'Search ID, title or owner':'Search records'} value={query} onChange={event=>{setQuery(event.currentTarget.value);setPage(1);}} aria-label="Search records"/>{screen!=='Media'&&<Select w={170} placeholder="All statuses" clearable value={status} onChange={value=>{setStatus(value);setPage(1);}} data={screen==='Ads'?adStatuses.map(value=>({label:value,value:value.toLowerCase()})):screen==='Users'?['active','suspended']:screen==='Reports'?['open','resolved','dismissed']:['pending','approved','rejected']} aria-label="Filter by status"/>}{screen==='Ads'&&<SegmentedControl value={view} onChange={setView} data={['List','Gallery']} aria-label="Ad layout"/>}</Group><Text size="xs" c="dimmed">{list.loading?'Updating records…':`${list.data?.total??0} records · page ${page}`}</Text>
+   {list.loading?<LoadingRows/>:list.error?<EmptyState title="Records could not load" description="The server could not complete this request." action="Retry" onAction={list.reload}/>:!rows.length?<EmptyState title="No records found" description={query||status?'Try clearing your search or filters.':'New records will appear here when they are created.'}/>:<>
+    {screen==='Ads'&&<ul className={view==='Gallery'?'post-list post-gallery':'post-list'}>{rows.map(row=>{const ad=mapAd(row);return <PostCard key={ad.id} title={ad.title} label={(ad.targets[0]&&countriesByCity.get(ad.targets[0])||'No destinations')+(ad.targets.length>1?` +${ad.targets.length-1} more`:'')} description={ad.description} details={<Group gap="xs"><Text size="xs">#{ad.id} · @{ad.owner}</Text><Status value={ad.status}/></Group>} actions={adMenu(ad)} thumbnail={ad.images?.[0]?<button className={styles.cardPhoto} aria-label="View ad image" onClick={()=>setPhoto(ad.images![0])}><img src={ad.images[0]} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover'}}/></button>:undefined}/>;})}</ul>}
+    {screen==='Users'&&<Table.ScrollContainer minWidth={560}><Table striped highlightOnHover verticalSpacing="md"><Table.Thead><Table.Tr><Table.Th>Account</Table.Th><Table.Th>Status</Table.Th><Table.Th>Ads</Table.Th><Table.Th>Actions</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{rows.map(user=><Table.Tr key={user.id}><Table.Td><Group wrap="nowrap"><Avatar radius="xl" color="indigo">{user.username?.slice(0,2).toUpperCase()}</Avatar><div><Text fw={600} size="sm">@{user.username}</Text><Text size="xs" c="dimmed">{user.email}</Text><Text size="xs" c="dimmed">{user.role} · {user.email_verified_at?'Email verified':'Email not verified'}</Text></div></Group></Table.Td><Table.Td><Status value={user.status}/></Table.Td><Table.Td>{user.ad_count}</Table.Td><Table.Td><RowMenu label={'Actions for '+user.username}><Menu.Item leftSection={<FiFileText/>} onClick={()=>{router.push(adminRoutes.Ads);setTimeout(()=>setQuery(user.username||''),0);}}>View ads</Menu.Item><Menu.Item disabled={user.role==='admin'||busy} color={user.status==='active'?'orange':'teal'} leftSection={user.status==='active'?<FiPause/>:<FiPlay/>} onClick={()=>setConfirm({title:`${user.status==='active'?'Suspend':'Restore'} @${user.username}?`,description:'Access changes apply immediately and existing sessions are revoked.',run:()=>adminApi(`/admin/users/${user.id}`,{method:'PATCH',body:JSON.stringify({status:user.status==='active'?'suspended':'active'})})})}>{user.status==='active'?'Suspend account':'Restore account'}</Menu.Item><Menu.Item disabled={user.role!=='member'||user.status!=='active'} leftSection={<FiUserCheck/>} onClick={()=>setConfirm({title:`Sign in as @${user.username}?`,description:'This opens a logged support session on the public site. Your admin session stays separate.',run:async()=>{const result=await adminApi<{url:string}>(`/admin/users/${user.id}/impersonate`,{method:'POST'});window.location.assign(result.url);}})}>Sign in as user</Menu.Item><Menu.Divider/><Menu.Item disabled={user.role==='admin'} color="red" leftSection={<FiTrash2/>} onClick={()=>setConfirm({title:`Delete @${user.username}?`,description:'This disables the account, revokes its sessions and removes all of its ads from public listings. Records are retained for recovery.',run:()=>adminApi(`/admin/users/${user.id}`,{method:'DELETE'})})}>Delete account</Menu.Item></RowMenu></Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer>}
+    {screen==='Media'&&<SimpleGrid cols={{base:1,xs:2,lg:3}}>{rows.map(image=><Paper key={image.id} withBorder p="sm" radius="md"><Stack gap="xs">{image.variants?.card?.url?<button className={styles.galleryPhoto} onClick={()=>setPhoto(image.variants?.full?.url||image.variants!.card!.url)}><img src={image.variants.card.url} alt={image.title||'Ad photo'} loading="lazy" style={{width:'100%',height:180,objectFit:'cover'}}/></button>:<Box py="xl"><FiImage size={30}/><Text size="xs">{image.status==='failed'?'Processing failed':'Image processing'}</Text></Box>}<Group justify="space-between"><Status value={image.status}/><RowMenu label="Image actions"><Menu.Item leftSection={<FiImage/>} disabled={!image.variants?.full?.url} onClick={()=>setPhoto(image.variants!.full!.url)}>View image</Menu.Item><Menu.Item color="red" leftSection={<FiTrash2/>} disabled={['processing','queued'].includes(image.status)} onClick={()=>setConfirm({title:'Permanently delete this image?',description:'The image and its public copies will be removed from storage. This cannot be undone.',run:()=>adminApi(`/admin/media/${image.id}`,{method:'DELETE'})})}>Delete image</Menu.Item></RowMenu></Group><Text size="sm" lineClamp={1}>{image.title||'Unattached image'}</Text><Text size="xs" c="dimmed">{image.ad_id?'Ad #'+image.ad_id:'No ad attached'} · @{image.owner}</Text></Stack></Paper>)}</SimpleGrid>}
+    {(screen==='Reports'||screen==='Verification')&&<Stack>{rows.map(row=><Paper key={row.id} withBorder p="md" radius="md"><Group justify="space-between" align="start" wrap="nowrap"><Stack gap={6} style={{minWidth:0}}><Group><Status value={row.status}/><Text size="xs" c="dimmed">{new Date(row.created_at).toLocaleDateString()}</Text></Group><Text fw={600} size="sm">{screen==='Reports'?`Ad #${row.ad_id} · ${row.title}`:`@${row.username} · ${row.email}`}</Text><Text size="sm">{row.reason||row.notes||'No additional notes.'}</Text></Stack><RowMenu label="Review actions">{screen==='Reports'?<><Menu.Item leftSection={<FiCheck/>} disabled={row.status!=='open'} onClick={()=>void action(()=>adminApi(`/admin/reports/${row.id}`,{method:'PATCH',body:JSON.stringify({status:'resolved'})}),'Report resolved.')}>Mark resolved</Menu.Item><Menu.Item leftSection={<FiX/>} disabled={row.status!=='open'} onClick={()=>void action(()=>adminApi(`/admin/reports/${row.id}`,{method:'PATCH',body:JSON.stringify({status:'dismissed'})}),'Report dismissed.')}>Dismiss report</Menu.Item><Menu.Item color="red" leftSection={<FiPause/>} onClick={()=>setConfirm({title:`Pause ad #${row.ad_id}?`,description:'The reported ad will no longer be public.',run:async()=>{await adminApi(`/admin/ads/${row.ad_id}/status`,{method:'POST',body:JSON.stringify({status:'paused'})});await adminApi(`/admin/reports/${row.id}`,{method:'PATCH',body:JSON.stringify({status:'resolved'})});}})}>Pause reported ad</Menu.Item></>:<><Menu.Item leftSection={<FiImage/>} onClick={()=>void action(async()=>{const {url}=await adminApi<{url:string}>(`/admin/verifications/${row.id}/photo`);setPhoto(url);},'Private photo opened.')}>Review private photo</Menu.Item><Menu.Item color="teal" leftSection={<FiCheck/>} disabled={row.status!=='pending'} onClick={()=>void action(()=>adminApi(`/admin/verifications/${row.id}`,{method:'PATCH',body:JSON.stringify({status:'approved'})}),'Verification approved.')}>Approve verification</Menu.Item><Menu.Item color="red" leftSection={<FiX/>} disabled={row.status!=='pending'} onClick={()=>setConfirm({title:'Reject this verification?',description:'The verification request will be marked rejected.',run:()=>adminApi(`/admin/verifications/${row.id}`,{method:'PATCH',body:JSON.stringify({status:'rejected'})})})}>Reject verification</Menu.Item></>}</RowMenu></Group></Paper>)}</Stack>}
+   </>}
+   {!list.loading&&(list.data?.total||0)>50&&<PostPagination page={page} total={Math.ceil((list.data?.total||0)/50)} onChange={setPage}/>}
+  </Stack></Paper>}
+  {screen==='Publish'&&<Publisher key={source?.id||'new'} locations={locations} categories={categories} source={source} mode={source?'edit':'create'} onSubmit={publication} defaultOwner={me.data?.user.username}/>}
+  {(screen==='Bump post'||screen==='Distribute post')&&<Stack><Paper withBorder p="md" radius="md"><form onSubmit={lookup}><Group align="end"><TextInput label="Find a post by ID" placeholder="Enter Post ID" value={postId} onChange={event=>setPostId(event.currentTarget.value)} style={{flex:1}} required/><Button type="submit" loading={finding} leftSection={<FiSearch/>}>Find post</Button></Group></form></Paper>{finding?<LoadingRows/>:found?<><FoundPost ad={found} images={found.images||[]} destinations={found.targets.map(target=>countriesByCity.get(target)||target)} onPreview={src=>setPhoto(src)} onBump={screen==='Bump post'?()=>void bump(found):undefined}/>{screen==='Distribute post'&&<Publisher key={found.id+found.targets.join(',')} source={found} locations={locations} categories={categories} mode="copy" onSubmit={publication}/>}</>:<EmptyState kind="search" title="Find an existing post" description="Enter its numeric Post ID to see its details and destinations."/>}</Stack>}
+  <Modal opened={Boolean(photo)} onClose={()=>setPhoto('')} title="Image preview" centered size="lg">{photo&&<img src={photo} alt="Selected image" style={{width:'100%',height:'auto',maxHeight:'75vh',objectFit:'contain'}}/>}</Modal>
+  <Modal opened={Boolean(confirm)} onClose={()=>{if(!busy)setConfirm(null);}} title={confirm?.title} centered><Stack><Text size="sm">{confirm?.description}</Text><Group justify="flex-end"><Button variant="default" disabled={busy} onClick={()=>setConfirm(null)}>Cancel</Button><Button color="red" loading={busy} onClick={async()=>{if(confirm&&await action(confirm.run,'Action completed.'))setConfirm(null);}}>Confirm action</Button></Group></Stack></Modal>
+  </Box></AppShell.Main></AppShell></div>;
 }

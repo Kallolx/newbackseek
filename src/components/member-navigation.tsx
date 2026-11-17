@@ -1,17 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { toast } from './toast';
 import { logOut, useMember } from '../member/session';
 
 export function MemberNavigation() {
   const { member } = useMember();
-  const router = useRouter();
   return (
     <nav className="header-member-nav" data-signed-in={Boolean(member)} aria-label="Main navigation">
       {member ? <>
         <Link href="/myaccount">My account</Link>
-        <button type="button" onClick={async () => { await logOut(); router.replace('/auth'); router.refresh(); }}>Logout</button>
+        <button type="button" onClick={async () => { try { await logOut(); window.location.replace('/auth'); } catch(error) {toast.error((error as Error).message);} }}>Logout</button>
       </> : <Link href="/post">Post an Ad</Link>}
     </nav>
   );

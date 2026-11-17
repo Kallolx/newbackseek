@@ -16,8 +16,8 @@ export function EmptyState({ title, description, kind = 'posts', href, action, o
 
 export function PageLoader({ label = 'Loading your account', children }: { label?: string; children?: ReactNode }) {
   return <div className={styles.loading} role="status" aria-live="polite" aria-busy="true">
-    <div className={styles.loaderHeading}><span className={styles.spinner} aria-hidden="true" /><span>{label}…</span></div>
-    <div className={styles.skeleton} aria-hidden="true"><i /><i /><div /><div /><div /></div>
+    <span className="sr-only">{label}</span>
+    <div className={styles.skeleton} aria-hidden="true"><div className={styles.skeletonTitle}/>{[0,1,2].map(index=><div className={styles.skeletonRow} key={index}><span className={styles.skeletonPhoto}/><span className={styles.skeletonLines}><i/><i/><i/></span></div>)}</div>
     {children}
   </div>;
 }

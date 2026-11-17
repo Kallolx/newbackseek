@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { SiteSelect } from '../../components/site-select';
 import { FeedbackToast, toast } from '../../components/toast';
 import { Turnstile } from '../../components/turnstile';
@@ -22,6 +22,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState(false);
   const [captchaAttempt, setCaptchaAttempt] = useState(0);
   const [message, setMessage] = useState(searchParams.get('error') ? 'Google sign-in could not be completed. Please try again or use email.' : '');
+  useEffect(()=>{if(searchParams.get('email')==='verified')toast.success('Email verified. You can now log in.');if(searchParams.get('email')==='invalid')toast.error('This verification link has expired or was already used.');},[searchParams]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,9 +44,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Unable to continue right now.');
+      if (signup) toast[result.verificationEmailSent === false ? 'warning' : 'success'](result.verificationEmailSent === false ? 'Account created, but the email could not be sent. Log in and resend it from Account Settings.' : 'Account created. Check your inbox to verify your email, then log in.');
       window.dispatchEvent(new Event('bpn-session-change'));
-      if (signup) toast[result.verificationEmailSent === false ? 'warning' : 'success'](result.verificationEmailSent === false ? 'Account created. Please resend your verification email from Account Settings.' : 'Account created. Check your email for the verification link.');
-      router.replace(signup ? `${destination}?email=pending` : destination);
+      router.replace(signup ? '/auth' : destination);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to continue right now.');
