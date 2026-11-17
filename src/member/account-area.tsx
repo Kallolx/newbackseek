@@ -64,7 +64,7 @@ function MemberPosts({ member }: { member: MemberSession }) {
       {matches.slice((currentPage - 1) * 10, currentPage * 10).map((post) => <PostCard key={post.id}
         title={post.title} label={post.location} description={post.description}
         href={'/myaccount/posts/' + post.id}
-        thumbnail={post.images[0] ? <Image src={post.images[0]} alt="" width={320} height={220} unoptimized={post.images[0].startsWith('data:')} /> : undefined}
+        thumbnail={post.images[0] ? <Image src={post.images[0]} alt="" width={320} height={220} unoptimized /> : undefined}
         details={<><span>Age: {post.age} · {post.cityName}</span><span className={styles.postStatus} data-paused={post.status === 'Paused'}>{post.status}</span></>} />)}
     </ul> : query ? <EmptyState kind="search" title="No matching ads" description="Try a shorter search or clear your search to see all your ads." action="Clear search" onAction={() => { setQuery(''); setPage(1); }} /> : <EmptyState title="Your first ad starts here" description="Once you publish an ad, you can find it here, view its pictures and manage its status." href="/myaccount/post" action="Create your first ad" />}
     {matches.length > 0 && <PostPagination page={currentPage} total={total} onChange={(value) => { setPage(value); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />}
@@ -82,8 +82,8 @@ function MemberDetails({ member, id }: { member: MemberSession; id: string }) {
     <div className={styles.heading}><span className={styles.postStatus}>{post.status}</span></div>
     <FeedbackToast message={message} type="info" />
     {!post.images.length && <EmptyState kind="photo" compact title="No pictures in this ad" description="This ad was posted without photos. Its details are available below." />}
-    {!!post.images.length && <><div className={styles.mainPhoto}><Image src={post.images[image]} alt={post.title} width={1000} height={700} unoptimized={post.images[image].startsWith('data:')} /></div>
-      {post.images.length > 1 && <div className={styles.thumbnails}>{post.images.map((src, index) => <button key={index} type="button" aria-label={'Show photo ' + (index + 1)} aria-pressed={index === image} onClick={() => setImage(index)}><Image src={src} alt="" width={90} height={70} unoptimized={src.startsWith('data:')} /></button>)}</div>}</>}
+    {!!post.images.length && <><div className={styles.mainPhoto}><Image src={post.images[image]} alt={post.title} width={1000} height={700} unoptimized /></div>
+      {post.images.length > 1 && <div className={styles.thumbnails}>{post.images.map((src, index) => <button key={index} type="button" aria-label={'Show photo ' + (index + 1)} aria-pressed={index === image} onClick={() => setImage(index)}><Image src={src} alt="" width={90} height={70} unoptimized /></button>)}</div>}</>}
     <dl className={styles.facts}><div><dt>Age</dt><dd>{post.age}</dd></div><div><dt>Location</dt><dd>{post.location}</dd></div><div><dt>Phone</dt><dd>{post.phone}</dd></div><div><dt>Email</dt><dd>{member.email}</dd></div></dl>
     {post.descriptionHtml ? <DescriptionEditor content={post.descriptionHtml} readOnly /> : <p className={styles.description}>{post.description}</p>}
     <p className={styles.muted}>Your listing is handled by the account service. Pending listings are reviewed before publication.</p>
