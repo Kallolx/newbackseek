@@ -60,7 +60,7 @@ export function Publisher({ locations, categories, source, mode, onSubmit, defau
     if (mode === 'copy') return { ...source!, titles: [source!.title], targets: selected };
     const titles = String(fields.get('titles') ?? '').split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
     const owner = String(fields.get('owner') ?? '').trim();
-    if (!titles.length || titles.length > 100 || titles.some((title) => title.length > 150) || !description.trim() || description.length > 2950 || !category || !owner) { setError('Add an owner, category, subcategory and description (up to 2950 characters). Use up to 100 titles, each up to 150 characters.'); setStep(0); return; }
+    if (titles.length !== 1 || titles[0].length < 5 || titles[0].length > 140 || description.trim().length < 20 || description.length > 2950 || !category || !owner) { setError('Add an existing owner username, category, a title of 5–140 characters and a description of 20–2950 characters.'); setStep(0); return; }
     const age = Number(fields.get('age')) || undefined;
     if (age && (age < 18 || age > 120 || !Number.isInteger(age))) { setError('Age must be a whole number between 18 and 120.'); setStep(0); return; }
     const email = String(fields.get('email') ?? '').trim();

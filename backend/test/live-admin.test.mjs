@@ -60,6 +60,8 @@ test('live administration and public authentication lifecycle',{skip:process.env
   assert.equal((await adminCall('DELETE',`/api/admin/ads/${post.id}`)).statusCode,200);assert.equal((await call('GET',`/api/ads/${post.id}`)).statusCode,404);
   assert.equal((await adminCall('DELETE',`/api/admin/users/${member.id}`)).statusCode,200);assert.equal((await signIn('member@example.com')).statusCode,401);
   const summary=await adminCall('GET','/api/admin/summary');assert.equal(summary.statusCode,200,summary.body);assert.equal(summary.json().counts.ads,0);assert.equal(summary.json().counts.users,0);
+  const mediaList=await adminCall('GET','/api/admin/media');assert.equal(mediaList.statusCode,200,mediaList.body);assert.equal(mediaList.json().items.length,0,'private verification images must not enter the public media browser');
+  const verificationSearch=await adminCall('GET','/api/admin/verifications?search=testmember&status=approved');assert.equal(verificationSearch.statusCode,200,verificationSearch.body);assert.equal(verificationSearch.json().total,1);
   const seeds=Array.from({length:51},(_,index)=>({email:`page${index}@example.com`,username:`pageuser${index}`,password_hash:hash}));await sql`insert into users ${sql(seeds)}`;
   const page2=await adminCall('GET','/api/admin/users?search=pageuser&page=2');assert.equal(page2.statusCode,200,page2.body);assert.equal(page2.json().total,51);assert.equal(page2.json().items.length,1);
   assert.equal((await call('GET','/api/auth/google/callback?code=fake&state=fake')).statusCode,303);
