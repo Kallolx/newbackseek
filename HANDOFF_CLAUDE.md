@@ -376,11 +376,21 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml up --build --
 docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove-orphans
 ~~~
 
+## 12b. Security layer (country blocking, origin lock)
+
+- Admin → Security (admin.backpagenew.com/admin/security) controls country blocking (BD preselected, off by default), Tor (T1), unknown (XX), optional admin-panel blocking, an IP allowlist and "Cloudflare-only". Settings live in table security_settings (migration 009); changes are audited as security.settings.
+- Enforcement 1 (origin): Caddy forward_auth calls GET /api/internal/geo-gate (hidden from the internet by Caddy) on every request except /_next/static. It reads CF-IPCountry / CF-Connecting-IP / CF-Ray. Without CF-Ray the request is treated as a direct hit and refused when Cloudflare-only is on.
+- Enforcement 2 (edge): when CLOUDFLARE_API_TOKEN (Zone WAF Edit + Zone Read, this zone only) and CLOUDFLARE_ZONE_ID are in backend/.env, the API maintains one WAF custom rule (ref bpn_geo_block). REQUIRED before re-enabling the Cloudflare page-cache rule, otherwise cached HTML bypasses the origin gate.
+- Origin lock: ops/security/cloudflare-origin-lock.sh (systemd bpn-origin-lock.service + daily timer) drops every connection to ports 80/443 that is not from Cloudflare, in Docker's DOCKER-USER chain. SSH is unaffected. Emergency undo: sudo sh /srv/backpagenew/app/ops/security/cloudflare-origin-lock.sh remove
+- Consequence: you cannot curl the server IP directly any more; test through the domain, or on the VPS use http://127.0.0.1:3000 / :4000.
+- Rate limits key on CF-Connecting-IP (real visitor), not the proxy address.
+- Never print or commit the Cloudflare token.
+
 ## 13. Important pitfalls
 
 1. Keep public HTML revalidation and account/API no-store behavior.
 2. Keep Zoho MX/TXT and R2 custom-domain records DNS-only where required.
-3. Full (strict) Cloudflare mode requires working Caddy origin TLS.
+3. Full (strict) Cloudflare mode requires working Caddy origin TLS. Certificates renew over HTTP-01 through Cloudflare (origin lock allows Cloudflare only); check Caddy logs for renewal errors around day 60 of each certificate.
 4. Admin context headers are not authorization; backend role/session checks remain mandatory.
 5. Use direct media CDN URLs; Next remote optimizer is not configured for media.backpagenew.com.
 6. Pictures upload on select; ads may attach pictures that are still queued/processing (the worker finishes them).
