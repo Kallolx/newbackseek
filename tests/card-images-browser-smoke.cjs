@@ -19,6 +19,8 @@ const sharp=require('sharp');
    await context.route('**/api/account/ads',route=>route.fulfill({json:{posts:[post]}}));
    await context.route('**/api/ads?*',route=>route.fulfill({json:{posts:[post],hasMore:false}}));
    await context.route('**/api/ads/1001',route=>route.fulfill({json:{post,images:variants.map((variants,i)=>({id:String(i),variants})),cities:[{href:post.city_href}]}}));
+   await context.route('**/api/admin/summary',route=>route.fulfill({json:{counts:{users:0,ads:0,published:0,pending:0,reports:0,verifications:0},daily:[]}}));
+   await context.route('**/api/admin/ads**',route=>route.fulfill({json:new URL(route.request().url()).pathname.endsWith('/1001')?{post:{...post,owner:'rendercheck',targets:[post.city_href],images:variants.map((variants,i)=>({id:String(i),variants}))}}:{items:[],total:0,page:1,pageSize:50}}));
    const page=await context.newPage();
    for(const path of ['/myaccount','/browse/us/alabama/auburn/automotive-services']){
     await page.goto(base+path,{waitUntil:'domcontentloaded'});
@@ -45,6 +47,15 @@ const sharp=require('sharp');
     if(path.includes('/browse/')){assert.equal(await page.locator('.post-facts a[href^="tel:"]').count(),1);assert.equal(await page.locator('.post-facts a[href="mailto:public-contact@example.com"]').count(),1);}
     await page.screenshot({path:`artifacts/gallery-${width}-${path.startsWith('/myaccount')?'member':'public'}.png`});
     console.log(`${width}px ${path}: three selectable thumbnails, portrait/landscape fit stable frame passed`);
+   }
+   for(const path of ['/admin/distribute','/admin/bump']){
+    await page.goto(base+path,{waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>document.querySelector('button[aria-label="Administrator account"]')?.textContent?.includes('RE'));
+    await page.getByRole('textbox',{name:/Find a post by ID/}).fill('1001');
+    await page.getByRole('button',{name:'Find post',exact:true}).click();
+    const photo=page.locator('.post-thumbnail img').first();await photo.waitFor();await photo.evaluate(img=>img.decode());assert.equal(await photo.getAttribute('src'),image);
+    assert.equal(await page.getByRole('button',{name:/Preview photo \d/}).count(),3);
+    console.log(`${width}px ${path}: direct CDN cover and all three preview thumbnails passed`);
    }
    await context.close();
   }
