@@ -45,7 +45,8 @@ const {chromium}=require(process.env.BPN_PLAYWRIGHT_MODULE||'playwright');
   await publicPage.goto(memberBase+'/myaccount/post',{waitUntil:'domcontentloaded'});await publicPage.getByRole('button',{name:'Choose pictures'}).waitFor({timeout:45000});
   for(let index=0;index<6;index++)await publicPage.getByLabel('Upload ad pictures').setInputFiles(file(index));
   assert.equal(await publicPage.getByAltText(/Ad picture /).count(),6);
-  assert.equal(publicUploads.length,0,'Selecting public pictures must not upload images');assert.equal(await publicPage.evaluate(()=>window.__bitmapCalls),0,'Selecting public pictures must not prepare images');
-  console.log('Public: original uploader accepts six separate selections with zero early uploads or processing');
+  await publicPage.waitForFunction(()=>document.querySelectorAll('[data-stage=ready]').length===6,null,{timeout:60000});
+  assert.ok(publicUploads.length>=12,'Public pictures upload and complete as soon as they are chosen');
+  console.log('Public: six separate selections upload immediately and all reach ready');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

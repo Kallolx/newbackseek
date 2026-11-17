@@ -31,9 +31,13 @@ const adInput = z.object({
   location: z.string().max(200).default(""),
   phone: z.string().max(40).default(""),
   contactEmail: z.union([z.email().max(254),z.literal('')]).default(''),
-  cityIds: z.array(z.number().int().positive()).min(1).max(1000),
+  cityIds: z.array(z.number().int().positive()).min(1).max(1000).optional(),
+  cityHref: z.string().startsWith("/browse/").max(300).optional(),
   mediaIds: z.array(uuid).max(12).default([]),
 });
+// Pictures upload while the member fills the form, so an ad may be submitted
+// while its last pictures are still finishing on the worker.
+const attachableMedia = ["queued", "processing", "ready"];
 const fail = (statusCode, message) =>
   Object.assign(new Error(message), { statusCode });
 const cookieOptions = {
@@ -432,7 +436,9 @@ export async function buildApp() {
     reply.clearCookie(name, { path: "/", secure: cookieOptions.secure });
     return { ok: true };
   });
-  app.get("/api/locations", async (req) => {
+  const directoryCache = "public, max-age=300, stale-while-revalidate=3600";
+  app.get("/api/locations", async (req, reply) => {
+    reply.header("Cache-Control", directoryCache);
     const q = z
       .object({
         country: z.string().max(10).default(""),
@@ -444,9 +450,10 @@ export async function buildApp() {
         await sql`select * from cities where (${q.country}='' or country_code=${q.country}) and (${q.region}='' or region=${q.region}) order by country,region,name`,
     };
   });
-  app.get("/api/categories", async () => ({
-    categories: await sql`select * from categories order by group_name,name`,
-  }));
+  app.get("/api/categories", async (req, reply) => {
+    reply.header("Cache-Control", directoryCache);
+    return { categories: await sql`select * from categories order by group_name,name` };
+  });
   app.get("/api/ads", async (req) => {
     const q = pagination
       .extend({
@@ -456,12 +463,12 @@ export async function buildApp() {
         search: z.string().max(120).default(""),
       })
       .parse(req.query);
-    const cityId = q.cityId || (await sql`select id from cities where href=${q.cityHref || ''}`)[0]?.id;
-    if (!cityId) return { posts: [], page: q.page, hasMore: false };
+    if (!q.cityId && !q.cityHref) return { posts: [], page: q.page, hasMore: false };
+    const cityId = q.cityId ?? null;
     const rows =
       await sql`select a.id,a.title,left(a.description,240) as description,a.age,a.location,p.ranked_at,
      (select variants from media where ad_id=a.id and status='ready' and purpose='ad' order by created_at limit 1) as image
-     from placements p join ads a on a.id=p.ad_id where p.city_id=${cityId} and a.category_slug=${q.category} and a.status='published'
+     from placements p join ads a on a.id=p.ad_id where p.city_id=coalesce(${cityId}::bigint,(select id from cities where href=${q.cityHref || ''})) and a.category_slug=${q.category} and a.status='published'
      and (${q.search}='' or a.search_document @@ websearch_to_tsquery('english',${q.search}))
      order by p.ranked_at desc,p.ad_id desc limit 51 offset ${(q.page - 1) * 50}`;
     return {
@@ -497,15 +504,18 @@ export async function buildApp() {
   });
   app.post("/api/account/ads", { preHandler: [member, verifiedMember] }, async (req, reply) => {
     const input = adInput.parse(req.body);
+    if (!input.cityIds?.length && !input.cityHref) throw fail(400, "Choose a city for your ad");
     const ad = await sql.begin(async (tx) => {
+      const cityIds = input.cityIds?.length ? input.cityIds : (await tx`select id from cities where href=${input.cityHref}`).map((city) => Number(city.id));
+      if (!cityIds.length) throw fail(400, "That city is unavailable. Please choose it again.");
       const [ad] =
         await tx`insert into ads (owner_id,category_slug,title,description,age,location,phone,contact_email,status) values
        (${req.user.id},${input.categorySlug},${input.title},${input.description},${input.age ?? null},${input.location},${input.phone},${input.contactEmail},'pending') returning *`;
-      await tx`insert into placements ${tx([...new Set(input.cityIds)].map((city_id) => ({ ad_id: ad.id, city_id })))}`;
+      await tx`insert into placements ${tx([...new Set(cityIds)].map((city_id) => ({ ad_id: ad.id, city_id })))}`;
       if (input.mediaIds.length) {
         const media =
-          await tx`update media set ad_id=${ad.id} where id in ${tx(input.mediaIds)} and owner_id=${req.user.id} and ad_id is null and purpose='ad' and status='ready' returning id`;
-        if (media.length !== input.mediaIds.length)
+          await tx`update media set ad_id=${ad.id},ever_attached=true where id in ${tx(input.mediaIds)} and owner_id=${req.user.id} and ad_id is null and purpose='ad' and status in ${tx(attachableMedia)} returning id`;
+        if (media.length !== new Set(input.mediaIds).size)
           throw fail(400, "One or more images are unavailable");
       }
       await audit(tx, req.user.id, "ad.create", ad.id);
@@ -526,10 +536,10 @@ export async function buildApp() {
         if(removed.length)await tx`update media set ad_id=null where id in ${tx(removed)} and ad_id=${old.id}`;
       }
       if(value.mediaIds?.length){
-        const attached=await tx`update media set ad_id=${old.id} where id in ${tx(value.mediaIds)} and owner_id=${req.user.id} and purpose='ad' and status='ready' and ad_id is null returning id`;
+        const attached=await tx`update media set ad_id=${old.id},ever_attached=true where id in ${tx(value.mediaIds)} and owner_id=${req.user.id} and purpose='ad' and status in ${tx(attachableMedia)} and ad_id is null returning id`;
         if(attached.length!==new Set(value.mediaIds).size)throw fail(400,'One or more pictures are unavailable');
       }
-      const [count]=await tx`select count(*)::int as total from media where ad_id=${old.id} and purpose='ad'`;
+      const [count]=await tx`select count(*)::int as total from media where ad_id=${old.id} and purpose='ad' and status<>'failed'`;
       if(count.total>6)throw fail(400,'You can add up to 6 pictures');
       await audit(tx,req.user.id,'ad.owner.edit',old.id);
       return {post};
@@ -558,7 +568,7 @@ export async function buildApp() {
     "/api/media/uploads",
     {
       preHandler: [member, verifiedMember],
-      config: { rateLimit: { max: 30, timeWindow: "1 hour" } },
+      config: { rateLimit: { max: 120, timeWindow: "1 hour" } },
     },
     async (req) => {
       if (!storageReady()) throw fail(503, "Image storage is not configured");
@@ -604,6 +614,12 @@ export async function buildApp() {
     await images.add("process", { id: media.id }, { jobId: media.id });
     await sql`update media set status='queued' where id=${media.id} and status='uploading'`;
     return { status: "queued" };
+  });
+  // One request reports every picture the form is waiting on.
+  app.get("/api/media/status", { preHandler: member, config: { rateLimit: { max: 600, timeWindow: "1 minute" } } }, async (req) => {
+    const { ids } = z.object({ ids: z.string().max(400) }).parse(req.query);
+    const list = z.array(uuid).min(1).max(12).parse([...new Set(ids.split(",").filter(Boolean))]);
+    return { media: await sql`select id,status,variants from media where id in ${sql(list)} and owner_id=${req.user.id}` };
   });
   app.get("/api/media/:id", { preHandler: member }, async (req) => {
     const [media] =

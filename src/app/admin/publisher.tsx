@@ -76,20 +76,24 @@ export function Publisher({ locations, categories, source, mode, onSubmit, defau
     setReview(value); setStep(2);
   }
   async function uploadPictures() {
-    const ids:string[]=[];
-    for (const file of files) {
-      const existing=uploaded.current.get(file);if(existing){ids.push(existing);continue;}
+    // Upload every picture at once, then check all of them with one status request.
+    const ids=await Promise.all(files.map(async file=>{
+      const existing=uploaded.current.get(file);if(existing)return existing;
       const data=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Could not read image'));reader.readAsDataURL(file);});
       const upload=await adminApi<{id:string}>('/admin/media/upload',{method:'POST',body:JSON.stringify({data,contentType:file.type})});
-      let ready=false;
-      for(let attempt=0;attempt<60;attempt++){
-        await new Promise(resolve=>setTimeout(resolve,1000));
-        const status=await adminApi<{status:string}>(`/media/${upload.id}`);
-        if(status.status==='failed')throw new Error('A picture could not be processed. Please choose another picture.');
-        if(status.status==='ready'){ids.push(upload.id);uploaded.current.set(file,upload.id);ready=true;break;}
+      return upload.id;
+    }));
+    const pending=new Set(ids.filter(mediaId=>![...uploaded.current.values()].includes(mediaId)));
+    for(let attempt=0;pending.size&&attempt<120;attempt++){
+      await new Promise(resolve=>setTimeout(resolve,500));
+      const {media}=await adminApi<{media:{id:string;status:string}[]}>(`/media/status?ids=${[...pending].join(',')}`);
+      for(const row of media){
+        if(row.status==='failed')throw new Error('A picture could not be processed. Please choose another picture.');
+        if(row.status==='ready')pending.delete(row.id);
       }
-      if(!ready)throw new Error('A picture is taking longer than expected. Check Media before retrying.');
     }
+    if(pending.size)throw new Error('A picture is taking longer than expected. Check Media before retrying.');
+    files.forEach((file,index)=>uploaded.current.set(file,ids[index]));
     return ids;
   }
   return <form ref={form} className={styles.publishFlow} noValidate onSubmit={async(event) => { event.preventDefault(); if (busy) return; if (step === 2 && review) {setBusy(true);setError('');try{const mediaIds=await uploadPictures();await onSubmit({...review,mediaIds});}catch(cause){setError(cause instanceof Error?cause.message:'Unable to save.');}finally{setBusy(false);}} else next(); }}>

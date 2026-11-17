@@ -11,7 +11,7 @@ const statusValues = ['draft','pending','published','paused','rejected','deleted
 const adSchema = z.object({ title:z.string().trim().min(5).max(140),description:z.string().trim().min(20).max(6000),categorySlug:z.string().min(1),owner:z.string().min(1),cityHrefs:z.array(z.string().startsWith('/browse/')).min(1).max(1500),age:z.number().int().min(18).max(120).optional(),location:z.string().max(200).default(''),phone:z.string().max(40).default(''),contactEmail:z.union([z.email().max(254),z.literal('')]).default(''),mediaIds:z.array(z.uuid()).max(12).default([]) });
 
 export function adminManagement(app, { admin, fail }) {
- app.post('/api/admin/media/upload',{preHandler:admin,bodyLimit:7500000,config:{rateLimit:{max:30,timeWindow:'1 hour'}}},async(req)=>{
+ app.post('/api/admin/media/upload',{preHandler:admin,bodyLimit:7500000,config:{rateLimit:{max:200,timeWindow:'1 hour'}}},async(req)=>{
   const input=z.object({contentType:z.enum(['image/jpeg','image/png','image/webp']),data:z.string().min(1).max(7000000)}).parse(req.body);
   const buffer=Buffer.from(input.data,'base64');if(!buffer.length||buffer.length>5242880)throw fail(400,'Choose an image under 5 MB');
   const key='incoming/'+req.user.id+'/'+token();
@@ -81,7 +81,7 @@ export function adminManagement(app, { admin, fail }) {
    } else [post]=await tx`insert into ads(owner_id,title,description,category_slug,age,location,phone,contact_email,status) values(${owner.id},${input.title},${input.description},${input.categorySlug},${input.age??null},${input.location},${input.phone},${input.contactEmail},'published') returning *`;
    await tx`insert into placements ${tx(cities.map(city=>({ad_id:post.id,city_id:city.id})))}`;
    if(input.mediaIds.length) {
-    const media=await tx`update media set ad_id=${post.id} where id in ${tx(input.mediaIds)} and owner_id=${req.user.id} and purpose='ad' and status='ready' and ad_id is null returning id`;
+    const media=await tx`update media set ad_id=${post.id},ever_attached=true where id in ${tx(input.mediaIds)} and owner_id=${req.user.id} and purpose='ad' and status='ready' and ad_id is null returning id`;
     if(media.length!==input.mediaIds.length)throw fail(400,'Images are still processing or unavailable');
    }
    await audit(tx,req.user.id,editing?'ad.edit':'ad.publish',post.id);

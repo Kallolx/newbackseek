@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, type FormEvent } from 'react';
-import { FiMapPin, FiInfo, FiImage, FiShield, FiUploadCloud, FiX } from 'react-icons/fi';
+import { FiMapPin, FiInfo, FiImage, FiShield, FiUploadCloud, FiX, FiCheck, FiRotateCw, FiAlertCircle } from 'react-icons/fi';
 import { SiteSelect } from '../components/site-select';
 import { countries } from '../directory/areas';
 import { serviceGroups } from '../directory/service-groups';
@@ -13,21 +13,37 @@ import { type MemberSession,type MemberPost } from './session';
 import { toast } from '../components/toast';
 import styles from './member.module.css';
 import { DescriptionEditor } from './description-editor';
+import { usePictureUploads, validatePicture, type PictureUpload } from './picture-uploads';
 
-async function preparePhoto(file: File): Promise<File> {
-  if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) throw new Error('Choose JPG, PNG, WebP or AVIF images.');
-  if (file.size > 5 * 1024 * 1024) throw new Error('Each picture must be under 5 MB.');
-  const bitmap = await createImageBitmap(file);
-  const ratio = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
-  canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
-  const context = canvas.getContext('2d');
-  if (!context) { bitmap.close(); throw new Error('Could not prepare this image.'); }
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Could not prepare this image.')), 'image/webp', 0.75));
-  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+type SubmitStep = { title: string; detail: string; step: number };
+
+function ProgressRing({ value }: { value: number }) {
+  const radius = 20, circumference = 2 * Math.PI * radius;
+  return <svg className={styles.ring} viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r={radius} className={styles.ringTrack} /><circle cx="24" cy="24" r={radius} className={styles.ringValue} strokeDasharray={circumference} strokeDashoffset={circumference * (1 - value / 100)} /></svg>;
+}
+
+function UploadTile({ item, index, cover, onRemove, onRetry, disabled }: { item: PictureUpload; index: number; cover: boolean; onRemove: () => void; onRetry: () => void; disabled: boolean }) {
+  const label = item.stage === 'ready' ? 'Ready' : item.stage === 'failed' ? 'Failed' : item.stage === 'waiting' ? 'Waiting' : item.stage === 'processing' ? 'Optimizing' : 'Uploading';
+  return <div className={styles.uploadTile} data-stage={item.stage}>
+    <Image src={item.preview} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />
+    {item.stage !== 'ready' && item.stage !== 'failed' && <div className={styles.tileProgress} role="progressbar" aria-label={`Picture ${index + 1} ${label.toLowerCase()}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={item.progress}><ProgressRing value={item.progress} /><strong>{item.progress}%</strong></div>}
+    {item.stage === 'ready' && <span className={styles.tileDone} aria-label={`Picture ${index + 1} ready`}><FiCheck aria-hidden="true" /></span>}
+    {item.stage === 'failed' && <div className={styles.tileFailed}><FiAlertCircle aria-hidden="true" /><small>{item.error || 'Upload failed'}</small><button type="button" className={styles.tileRetry} onClick={onRetry}><FiRotateCw aria-hidden="true" /> Retry</button></div>}
+    {cover && <span className={styles.coverLabel}>Cover photo</span>}
+    <button type="button" className={styles.tileRemove} disabled={disabled} aria-label={'Remove picture ' + (index + 1)} onClick={onRemove}><FiX /></button>
+  </div>;
+}
+
+function SubmitOverlay({ state }: { state: SubmitStep }) {
+  const steps = ['Pictures', 'Saving', 'Done'];
+  return <div className={styles.submitOverlay} role="status" aria-live="polite">
+    <div className={styles.submitCard}>
+      <div className={styles.submitSpinner} data-done={state.step === 2}>{state.step === 2 ? <FiCheck aria-hidden="true" /> : <span aria-hidden="true" />}</div>
+      <strong>{state.title}</strong>
+      <p>{state.detail}</p>
+      <ol className={styles.submitSteps}>{steps.map((name, index) => <li key={name} data-state={index < state.step ? 'done' : index === state.step ? 'active' : 'todo'}>{name}</li>)}</ol>
+    </div>
+  </div>;
 }
 
 export function MemberPostForm({ member,post }: { member: MemberSession;post?:MemberPost }) {
@@ -41,11 +57,12 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
   const [description, setDescription] = useState(post?.description||'');
   const [saved,setSaved]=useState((post?.images||[]).map((src,index)=>({src,id:post?.mediaIds?.[index]})));
   const [descriptionHtml, setDescriptionHtml] = useState('');
-  const [pictures, setPictures] = useState<{ preview: string; file: File }[]>([]);
+  const uploads = usePictureUploads();
+  const pictures = uploads.items;
   const [processing, setProcessing] = useState(false);
+  const [submitState, setSubmitState] = useState<SubmitStep | null>(null);
   const [error, setError] = useState('');
   const [photoError, setPhotoError] = useState('');
-  const busy = useRef(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const country = countries.find((item) => item.code === countryCode);
   const region = country?.regions.find((item) => item.href === regionHref);
@@ -53,20 +70,14 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
   const group = serviceGroups.find((item) => item.name === groupName);
   const service = group?.services.find((item) => item.slug === serviceSlug);
 
-  async function addPictures(files: File[]) {
-    if (busy.current || !files.length) return;
+  function addPictures(files: File[]) {
+    if (fileInput.current) fileInput.current.value = '';
+    if (!files.length) return;
     setPhotoError('');
-    if (saved.length+pictures.length + files.length > 6) { setPhotoError('You can add up to 6 pictures.'); return; }
-    busy.current = true;
-    try {
-      const prepared: { preview: string; file: File }[] = [];
-      for (const file of files) {
-        if (!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type) || file.size > 5*1024*1024) throw new Error('Choose JPG, PNG, WebP or AVIF pictures under 5 MB.');
-        prepared.push({file,preview:URL.createObjectURL(file)});
-      }
-      setPictures((previous) => [...previous, ...prepared]);
-    } catch (cause) { setPhotoError(cause instanceof Error ? cause.message : 'Could not open this image. Try another file.'); }
-    finally { busy.current = false; if (fileInput.current) fileInput.current.value = ''; }
+    if (saved.length + pictures.length + files.length > 6) { setPhotoError('You can add up to 6 pictures.'); return; }
+    const invalid = files.map(validatePicture).find(Boolean);
+    if (invalid) { setPhotoError(invalid); return; }
+    uploads.add(files);
   }
 
   async function publish(event: FormEvent<HTMLFormElement>) {
@@ -85,39 +96,22 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
     }
     setProcessing(true);
     try {
-      const locationsResponse = await fetch(`/api/locations?country=${encodeURIComponent(country.code)}&region=${encodeURIComponent(region.name)}`, { credentials: 'same-origin' });
-      const locations = await locationsResponse.json();
-      const selectedCity = locations.cities?.find((item: { href: string }) => item.href === city.href);
-      if (!selectedCity) throw new Error('That city is unavailable. Please choose it again.');
-      const mediaIds: string[] = [];
-      for (const picture of pictures) {
-        const uploadFile = await preparePhoto(picture.file);
-        const create = await fetch('/api/media/uploads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bytes: uploadFile.size, contentType: uploadFile.type, purpose: 'ad' }) });
-        const upload = await create.json();
-        if (!create.ok) throw new Error(upload.error || 'Could not prepare an image upload.');
-        const put = await fetch(upload.url, { method: 'PUT', headers: { 'content-type': uploadFile.type }, body: uploadFile });
-        if (!put.ok) throw new Error('Could not upload an image.');
-        const complete = await fetch(`/api/media/${upload.id}/complete`, { method: 'POST', credentials: 'same-origin' });
-        if (!complete.ok) throw new Error('Could not finish an image upload.');
-        let ready = false;
-        for (let attempt = 0; attempt < 20; attempt += 1) {
-          await new Promise((resolve) => window.setTimeout(resolve, 750));
-          const statusResponse = await fetch(`/api/media/${upload.id}`, { credentials: 'same-origin', cache: 'no-store' });
-          const status = await statusResponse.json();
-          if (status.status === 'ready') { ready = true; break; }
-          if (status.status === 'failed') throw new Error('An image could not be processed. Please choose another picture.');
-        }
-        if (!ready) throw new Error('Image processing is taking longer than expected. Please try again in a moment.');
-        mediaIds.push(upload.id);
-      }
-      const response = await fetch('/api/account/ads'+(post?'/'+post.id:''), { method: post?'PATCH':'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, contactEmail, ...(post?{keepMediaIds:saved.flatMap(photo=>photo.id?[photo.id]:[])}:{cityIds:[Number(selectedCity.id)]}), mediaIds }) });
+      const total = pictures.length;
+      const settled = await uploads.settle(list => {
+        const done = list.filter(item => item.stage === 'ready').length;
+        const uploading = list.some(item => ['waiting', 'preparing', 'uploading'].includes(item.stage));
+        if (total) setSubmitState({ step: 0, title: uploading ? 'Uploading your pictures' : 'Finishing your pictures', detail: `${done} of ${total} ready` });
+      });
+      const mediaIds = settled.flatMap(item => item.mediaId && item.stage !== 'failed' ? [item.mediaId] : []);
+      setSubmitState({ step: 1, title: post ? 'Saving your changes' : 'Saving your ad', detail: 'This only takes a moment.' });
+      const response = await fetch('/api/account/ads'+(post?'/'+post.id:''), { method: post?'PATCH':'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, contactEmail, ...(post?{keepMediaIds:saved.flatMap(photo=>photo.id?[photo.id]:[])}:{cityHref:city.href}), mediaIds }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not submit your ad.');
+      setSubmitState({ step: 2, title: post ? 'Changes submitted' : 'Ad submitted', detail: 'Sent for review. Taking you back…' });
       window.dispatchEvent(new Event('bpn-session-change'));
       toast.success(post?'Changes submitted for review.':'Ad submitted for review.');
       router.replace(post?'/myaccount/posts/'+post.id:'/myaccount'); router.refresh();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not submit your ad.'); }
-    finally { setProcessing(false); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not submit your ad.'); setSubmitState(null); setProcessing(false); }
   }
 
   return <div className={styles.formWidth}>
@@ -150,13 +144,13 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
       </section>
       <section className={styles.section} aria-labelledby="post-pictures-heading">
         <h2 id="post-pictures-heading"><FiImage aria-hidden="true" /> Your pictures <span className={styles.help}>{saved.length+pictures.length} / 6</span></h2>
-        <div className={styles.upload} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void addPictures(Array.from(event.dataTransfer.files)); }}>
-          <FiUploadCloud aria-hidden="true" /><strong>Add pictures to your ad</strong><p>Drop images here or choose files. JPG, PNG, WebP or AVIF, up to 5 MB each.</p>
-          <button className={styles.secondary} type="button" disabled={processing || saved.length+pictures.length >= 6} onClick={() => fileInput.current?.click()}>{processing ? 'Preparing pictures…' : 'Choose pictures'}</button>
-          <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden aria-label="Upload ad pictures" onChange={(event) => void addPictures(Array.from(event.target.files ?? []))} />
+        <div className={styles.upload} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addPictures(Array.from(event.dataTransfer.files)); }}>
+          <FiUploadCloud aria-hidden="true" /><strong>Add pictures to your ad</strong><p>Drop images here or choose files. JPG, PNG, WebP or AVIF, up to 10 MB each. Pictures upload right away while you finish the form.</p>
+          <button className={styles.secondary} type="button" disabled={processing || saved.length+pictures.length >= 6} onClick={() => fileInput.current?.click()}>Choose pictures</button>
+          <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden aria-label="Upload ad pictures" onChange={(event) => addPictures(Array.from(event.target.files ?? []))} />
         </div>
-        {(saved.length+pictures.length)>0&&<div className={styles.photos}>{saved.map((photo,index)=><div key={photo.src}><Image src={photo.src} alt={'Saved ad picture '+(index+1)} width={200} height={160} unoptimized/>{index===0&&<span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove saved picture '+(index+1)} onClick={()=>setSaved(previous=>previous.filter((_,item)=>item!==index))}><FiX/></button></div>)}{pictures.map((picture, index) => <div key={picture.preview}><Image src={picture.preview} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />{index === 0&&!saved.length && <span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove picture ' + (index + 1)} onClick={() => setPictures((previous) => previous.filter((_, item) => item !== index))}><FiX /></button></div>)}</div>}
-        <p className={styles.help}>Pictures are prepared automatically and optimized after upload.</p>
+        {(saved.length+pictures.length)>0&&<div className={styles.photos}>{saved.map((photo,index)=><div key={photo.src}><Image src={photo.src} alt={'Saved ad picture '+(index+1)} width={200} height={160} unoptimized/>{index===0&&<span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove saved picture '+(index+1)} onClick={()=>setSaved(previous=>previous.filter((_,item)=>item!==index))}><FiX/></button></div>)}{pictures.map((picture, index) => <UploadTile key={picture.key} item={picture} index={index} cover={index === 0 && !saved.length} disabled={processing} onRemove={() => uploads.remove(picture.key)} onRetry={() => uploads.retry(picture.key)} />)}</div>}
+        <p className={styles.help}>Each picture uploads and is optimized as soon as you add it. It turns sharp when it reaches 100%.</p>
         <FeedbackToast message={photoError} />
       </section>
       <section className={styles.section} aria-labelledby="post-privacy-heading">
@@ -165,7 +159,8 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
         <p className={styles.notice}>Your listing is sent for review. Pictures are optimized securely after upload and only approved ads appear publicly.</p>
       </section>
       <FeedbackToast message={error} />
-      <div className={styles.publish}><Link href={post?'/myaccount/posts/'+post.id:'/myaccount'}>Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{processing ? 'Submitting…' : post?'Save changes for review':'Submit ad for review'}</button></div>
+      <div className={styles.publish}><Link href={post?'/myaccount/posts/'+post.id:'/myaccount'}>Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{post?'Save changes for review':'Submit ad for review'}</button></div>
+      {submitState && <SubmitOverlay state={submitState} />}
     </form>
   </div>;
 }

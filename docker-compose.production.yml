@@ -39,6 +39,26 @@ services:
     image: postgres:18
     profiles: ['backend']
     env_file: ./backend/.env
+    # Tuned for the 6 vCPU / 6 GB VPS (stock Postgres assumes 128 MB of cache).
+    command:
+      - postgres
+      - -c
+      - shared_buffers=768MB
+      - -c
+      - effective_cache_size=2560MB
+      - -c
+      - work_mem=12MB
+      - -c
+      - maintenance_work_mem=192MB
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - max_connections=100
+    shm_size: 256mb
     environment:
       POSTGRES_DB: backpagenew
       POSTGRES_USER: backpagenew
@@ -94,8 +114,10 @@ services:
     profiles: ['backend']
     env_file: ./backend/.env
     command: [npm, run, worker]
-    mem_limit: 768m
-    cpus: 1
+    environment:
+      IMAGE_WORKER_CONCURRENCY: '4'
+    mem_limit: 1536m
+    cpus: 2
     depends_on:
       migrate:
         condition: service_completed_successfully
