@@ -385,6 +385,7 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - Consequence: you cannot curl the server IP directly any more; test through the domain, or on the VPS use http://127.0.0.1:3000 / :4000.
 - Rate limits key on CF-Connecting-IP (real visitor), not the proxy address.
 - Never print or commit the Cloudflare token.
+- Admin VPN (Admin → VPN page): WireGuard on the VPS, UDP 51820, clients 10.66.66.0/24, full tunnel via the New York IP (ADMIN_VPN_IP in backend/.env). Devices live in table vpn_devices (migration 011); ops/security/vpn-sync.sh (bpn-vpn-sync.service) applies them to wg0 every 5 s and reports status into vpn_server. Client private keys are shown once in the page and never stored. wg0.conf holds only [Interface]; never add peers by hand (the sync removes them). Server setup: sudo sh ops/security/vpn-setup.sh.
 
 ## 13. Important pitfalls
 
