@@ -28,8 +28,8 @@ function UploadTile({ item, index, cover, onRemove, onRetry, disabled }: { item:
     <Image src={item.preview} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />
     {item.stage !== 'ready' && item.stage !== 'failed' && <div className={styles.tileProgress} role="progressbar" aria-label={`Picture ${index + 1} ${label.toLowerCase()}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={item.progress}><ProgressRing value={item.progress} /><strong>{item.progress}%</strong></div>}
     {item.stage === 'ready' && <span className={styles.tileDone} aria-label={`Picture ${index + 1} ready`}><FiCheck aria-hidden="true" /></span>}
-    {item.stage === 'failed' && <div className={styles.tileFailed}><FiAlertCircle aria-hidden="true" /><small>{item.error || 'Upload failed'}</small><button type="button" className={styles.tileRetry} onClick={onRetry}><FiRotateCw aria-hidden="true" /> Retry</button></div>}
-    {cover && <span className={styles.coverLabel}>Cover photo</span>}
+    {item.stage === 'failed' && <div className={styles.tileFailed} title={item.error}><FiAlertCircle aria-hidden="true" /><small>Failed<span className={styles.srOnly}>: {item.error || 'Upload failed'}</span></small><button type="button" className={styles.tileRetry} onClick={onRetry}><FiRotateCw aria-hidden="true" /> Retry</button></div>}
+    {cover && item.stage !== 'failed' && <span className={styles.coverLabel}>Cover photo</span>}
     <button type="button" className={styles.tileRemove} disabled={disabled} aria-label={'Remove picture ' + (index + 1)} onClick={onRemove}><FiX /></button>
   </div>;
 }

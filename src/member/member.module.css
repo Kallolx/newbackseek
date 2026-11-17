@@ -158,10 +158,12 @@
 .ringValue { fill: none; stroke: white; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset .3s ease; }
 .photos .tileDone { left: auto; right: 6px; top: auto; bottom: 6px; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border-radius: 50%; background: #16a34a; font-size: 13px; animation: tilePop .35s ease; }
 .photos .coverLabel { left: 6px; bottom: 6px; }
-.tileFailed { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; color: white; text-align: center; }
-.tileFailed > svg { font-size: 20px; color: #fca5a5; }
-.tileFailed small { font-size: 11px; line-height: 1.3; }
-.photos .tileRetry { position: static; display: inline-flex; gap: 5px; width: auto; height: auto; padding: 4px 10px; border-radius: 14px; font: inherit; font-size: 12px; font-weight: 600; }
+.tileFailed { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 16px 4px 4px; color: white; text-align: center; background: #3b0d1499; }
+.tileFailed > svg { flex-shrink: 0; font-size: 18px; color: #fecaca; }
+.tileFailed small { font-size: 12px; font-weight: 700; line-height: 1; }
+.photos .tileFailed span { position: static; padding: 0; background: none; }
+.srOnly { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.photos .tileRetry { position: static; display: inline-flex; align-items: center; gap: 4px; width: auto; height: auto; padding: 3px 9px; white-space: nowrap; border-radius: 14px; font: inherit; font-size: 12px; font-weight: 600; }
 @keyframes tilePop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* Submit progress overlay */

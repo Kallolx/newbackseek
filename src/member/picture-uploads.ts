@@ -10,31 +10,71 @@ const PARALLEL_UPLOADS = 3;
 const POLL_MS = 450;
 const MAX_EDGE = 1600;
 
-/** Resize in the browser so only a small WebP (or JPEG on Safari) travels over the network. */
-async function preparePhoto(file: File): Promise<Blob> {
-  const blob = await encode(file, 'image/webp');
-  // Safari cannot encode WebP and silently returns a large PNG instead.
-  return blob.type === 'image/webp' ? blob : encode(file, 'image/jpeg');
+const SERVER_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const UNREADABLE = 'This picture could not be read. Try another one.';
+
+// Full-size phone photos (50 MP and up) take hundreds of MB to decode. Decoding
+// several at once makes mobile browsers fail with "could not be decoded", so
+// pictures are decoded strictly one at a time; uploads still run in parallel.
+let decodeQueue: Promise<unknown> = Promise.resolve();
+function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
+  const result = decodeQueue.then(task, task);
+  decodeQueue = result.catch(() => undefined);
+  return result;
 }
 
-async function encode(file: File, type: 'image/webp' | 'image/jpeg'): Promise<Blob> {
-  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+type Drawable = { source: CanvasImageSource; width: number; height: number; release: () => void };
+
+async function decode(file: Blob): Promise<Drawable> {
   try {
-    const ratio = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-    const width = Math.max(1, Math.round(bitmap.width * ratio));
-    const height = Math.max(1, Math.round(bitmap.height * ratio));
-    if (typeof OffscreenCanvas !== 'undefined') {
-      const canvas = new OffscreenCanvas(width, height);
-      const context = canvas.getContext('2d');
-      if (context) { context.drawImage(bitmap, 0, 0, width, height); return await canvas.convertToBlob({ type, quality: 0.82 }); }
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = width; canvas.height = height;
+    const bitmap = await createImageBitmap(file);
+    return { source: bitmap, width: bitmap.width, height: bitmap.height, release: () => bitmap.close() };
+  } catch {
+    // Some Android builds reject createImageBitmap for files the <img> decoder reads fine.
+    const url = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = url;
+      await image.decode();
+      return { source: image, width: image.naturalWidth, height: image.naturalHeight, release: () => URL.revokeObjectURL(url) };
+    } catch (error) { URL.revokeObjectURL(url); throw error; }
+  }
+}
+
+function toBlob(canvas: HTMLCanvasElement, type: string) {
+  return new Promise<Blob | null>(resolve => canvas.toBlob(resolve, type, 0.82));
+}
+
+/** Shrink in the browser so only a small WebP (or JPEG on Safari) travels over the network. */
+async function shrink(file: File): Promise<Blob> {
+  const image = await decode(file);
+  const canvas = document.createElement('canvas');
+  try {
+    const ratio = Math.min(1, MAX_EDGE / Math.max(image.width, image.height));
+    canvas.width = Math.max(1, Math.round(image.width * ratio));
+    canvas.height = Math.max(1, Math.round(image.height * ratio));
     const context = canvas.getContext('2d');
-    if (!context) throw new Error('Could not prepare this picture.');
-    context.drawImage(bitmap, 0, 0, width, height);
-    return await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Could not prepare this picture.')), type, 0.82));
-  } finally { bitmap.close(); }
+    if (!context) throw new Error('No canvas');
+    context.drawImage(image.source, 0, 0, canvas.width, canvas.height);
+  } finally { image.release(); }
+  try {
+    const webp = await toBlob(canvas, 'image/webp');
+    if (webp?.type === 'image/webp') return webp;
+    // Safari cannot encode WebP and silently returns a large PNG instead.
+    const jpeg = await toBlob(canvas, 'image/jpeg');
+    if (jpeg) return jpeg;
+    throw new Error('No encoder');
+  } finally { canvas.width = canvas.height = 0; }
+}
+
+/** Never fails for a readable JPG/PNG/WebP: if the browser cannot shrink it, the server does. */
+async function preparePhoto(file: File): Promise<Blob> {
+  try { return await oneAtATime(() => shrink(file)); }
+  catch {
+    if (SERVER_TYPES.includes(file.type) && file.size <= 10 * 1024 * 1024) return file;
+    throw new Error(UNREADABLE);
+  }
 }
 
 function putWithProgress(url: string, body: Blob, onProgress: (fraction: number) => void, register: (xhr: XMLHttpRequest) => void) {

@@ -23,7 +23,7 @@ const worker = new Worker('images', async job => {
     if (!response.ContentLength || response.ContentLength > 10485760) throw new Error('Image exceeds upload limit');
     const input = Buffer.from(await response.Body.transformToByteArray());
     // Decode once, then derive every size from the same pipeline.
-    const base = sharp(input, { limitInputPixels: 25000000, animated: false });
+    const base = sharp(input, { limitInputPixels: 120000000, animated: false });
     const metadata = await base.metadata();
     if (!['jpeg', 'png', 'webp'].includes(metadata.format) || (metadata.pages || 1) > 1) throw new Error('Unsupported image');
     if (media.purpose === 'verification') {
