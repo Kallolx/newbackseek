@@ -1,5 +1,7 @@
 backpagenew.com, www.backpagenew.com {
   encode zstd gzip
+  @adminPages path /admin /admin/*
+  redir @adminPages https://admin.backpagenew.com{uri} 302
 
   header {
     -Server
