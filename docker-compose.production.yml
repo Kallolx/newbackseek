@@ -6,6 +6,8 @@ services:
       args:
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
     container_name: backpagenew-frontend
+    volumes:
+      - public_static:/app/static-archive
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -23,6 +25,8 @@ services:
       args:
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
     container_name: backpagenew-admin
+    volumes:
+      - admin_static:/app/static-archive
     restart: unless-stopped
     profiles: ['admin']
     environment:
@@ -111,8 +115,12 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - public_static:/srv/static/public:ro
+      - admin_static:/srv/static/admin:ro
 
 volumes:
+  public_static:
+  admin_static:
   caddy_data:
   caddy_config:
   postgres_data:
