@@ -18,7 +18,7 @@ const sharp=require('sharp');
    await context.route('**/api/auth/me',route=>route.fulfill({json:{user:{id:'render-only',username:'rendercheck',email:'render@example.com',email_verified_at:new Date().toISOString()}}}));
    await context.route('**/api/account/ads',route=>route.fulfill({json:{posts:[post]}}));
    await context.route('**/api/ads?*',route=>route.fulfill({json:{posts:[post],hasMore:false}}));
-   await context.route('**/api/ads/1001',route=>route.fulfill({json:{post,images:variants.map((variants,i)=>({id:String(i),variants})),cities:[{href:post.city_href}]}}));
+   await context.route(/\/api\/(account\/)?ads\/1001$/,route=>route.fulfill({json:{post,images:variants.map((variants,i)=>({id:String(i),variants})),cities:[{href:post.city_href}]}}));
    await context.route('**/api/admin/summary',route=>route.fulfill({json:{counts:{users:0,ads:0,published:0,pending:0,reports:0,verifications:0},daily:[]}}));
    await context.route('**/api/admin/ads**',route=>route.fulfill({json:new URL(route.request().url()).pathname.endsWith('/1001')?{post:{...post,owner:'rendercheck',targets:[post.city_href],images:variants.map((variants,i)=>({id:String(i),variants}))}}:{items:[],total:0,page:1,pageSize:50}}));
    const page=await context.newPage();
@@ -54,8 +54,8 @@ const sharp=require('sharp');
     await page.getByRole('textbox',{name:/Find a post by ID/}).fill('1001');
     await page.getByRole('button',{name:'Find post',exact:true}).click();
     const photo=page.locator('.post-thumbnail img').first();await photo.waitFor();await photo.evaluate(img=>img.decode());assert.equal(await photo.getAttribute('src'),image);
-    assert.equal(await page.getByRole('button',{name:/Preview photo \d/}).count(),3);
-    console.log(`${width}px ${path}: direct CDN cover and all three preview thumbnails passed`);
+    assert.equal(await page.getByRole('button',{name:/Preview photo \d/}).count(),0);
+    console.log(`${width}px ${path}: direct CDN cover only, no thumbnail strip passed`);
    }
    await context.close();
   }

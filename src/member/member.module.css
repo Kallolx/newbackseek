@@ -1,4 +1,11 @@
 .page { padding-top: 0; padding-bottom: 12px; min-height: 50vh; }
+.ownerActions { display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-block:16px; }
+.ownerActions a,.ownerActions button { min-height:36px;font-size:12px;padding:7px 11px; }
+.danger { display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #edb7bb;border-radius:6px;background:#fff5f5;color:#b32635;font:inherit;cursor:pointer; }
+.danger:disabled { opacity:.5;cursor:wait; }
+.confirmDialog { width:min(400px,calc(100% - 32px));padding:24px;border:1px solid #dfe5ee;border-radius:12px;color:#25334b; }
+.confirmDialog::backdrop { background:#101a2b88; }
+.confirmDialog h2 { font-size:20px;margin-bottom:10px; }.confirmDialog p { line-height:1.6;font-size:14px; }
 .page h1 { font-size: 22px; line-height: 1.35; margin: 0 0 8px; }
 .menu { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 16px; padding: 3px 0 19px; font-size: 14px; color: #79818d; }
 .menu a[aria-current] { font-weight: 700; color: #123168; }

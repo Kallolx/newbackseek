@@ -6,15 +6,16 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
-import { FiGrid, FiList, FiArrowLeft } from 'react-icons/fi';
+import { FiGrid, FiList } from 'react-icons/fi';
 import { EmptyState, PageLoader } from '../components/page-state';
 import { Verification } from './verification';
 import { PostCard } from '../components/post-card';
-import { PhotoGallery } from '../components/photo-gallery';
 import { PostPagination } from '../components/post-pagination';
 import { useMember, type MemberSession } from './session';
 import styles from './member.module.css';
-import { DescriptionEditor } from './description-editor';
+import { PostDetail } from '../components/post-detail';
+import { countries } from '../directory/areas';
+import { serviceGroups } from '../directory/service-groups';
 
 const MemberPostForm = dynamic(() => import('./post-form').then((module) => module.MemberPostForm), {
   loading: () => <PageLoader label="Loading the posting form" />,
@@ -40,7 +41,7 @@ export function AccountArea({ section }: { section: string[] }) {
       {current === 'post' && <MemberPostForm member={member} />}
       {current === 'settings' && <Settings member={member} />}
       {current === 'verification' && <Verification member={member} />}
-      {current === 'posts' && <MemberDetails member={member} id={section[1]} />}
+      {current === 'posts' && <MemberDetails member={member} id={section[1]} editing={section[2]==='edit'} />}
     </main>
   );
 }
@@ -72,21 +73,13 @@ function MemberPosts({ member }: { member: MemberSession }) {
   </>;
 }
 
-function MemberDetails({ member, id }: { member: MemberSession; id: string }) {
+function MemberDetails({ member, id,editing }: { member: MemberSession; id: string;editing:boolean }) {
   const post = member.posts.find((item) => item.id === id);
-  const [message, setMessage] = useState('');
   if (!post) return <EmptyState title="We couldn’t find this ad" description="It may have been removed or is no longer available in your account. Your other ads are still waiting for you." href="/myaccount" action="Back to my ads" />;
-  return <article className={styles.detail}>
-    <Link className={styles.back} href="/myaccount"><FiArrowLeft aria-hidden="true" /> My ads</Link>
-    <h1>{post.title}</h1><p>{post.cityName} › {post.category} › <strong>{post.service}</strong></p>
-    <div className={styles.heading}><span className={styles.postStatus}>{post.status}</span></div>
-    <FeedbackToast message={message} type="info" />
-    {!post.images.length && <EmptyState kind="photo" compact title="No pictures in this ad" description="This ad was posted without photos. Its details are available below." />}
-    <PhotoGallery title={post.title} photos={post.images.map((src,index)=>({src,thumbnail:post.thumbnails?.[index]}))} />
-    <dl className={styles.facts}><div><dt>Age</dt><dd>{post.age}</dd></div><div><dt>Location</dt><dd>{post.location}</dd></div><div><dt>Phone</dt><dd>{post.phone}</dd></div><div><dt>Email</dt><dd>{member.email}</dd></div></dl>
-    {post.descriptionHtml ? <DescriptionEditor content={post.descriptionHtml} readOnly /> : <p className={styles.description}>{post.description}</p>}
-    <p className={styles.muted}>Your listing is handled by the account service. Pending listings are reviewed before publication.</p>
-  </article>;
+  if(editing)return <MemberPostForm key={post.id} member={member} post={post} />;
+  const place=countries.flatMap(country=>country.regions.flatMap(region=>region.cities.map(city=>({city,region})))).find(place=>place.city.href===post.cityHref);
+  const service=serviceGroups.flatMap(group=>group.services).find(service=>service.slug===post.service)||{name:post.service,slug:post.service};
+  return <PostDetail account postId={id} city={place?.city||{name:post.cityName,href:post.cityHref}} region={place?.region||{name:post.cityName,href:post.cityHref}} service={service} />;
 }
 
 function Settings({ member }: { member: MemberSession }) {

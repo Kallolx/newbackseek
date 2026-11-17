@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useSyncExternalStore } from 'react';
-export type MemberPost={id:string;title:string;description:string;descriptionHtml?:string;age:number;location:string;phone:string;cityName:string;cityHref:string;category:string;service:string;images:string[];coverImage?:string;thumbnails?:string[];status:'Published'|'Paused'|'Pending'|'Rejected';sample:false;createdAt:string};
+export type MemberPost={id:string;title:string;description:string;descriptionHtml?:string;age:number;location:string;phone:string;contactEmail?:string;mediaIds?:string[];cityName:string;cityHref:string;category:string;service:string;images:string[];coverImage?:string;thumbnails?:string[];status:'Published'|'Paused'|'Pending'|'Rejected';sample:false;createdAt:string};
 export type MemberSession={id:string;email:string;username:string;emailVerified:boolean;posts:MemberPost[];actorId?:string;verificationStatus?:string;verificationRequested?:boolean};
 type Snapshot={member:MemberSession|null;ready:boolean;error:string;postsLoading:boolean};
 const server:Snapshot={member:null,ready:false,error:'',postsLoading:false};
@@ -25,7 +25,7 @@ export function refreshMember(force=false):Promise<void>{
   const body=await ads.json();
   const posts:MemberPost[]=body.posts.map((post:Record<string,unknown>)=>{
     const pictures=Array.isArray(post.images)&&post.images.length?post.images:[post.image];
-    return {id:String(post.id),title:String(post.title),description:String(post.description),age:Number(post.age||0),location:String(post.location||''),phone:String(post.phone||''),cityName:String(post.city_name||''),cityHref:String(post.city_href||''),category:String(post.category_slug),service:String(post.category_slug),images:pictures.flatMap(value=>image(value,'full')),coverImage:image(post.image)[0]||pictures.flatMap(value=>image(value))[0],thumbnails:pictures.flatMap(value=>image(value,'thumb')),status:post.status==='published'?'Published':post.status==='paused'?'Paused':post.status==='rejected'?'Rejected':'Pending',sample:false,createdAt:String(post.created_at)};
+    return {id:String(post.id),title:String(post.title),description:String(post.description),age:Number(post.age||0),location:String(post.location||''),phone:String(post.phone||''),contactEmail:String(post.contact_email||''),mediaIds:Array.isArray(post.media_ids)?post.media_ids.map(String):[],cityName:String(post.city_name||''),cityHref:String(post.city_href||''),category:String(post.category_slug),service:String(post.category_slug),images:pictures.flatMap(value=>image(value,'full')),coverImage:image(post.image)[0]||pictures.flatMap(value=>image(value))[0],thumbnails:pictures.flatMap(value=>image(value,'thumb')),status:post.status==='published'?'Published':post.status==='paused'?'Paused':post.status==='rejected'?'Rejected':'Pending',sample:false,createdAt:String(post.created_at)};
   });
   if(version===generation&&snapshot.member)publish({...snapshot,member:{...snapshot.member,posts},postsLoading:false});
  }catch(cause){if(version===generation)publish({...snapshot,ready:true,postsLoading:false,error:cause instanceof Error?cause.message:'Unable to load your account.'});}

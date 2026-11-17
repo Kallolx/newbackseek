@@ -9,7 +9,8 @@ import { FiMapPin, FiInfo, FiImage, FiShield, FiUploadCloud, FiX } from 'react-i
 import { SiteSelect } from '../components/site-select';
 import { countries } from '../directory/areas';
 import { serviceGroups } from '../directory/service-groups';
-import { type MemberSession } from './session';
+import { type MemberSession,type MemberPost } from './session';
+import { toast } from '../components/toast';
 import styles from './member.module.css';
 import { DescriptionEditor } from './description-editor';
 
@@ -29,14 +30,16 @@ async function preparePhoto(file: File): Promise<File> {
   return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
 }
 
-export function MemberPostForm({ member }: { member: MemberSession }) {
+export function MemberPostForm({ member,post }: { member: MemberSession;post?:MemberPost }) {
   const router = useRouter();
-  const [countryCode, setCountry] = useState('');
-  const [regionHref, setRegion] = useState('');
-  const [cityHref, setCity] = useState('');
-  const [groupName, setGroup] = useState('');
-  const [serviceSlug, setService] = useState('');
-  const [description, setDescription] = useState('');
+  const original=countries.flatMap(country=>country.regions.flatMap(region=>region.cities.map(city=>({country,region,city})))).find(item=>item.city.href===post?.cityHref);
+  const [countryCode, setCountry] = useState(original?.country.code||'');
+  const [regionHref, setRegion] = useState(original?.region.href||'');
+  const [cityHref, setCity] = useState(original?.city.href||'');
+  const [groupName, setGroup] = useState(serviceGroups.find(group=>group.services.some(service=>service.slug===post?.service))?.name||'');
+  const [serviceSlug, setService] = useState(post?.service||'');
+  const [description, setDescription] = useState(post?.description||'');
+  const [saved,setSaved]=useState((post?.images||[]).map((src,index)=>({src,id:post?.mediaIds?.[index]})));
   const [descriptionHtml, setDescriptionHtml] = useState('');
   const [pictures, setPictures] = useState<{ preview: string; file: File }[]>([]);
   const [processing, setProcessing] = useState(false);
@@ -53,7 +56,7 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
   async function addPictures(files: File[]) {
     if (busy.current || !files.length) return;
     setPhotoError('');
-    if (pictures.length + files.length > 6) { setPhotoError('You can add up to 6 pictures.'); return; }
+    if (saved.length+pictures.length + files.length > 6) { setPhotoError('You can add up to 6 pictures.'); return; }
     busy.current = true;
     try {
       const prepared: { preview: string; file: File }[] = [];
@@ -107,24 +110,25 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
         if (!ready) throw new Error('Image processing is taking longer than expected. Please try again in a moment.');
         mediaIds.push(upload.id);
       }
-      const response = await fetch('/api/account/ads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, contactEmail, cityIds: [Number(selectedCity.id)], mediaIds }) });
+      const response = await fetch('/api/account/ads'+(post?'/'+post.id:''), { method: post?'PATCH':'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, contactEmail, ...(post?{keepMediaIds:saved.flatMap(photo=>photo.id?[photo.id]:[])}:{cityIds:[Number(selectedCity.id)]}), mediaIds }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not submit your ad.');
       window.dispatchEvent(new Event('bpn-session-change'));
-      router.replace('/myaccount'); router.refresh();
+      toast.success(post?'Changes submitted for review.':'Ad submitted for review.');
+      router.replace(post?'/myaccount/posts/'+post.id:'/myaccount'); router.refresh();
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not submit your ad.'); }
     finally { setProcessing(false); }
   }
 
   return <div className={styles.formWidth}>
-    <h1>Post an Ad</h1><p className={styles.intro}>Choose where your ad appears, then add the details. Required fields are marked *.</p>
+    <h1>{post?'Edit ad':'Post an Ad'}</h1><p className={styles.intro}>{post?'Update your details and pictures. Existing city placements are kept.':'Choose where your ad appears, then add the details. Required fields are marked *.'}</p>
     <form className={styles.form} onSubmit={publish}>
       <section className={styles.section} aria-labelledby="post-location-heading">
         <h2 id="post-location-heading"><FiMapPin aria-hidden="true" /> Location & category</h2>
         <div className={styles.fields}>
-          <SiteSelect label="Country" required value={countryCode} options={countries.map((item) => ({ value: item.code, label: item.name }))} placeholder="Choose your country" onChange={(value) => { setCountry(value); setRegion(''); setCity(''); }} />
-          <SiteSelect label="State or region" required value={regionHref} disabled={!country} placeholder={country ? 'Choose your state or region' : 'Select a country first'} options={country?.regions.map((item) => ({ value: item.href, label: item.name })) ?? []} onChange={(value) => { setRegion(value); setCity(''); }} />
-          <SiteSelect label="City" required value={cityHref} disabled={!region} placeholder={region ? 'Pick your city' : 'Select a state or region first'} options={region?.cities.map((item) => ({ value: item.href, label: item.name })) ?? []} onChange={setCity} />
+          <SiteSelect label="Country" disabled={Boolean(post)} required value={countryCode} options={countries.map((item) => ({ value: item.code, label: item.name }))} placeholder="Choose your country" onChange={(value) => { setCountry(value); setRegion(''); setCity(''); }} />
+          <SiteSelect label="State or region" required value={regionHref} disabled={Boolean(post)||!country} placeholder={country ? 'Choose your state or region' : 'Select a country first'} options={country?.regions.map((item) => ({ value: item.href, label: item.name })) ?? []} onChange={(value) => { setRegion(value); setCity(''); }} />
+          <SiteSelect label="City" required value={cityHref} disabled={Boolean(post)||!region} placeholder={region ? 'Pick your city' : 'Select a state or region first'} options={region?.cities.map((item) => ({ value: item.href, label: item.name })) ?? []} onChange={setCity} />
           <SiteSelect label="Category" required value={groupName} placeholder="Choose your category" options={serviceGroups.map((item) => ({ value: item.name, label: item.name }))} onChange={(value) => { setGroup(value); setService(''); }} />
           <SiteSelect label="Subcategory" required value={serviceSlug} disabled={!group} placeholder={group ? 'Choose your subcategory' : 'Select a category first'} options={group?.services.map((item) => ({ value: item.slug, label: item.name })) ?? []} onChange={setService} />
         </div>
@@ -136,23 +140,22 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
       <section className={styles.section} aria-labelledby="post-info-heading">
         <h2 id="post-info-heading"><FiInfo aria-hidden="true" /> Must-have info</h2>
         <div className={styles.fields}>
-          <label className={styles.full}>Headline *<input name="headline" required maxLength={150} placeholder="Give your ad a clear, descriptive title" /></label>
-          <label>Age *<input name="age" type="number" required min={18} max={120} step={1} inputMode="numeric" placeholder="Your age (18+)" /></label>
-          <label>Location *<input name="location" required maxLength={120} placeholder="Neighborhood or nearby area" /></label>
-          <label>Phone number *<input name="phone" type="tel" required maxLength={40} autoComplete="tel" placeholder="e.g. +1 202 555 0142" /></label>
-          <label>Contact email<input name="contactEmail" type="email" maxLength={254} placeholder="Public contact email (optional)" /><small>This address will be visible on your ad.</small></label>
-          <label>Contact email<input type="email" value={member.email} readOnly /><span className={styles.help}>Update this in Account Settings.</span></label>
-          <div className={styles.full}><p className={styles.editorLabel}>Description *</p><DescriptionEditor onChange={(text, html) => { setDescription(text); setDescriptionHtml(html); }} /></div>
+          <label className={styles.full}>Headline *<input name="headline" defaultValue={post?.title} required maxLength={140} placeholder="Give your ad a clear, descriptive title" /></label>
+          <label>Age *<input name="age" defaultValue={post?.age} type="number" required min={18} max={120} step={1} inputMode="numeric" placeholder="Your age (18+)" /></label>
+          <label>Location *<input name="location" defaultValue={post?.location} required maxLength={120} placeholder="Neighborhood or nearby area" /></label>
+          <label>Phone number *<input name="phone" defaultValue={post?.phone} type="tel" required maxLength={40} autoComplete="tel" placeholder="e.g. +1 202 555 0142" /></label>
+          <label>Contact email<input name="contactEmail" defaultValue={post?.contactEmail} type="email" maxLength={254} placeholder="Public contact email (optional)" /><small>This address will be visible on your ad.</small></label>
+          <div className={styles.full}><p className={styles.editorLabel}>Description *</p><DescriptionEditor content={post?.descriptionHtml||post?.description||''} onChange={(text, html) => { setDescription(text); setDescriptionHtml(html); }} /></div>
         </div>
       </section>
       <section className={styles.section} aria-labelledby="post-pictures-heading">
-        <h2 id="post-pictures-heading"><FiImage aria-hidden="true" /> Your pictures <span className={styles.help}>{pictures.length} / 6</span></h2>
+        <h2 id="post-pictures-heading"><FiImage aria-hidden="true" /> Your pictures <span className={styles.help}>{saved.length+pictures.length} / 6</span></h2>
         <div className={styles.upload} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void addPictures(Array.from(event.dataTransfer.files)); }}>
           <FiUploadCloud aria-hidden="true" /><strong>Add pictures to your ad</strong><p>Drop images here or choose files. JPG, PNG, WebP or AVIF, up to 5 MB each.</p>
-          <button className={styles.secondary} type="button" disabled={processing || pictures.length >= 6} onClick={() => fileInput.current?.click()}>{processing ? 'Preparing pictures…' : 'Choose pictures'}</button>
+          <button className={styles.secondary} type="button" disabled={processing || saved.length+pictures.length >= 6} onClick={() => fileInput.current?.click()}>{processing ? 'Preparing pictures…' : 'Choose pictures'}</button>
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden aria-label="Upload ad pictures" onChange={(event) => void addPictures(Array.from(event.target.files ?? []))} />
         </div>
-        {pictures.length > 0 && <div className={styles.photos}>{pictures.map((picture, index) => <div key={picture.preview}><Image src={picture.preview} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />{index === 0 && <span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove picture ' + (index + 1)} onClick={() => setPictures((previous) => previous.filter((_, item) => item !== index))}><FiX /></button></div>)}</div>}
+        {(saved.length+pictures.length)>0&&<div className={styles.photos}>{saved.map((photo,index)=><div key={photo.src}><Image src={photo.src} alt={'Saved ad picture '+(index+1)} width={200} height={160} unoptimized/>{index===0&&<span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove saved picture '+(index+1)} onClick={()=>setSaved(previous=>previous.filter((_,item)=>item!==index))}><FiX/></button></div>)}{pictures.map((picture, index) => <div key={picture.preview}><Image src={picture.preview} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />{index === 0&&!saved.length && <span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove picture ' + (index + 1)} onClick={() => setPictures((previous) => previous.filter((_, item) => item !== index))}><FiX /></button></div>)}</div>}
         <p className={styles.help}>Pictures are prepared automatically and optimized after upload.</p>
         <FeedbackToast message={photoError} />
       </section>
@@ -162,7 +165,7 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
         <p className={styles.notice}>Your listing is sent for review. Pictures are optimized securely after upload and only approved ads appear publicly.</p>
       </section>
       <FeedbackToast message={error} />
-      <div className={styles.publish}><Link href="/myaccount">Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{processing ? 'Submitting…' : 'Submit ad for review'}</button></div>
+      <div className={styles.publish}><Link href={post?'/myaccount/posts/'+post.id:'/myaccount'}>Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{processing ? 'Submitting…' : post?'Save changes for review':'Submit ad for review'}</button></div>
     </form>
   </div>;
 }

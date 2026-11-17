@@ -29,6 +29,14 @@ backpagenew.com, www.backpagenew.com {
     }
   }
   handle {
+    @page path / /browse/*
+    header @page Cache-Control "public, max-age=0, must-revalidate" {
+      defer
+    }
+    @account path /auth /myaccount /myaccount/*
+    header @account Cache-Control "private, no-store" {
+      defer
+    }
     reverse_proxy frontend:3000
   }
 }

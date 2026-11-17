@@ -490,7 +490,8 @@ export async function buildApp() {
           (select c.name from placements p join cities c on c.id=p.city_id where p.ad_id=a.id order by p.ranked_at desc limit 1) as city_name,
           (select c.href from placements p join cities c on c.id=p.city_id where p.ad_id=a.id order by p.ranked_at desc limit 1) as city_href,
           (select variants from media m where m.ad_id=a.id and m.status='ready' and m.purpose='ad' order by m.created_at limit 1) as image,
-          coalesce((select json_agg(m.variants order by m.created_at,m.id) from media m where m.ad_id=a.id and m.status='ready' and m.purpose='ad'),'[]') as images
+          coalesce((select json_agg(m.variants order by m.created_at,m.id) from media m where m.ad_id=a.id and m.status='ready' and m.purpose='ad'),'[]') as images,
+          coalesce((select json_agg(m.id order by m.created_at,m.id) from media m where m.ad_id=a.id and m.status='ready' and m.purpose='ad'),'[]') as media_ids
           from ads a where a.owner_id=${req.user.id} and a.status!='deleted' order by a.created_at desc limit 50 offset ${(page - 1) * 50}`,
     };
   });
@@ -513,17 +514,46 @@ export async function buildApp() {
     return reply.code(201).send({ post: ad });
   });
   app.patch("/api/account/ads/:id", { preHandler: member }, async (req) => {
-    const value = z
-      .object({
-        title: z.string().min(5).max(140),
-        description: z.string().min(20).max(6000),
-      })
-      .parse(req.body);
-    const [post] =
-      await sql`update ads set title=${value.title},description=${value.description},status='pending',updated_at=now() where id=${id.parse(req.params.id)} and owner_id=${req.user.id} and status!='deleted' returning *`;
-    if (!post) throw fail(404, "Post not found");
-    return { post };
+    const value=adInput.partial().extend({keepMediaIds:z.array(uuid).max(6).optional()}).parse(req.body);
+    return sql.begin(async tx=>{
+      const [old]=await tx`select * from ads where id=${id.parse(req.params.id)} and owner_id=${req.user.id} and status!='deleted' for update`;
+      if(!old)throw fail(404,'Post not found');
+      const [post]=await tx`update ads set title=${value.title??old.title},description=${value.description??old.description},category_slug=${value.categorySlug??old.category_slug},age=${value.age??old.age},location=${value.location??old.location},phone=${value.phone??old.phone},contact_email=${value.contactEmail??old.contact_email},status='pending',updated_at=now() where id=${old.id} returning *`;
+      if(value.keepMediaIds){
+        const saved=await tx`select id from media where ad_id=${old.id} and purpose='ad' and status='ready'`;
+        if(value.keepMediaIds.some(mediaId=>!saved.some(photo=>photo.id===mediaId)))throw fail(400,'One or more saved pictures are unavailable');
+        const removed=saved.filter(photo=>!value.keepMediaIds.includes(photo.id)).map(photo=>photo.id);
+        if(removed.length)await tx`update media set ad_id=null where id in ${tx(removed)} and ad_id=${old.id}`;
+      }
+      if(value.mediaIds?.length){
+        const attached=await tx`update media set ad_id=${old.id} where id in ${tx(value.mediaIds)} and owner_id=${req.user.id} and purpose='ad' and status='ready' and ad_id is null returning id`;
+        if(attached.length!==new Set(value.mediaIds).size)throw fail(400,'One or more pictures are unavailable');
+      }
+      const [count]=await tx`select count(*)::int as total from media where ad_id=${old.id} and purpose='ad'`;
+      if(count.total>6)throw fail(400,'You can add up to 6 pictures');
+      await audit(tx,req.user.id,'ad.owner.edit',old.id);
+      return {post};
+    });
   });
+  app.get('/api/account/ads/:id',{preHandler:member},async req=>{
+    const [post]=await sql`select id,title,description,age,location,phone,contact_email,category_slug,status,created_at from ads where id=${id.parse(req.params.id)} and owner_id=${req.user.id} and status!='deleted'`;
+    if(!post)throw fail(404,'Post not found');
+    return {post,images:await sql`select id,variants from media where ad_id=${post.id} and purpose='ad' and status='ready' order by created_at,id`,cities:await sql`select c.* from placements p join cities c on c.id=p.city_id where p.ad_id=${post.id} order by c.id`};
+  });
+  app.delete('/api/account/ads/:id',{preHandler:member},async req=>sql.begin(async tx=>{
+    const [post]=await tx`update ads set status='deleted',updated_at=now() where id=${id.parse(req.params.id)} and owner_id=${req.user.id} and status!='deleted' returning id`;
+    if(!post)throw fail(404,'Post not found');
+    await audit(tx,req.user.id,'ad.owner.delete',post.id);return {ok:true};
+  }));
+  app.post('/api/account/ads/:id/status',{preHandler:member},async req=>sql.begin(async tx=>{
+    const {status}=z.object({status:z.enum(['paused','pending'])}).parse(req.body);
+    const [old]=await tx`select id,status from ads where id=${id.parse(req.params.id)} and owner_id=${req.user.id} and status!='deleted' for update`;
+    if(!old)throw fail(404,'Post not found');
+    if(status==='paused'&&old.status!=='published')throw fail(400,'Only a published ad can be paused');
+    if(status==='pending'&&!['paused','rejected','draft'].includes(old.status))throw fail(400,'This ad is already published or awaiting review');
+    await tx`update ads set status=${status},updated_at=now() where id=${old.id}`;
+    await audit(tx,req.user.id,'ad.owner.'+status,old.id);return {ok:true};
+  }));
   app.post(
     "/api/media/uploads",
     {

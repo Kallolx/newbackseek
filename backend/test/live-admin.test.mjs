@@ -48,6 +48,28 @@ test('live administration and public authentication lifecycle',{skip:process.env
   await adminCall('POST',`/api/admin/ads/${post.id}/status`,{status:'published'});
   const distribute=await adminCall('POST',`/api/admin/ads/${post.id}/destinations`,{cityHrefs:[city2.href]});assert.equal(distribute.statusCode,200,distribute.body);
   assert.equal((await adminCall('GET',`/api/admin/ads/${post.id}`)).json().post.targets.length,2);
+  const ownDetails=await call('GET',`/api/account/ads/${post.id}`,undefined,memberCookie);assert.equal(ownDetails.statusCode,200,ownDetails.body);
+  const [otherMember]=await sql`insert into users(email,username,password_hash,email_verified_at) values('other-owner@example.com','otherowner',${hash},now()) returning id`;
+  const outsiderToken=token();await sql`insert into sessions(token_hash,user_id,expires_at) values(${digest(outsiderToken)},${otherMember.id},now()+interval '1 hour')`;const outsiderCookie='bpn-session='+outsiderToken;
+  for(const method of ['GET','PATCH','DELETE']){const unauthorized=await call(method,`/api/account/ads/${post.id}`,method==='PATCH'?{title:'Another owner cannot edit this ad'}:undefined,outsiderCookie);assert.equal(unauthorized.statusCode,404,unauthorized.body);}
+  assert.equal((await call('POST',`/api/account/ads/${post.id}/status`,{status:'paused'},outsiderCookie)).statusCode,404);
+  const [savedPhoto]=await sql`insert into media(owner_id,ad_id,object_key,expected_bytes,content_type,purpose,status,variants) values(${register.json().user.id},${post.id},'test/owner-photo',123,'image/webp','ad','ready',${sql.json(imageVariants[0])}) returning id`;
+  const ownerEdit=await call('PATCH',`/api/account/ads/${post.id}`,{title:'Owner edited regression listing',description:'Owner updated the description and public contact details.',phone:'+1 202 555 0199',contactEmail:'updated-contact@example.com',keepMediaIds:[savedPhoto.id]},memberCookie);assert.equal(ownerEdit.statusCode,200,ownerEdit.body);assert.equal(ownerEdit.json().post.status,'pending');assert.equal(ownerEdit.json().post.contact_email,'updated-contact@example.com');
+  assert.equal((await sql`select count(*)::int as count from placements where ad_id=${post.id}`)[0].count,2,'editing content preserves all distributed destinations');
+  assert.equal((await call('GET',`/api/ads/${post.id}`)).statusCode,404,'edits require review before public display');
+  assert.equal((await call('GET',`/api/account/ads/${post.id}`,undefined,memberCookie)).json().images.length,1);
+  await adminCall('POST',`/api/admin/ads/${post.id}/status`,{status:'published'});
+  assert.equal((await call('POST',`/api/account/ads/${post.id}/status`,{status:'paused'},memberCookie)).statusCode,200);
+  assert.equal((await call('GET',`/api/ads/${post.id}`)).statusCode,404);
+  assert.equal((await call('POST',`/api/account/ads/${post.id}/status`,{status:'pending'},memberCookie)).statusCode,200);
+  assert.equal((await call('GET',`/api/account/ads/${post.id}`,undefined,memberCookie)).json().post.status,'pending','resubmitting cannot bypass review');
+  await adminCall('POST',`/api/admin/ads/${post.id}/status`,{status:'published'});
+  const [disposable]=await sql`insert into ads(owner_id,category_slug,title,description,status) values(${register.json().user.id},'test-category','Owner deletion check','This disposable ad checks owner deletion.','published') returning id`;
+  assert.equal((await call('DELETE',`/api/account/ads/${disposable.id}`,undefined,memberCookie)).statusCode,200);
+  assert.equal((await call('GET',`/api/account/ads/${disposable.id}`,undefined,memberCookie)).statusCode,404);
+  assert.equal((await call('GET',`/api/ads/${disposable.id}`)).statusCode,404);
+  assert.equal((await call('PATCH',`/api/account/ads/${disposable.id}`,{title:'Cannot restore deleted ad'},memberCookie)).statusCode,404);
+  await sql`delete from media where ad_id=${post.id}`;await sql`delete from sessions where user_id=${otherMember.id}`;await sql`delete from users where id=${otherMember.id}`;
   const feed=await call('GET',`/api/ads?cityHref=${city2.href}&category=test-category`);assert.equal(feed.statusCode,200,feed.body);assert.equal(feed.json().posts.length,1);
   assert.equal((await call('POST','/api/reports',{adId:Number(post.id),reason:'A test review request'},memberCookie)).statusCode,200);
   const report=(await adminCall('GET','/api/admin/reports')).json().items[0];assert.equal(report.reason,'A test review request');
