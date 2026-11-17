@@ -1,19 +1,19 @@
 'use client';
 import { useMemo, useState, type ReactNode } from 'react';
 import { ActionIcon, Alert, Badge, Button, Group, Modal, MultiSelect, Paper, Skeleton, Stack, Switch, TagsInput, Text, Title } from '@mantine/core';
-import { FiAlertTriangle, FiCheckCircle, FiCloud, FiGlobe, FiLock, FiRefreshCw, FiServer, FiShield, FiUserCheck, FiWifi } from 'react-icons/fi';
+import { FiAlertTriangle, FiCloud, FiGlobe, FiLock, FiRefreshCw, FiServer, FiShield, FiUserCheck } from 'react-icons/fi';
 import { adminApi, useAdminResource } from './live-api';
 import { toast } from '../../components/toast';
 import { EmptyState } from '../../components/page-state';
 import styles from './security.module.css';
 
 type Settings = { geoEnabled: boolean; blockedCountries: string[]; blockTor: boolean; blockUnknown: boolean; protectAdmin: boolean; cloudflareOnly: boolean; adminAllowlistOnly: boolean; allowlist: string[]; edge: { configured: boolean; status: string; message: string; syncedAt: string | null }; updatedAt: string };
-type Security = { settings: Settings; you: { ip: string; country: string; allowlisted: boolean; vpn: boolean }; vpnIp: string; hosts: { site: string; admin: string; media: string }; stats: { day: string; reason: string; count: number }[] };
+type Security = { settings: Settings; you: { ip: string; country: string; allowlisted: boolean }; hosts: { site: string; admin: string; media: string }; stats: { day: string; reason: string; count: number }[] };
 type Editable = Omit<Settings, 'edge' | 'updatedAt'>;
 
 const CODES = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS XK YE YT ZA ZM ZW'.split(' ');
 const regionNames = typeof Intl !== 'undefined' && 'DisplayNames' in Intl ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
-const countryName = (code: string) => code === 'T1' ? 'Tor network' : code === 'XX' ? 'Unknown location' : code === 'direct' ? 'Bypassed Cloudflare' : code === 'admin' ? 'Admin panel (not on VPN)' : (() => { try { return regionNames?.of(code) || code; } catch { return code; } })();
+const countryName = (code: string) => code === 'T1' ? 'Tor network' : code === 'XX' ? 'Unknown location' : code === 'direct' ? 'Bypassed Cloudflare' : code === 'admin' ? 'Admin panel (not allowlisted)' : (() => { try { return regionNames?.of(code) || code; } catch { return code; } })();
 const editable = (settings: Settings): Editable => ({ geoEnabled: settings.geoEnabled, blockedCountries: settings.blockedCountries, blockTor: settings.blockTor, blockUnknown: settings.blockUnknown, protectAdmin: settings.protectAdmin, cloudflareOnly: settings.cloudflareOnly, adminAllowlistOnly: settings.adminAllowlistOnly, allowlist: settings.allowlist });
 
 function StatusRow({ icon, label, badge, detail }: { icon: ReactNode; label: string; badge: ReactNode; detail?: string }) {
@@ -46,7 +46,6 @@ export function SecurityCenter() {
   const youAllowed = data.you.allowlisted || form.allowlist.includes(data.you.ip);
   const youBlockedOnSite = form.geoEnabled && !youAllowed && (form.blockedCountries.includes(data.you.country) || (form.blockTor && data.you.country === 'T1'));
   const adminRisk = !youAllowed && ((form.protectAdmin && youBlockedOnSite) || form.adminAllowlistOnly);
-  const vpnAllowlisted = Boolean(data.vpnIp) && form.allowlist.includes(data.vpnIp);
   const edge = data.settings.edge;
   const edgeBadge = !edge.configured ? <Badge color="gray" variant="light">Not connected</Badge> : edge.status === 'active' ? <Badge color="teal" variant="light">Active</Badge> : edge.status === 'off' ? <Badge color="gray" variant="light">Idle</Badge> : edge.status === 'error' ? <Badge color="red" variant="light">Error</Badge> : <Badge color="yellow" variant="light">Pending</Badge>;
 
@@ -70,7 +69,7 @@ export function SecurityCenter() {
     </Group>
 
     <Paper withBorder radius="md" className={styles.status}>
-      <StatusRow icon={<FiUserCheck />} label={data.you.vpn ? 'You are on the admin VPN' : 'Your connection'} detail={`${data.you.ip || 'Unknown IP'} · ${data.you.country ? countryName(data.you.country) : 'Unknown country'}`} badge={data.you.vpn ? <Badge color="teal" variant="light">VPN</Badge> : youAllowed ? <Badge color="teal" variant="light">Allowlisted</Badge> : <Badge color="gray" variant="light">Direct</Badge>} />
+      <StatusRow icon={<FiUserCheck />} label="Your connection" detail={`${data.you.ip || 'Unknown IP'} · ${data.you.country ? countryName(data.you.country) : 'Unknown country'}`} badge={youAllowed ? <Badge color="teal" variant="light">Allowlisted</Badge> : <Badge color="gray" variant="light">Direct</Badge>} />
       <StatusRow icon={<FiServer />} label="Server gate" detail="Checks every request on the server." badge={<Badge color={data.settings.geoEnabled ? 'teal' : 'gray'} variant="light">{data.settings.geoEnabled ? 'Blocking' : 'Off'}</Badge>} />
       <StatusRow icon={<FiCloud />} label="Cloudflare edge rule" detail={edge.message || 'Blocks at Cloudflare, including cached pages.'} badge={edgeBadge} />
     </Paper>
@@ -78,33 +77,22 @@ export function SecurityCenter() {
     {!edge.configured && <Alert color="yellow" icon={<FiAlertTriangle />} title="Edge blocking not connected" className={styles.alert}>Blocking runs on the server only. Connect the Cloudflare token before turning the page cache back on.</Alert>}
     {edge.configured && edge.status === 'error' && <Alert color="red" icon={<FiAlertTriangle />} title="Cloudflare rule out of date" className={styles.alert}>{edge.message}<Button display="block" mt="xs" size="compact-sm" variant="white" onClick={sync} loading={saving}>Retry sync</Button></Alert>}
 
-    <Section icon={<FiWifi />} title="Admin VPN">
-      <Stack gap="sm">
-        <Text size="sm" c="dimmed">Connect your phone or laptop to the New York VPN to manage the site from anywhere, even while your country is blocked.</Text>
-        {data.vpnIp ? <>
-          <div className={styles.vpnRow}><Text size="sm">VPN address</Text><Text size="sm" ff="monospace" fw={600}>{data.vpnIp}</Text></div>
-          {vpnAllowlisted ? <Text size="sm" c="teal.7" className={styles.okLine}><FiCheckCircle /> The VPN is on the allowlist and is never blocked.</Text>
-            : <Button variant="light" onClick={() => set('allowlist', [...form.allowlist, data.vpnIp])}>Add the VPN to the allowlist</Button>}
-          <Switch checked={form.adminAllowlistOnly} onChange={event => set('adminAllowlistOnly', event.currentTarget.checked)} label="Admin panel only through the VPN" description="Strongest setting: the admin panel answers nobody outside the allowlist, from any country." />
-        </> : <Text size="sm" c="dimmed">The VPN is not set up on this server yet.</Text>}
-      </Stack>
-    </Section>
-
     <Section icon={<FiGlobe />} title="Country blocking">
       <Stack gap="md">
         <Switch checked={form.geoEnabled} onChange={event => set('geoEnabled', event.currentTarget.checked)} label="Block the selected countries" description="Blocked visitors see “not available in your region” and cannot load pages, pictures or the API." />
         <MultiSelect label="Blocked countries" placeholder={form.blockedCountries.length ? '' : 'Search countries'} data={options} value={form.blockedCountries} onChange={value => set('blockedCountries', value)} searchable clearable hidePickedOptions maxValues={60} nothingFoundMessage="No country matches" comboboxProps={{ withinPortal: true }} />
         <Switch checked={form.blockTor} onChange={event => set('blockTor', event.currentTarget.checked)} label="Block the Tor network" description="Tor hides a visitor’s real country." />
         <Switch checked={form.blockUnknown} onChange={event => set('blockUnknown', event.currentTarget.checked)} label="Block unknown locations" description="Visitors Cloudflare cannot place in a country." />
-        <Switch color="red" checked={form.protectAdmin} onChange={event => set('protectAdmin', event.currentTarget.checked)} label="Also block them on the admin panel" description={`Applies to ${data.hosts.admin}. Allowlisted addresses (such as the VPN) still get in.`} />
-        {youBlockedOnSite && !adminRisk && <Alert color="blue" icon={<FiShield />} className={styles.alert}>From this connection ({countryName(data.you.country)}) you will not see the public site. Use the admin VPN to view it.</Alert>}
+        <Switch color="red" checked={form.protectAdmin} onChange={event => set('protectAdmin', event.currentTarget.checked)} label="Also block them on the admin panel" description={`Applies to ${data.hosts.admin}. Allowlisted addresses still get in.`} />
+        {youBlockedOnSite && !adminRisk && <Alert color="blue" icon={<FiShield />} className={styles.alert}>From this connection ({countryName(data.you.country)}) you will not see the public site. Add your IP to the allowlist to view it.</Alert>}
       </Stack>
     </Section>
 
     <Section icon={<FiUserCheck />} title="Allowlist">
       <TagsInput label="Never blocked" description="IP addresses or ranges, e.g. 203.0.113.7 or 203.0.113.0/24." placeholder="Add an IP, then Enter" value={form.allowlist} onChange={value => set('allowlist', value.map(item => item.trim()).filter(Boolean))} maxTags={50} clearable splitChars={[',', ' ']} />
-      {data.you.ip && !form.allowlist.includes(data.you.ip) && !data.you.vpn && <Button mt="sm" size="compact-sm" variant="subtle" onClick={() => set('allowlist', [...form.allowlist, data.you.ip])}>Add my current IP ({data.you.ip})</Button>}
-      <Text size="xs" c="dimmed" mt={6}>Mobile networks change IPs often; the VPN address never changes.</Text>
+      {data.you.ip && !form.allowlist.includes(data.you.ip) && <Button mt="sm" size="compact-sm" variant="subtle" onClick={() => set('allowlist', [...form.allowlist, data.you.ip])}>Add my current IP ({data.you.ip})</Button>}
+      <Text size="xs" c="dimmed" mt={6}>Mobile networks change IPs often. A fixed address never changes.</Text>
+      <Switch mt="md" checked={form.adminAllowlistOnly} onChange={event => set('adminAllowlistOnly', event.currentTarget.checked)} label="Admin panel only for allowlisted addresses" description="Strongest setting: the admin panel answers nobody outside this list, from any country." />
     </Section>
 
     <Section icon={<FiServer />} title="Server protection">
@@ -117,7 +105,7 @@ export function SecurityCenter() {
     </Section>
 
     {(dirty || adminRisk) && <div className={styles.saveBar} role="region" aria-label="Unsaved changes">
-      {adminRisk ? <Text size="xs" c="red.7" className={styles.saveNote}><FiLock /> Connect through the VPN or allowlist your IP first, or you will be locked out.</Text> : <Text size="xs" c="dimmed" className={styles.saveNote}>Unsaved changes</Text>}
+      {adminRisk ? <Text size="xs" c="red.7" className={styles.saveNote}><FiLock /> Allowlist your current IP first, or you will be locked out.</Text> : <Text size="xs" c="dimmed" className={styles.saveNote}>Unsaved changes</Text>}
       <Group gap="xs" wrap="nowrap">
         <Button variant="default" size="sm" disabled={saving} onClick={() => setDraft(null)}>Discard</Button>
         <Button size="sm" disabled={!dirty || adminRisk} onClick={() => setConfirming(true)}>Save</Button>

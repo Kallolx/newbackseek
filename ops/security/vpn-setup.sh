@@ -2,6 +2,7 @@
 # Admin VPN (WireGuard) on this VPS. Admins connect from anywhere and browse
 # from the server's New York address, so country blocking never affects them.
 # WireGuard stays silent to anyone without a key: scanners cannot see it.
+# Devices are managed in the admin panel (VPN page); vpn-sync.sh applies them.
 #   sudo sh vpn-setup.sh            (safe to re-run)
 set -eu
 PORT="${BPN_VPN_PORT:-51820}"
@@ -28,4 +29,4 @@ printf 'net.ipv4.ip_forward = 1\n' > /etc/sysctl.d/90-bpn-vpn.conf
 sysctl -q -p /etc/sysctl.d/90-bpn-vpn.conf
 ufw allow "$PORT/udp" comment 'BackpageNew admin VPN' >/dev/null
 systemctl enable --now wg-quick@wg0 >/dev/null 2>&1 || systemctl restart wg-quick@wg0
-echo "Admin VPN running on UDP $PORT ($(wg show wg0 peers | wc -l) device(s))."
+echo "Admin VPN running on UDP $PORT. Manage devices in the admin panel (VPN page)."

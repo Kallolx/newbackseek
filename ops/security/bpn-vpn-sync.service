@@ -1,0 +1,13 @@
+[Unit]
+Description=Apply BackpageNew admin VPN devices to WireGuard
+After=docker.service wg-quick@wg0.service
+Wants=wg-quick@wg0.service
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /srv/backpagenew/app/ops/security/vpn-sync.sh --loop
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

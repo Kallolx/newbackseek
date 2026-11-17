@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Drawer,SimpleGrid,UnstyledButton,Text } from '@mantine/core';
-import { FiLock,FiActivity,FiArrowUp,FiFileText,FiFlag,FiGrid,FiImage,FiMapPin,FiMoreHorizontal,FiPlus,FiShield,FiUsers } from 'react-icons/fi';
+import { FiWifi,FiLock,FiActivity,FiArrowUp,FiFileText,FiFlag,FiGrid,FiImage,FiMapPin,FiMoreHorizontal,FiPlus,FiShield,FiUsers } from 'react-icons/fi';
 import { adminRoutes } from './admin-routes';
 import styles from './mobile-navigation.module.css';
 const tabs=[['Overview','Home',FiGrid],['Ads','Ads',FiFileText],['Publish','Create',FiPlus],['Users','Users',FiUsers]] as const;
-const more=[['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['System health',FiActivity],['Security',FiLock]] as const;
+const more=[['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['System health',FiActivity],['Security',FiLock],['VPN',FiWifi]] as const;
 export function AdminMobileNavigation({onCreate}:{onCreate:()=>void}){
  const path=usePathname();const [opened,setOpened]=useState(false);
  const moreActive=more.some(([name])=>adminRoutes[name]===path);

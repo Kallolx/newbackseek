@@ -5,7 +5,7 @@ import { useEffect,useState } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 import { AreaChart } from '@mantine/charts';
 import { ActionIcon,AppShell,Avatar,Badge,Box,Breadcrumbs,Burger,Button,Group,Menu,Modal,NavLink,Paper,ScrollArea,SegmentedControl,Select,SimpleGrid,Skeleton,Stack,Table,Text,TextInput,Title } from '@mantine/core';
-import { FiLock,FiActivity,FiArrowUp,FiBell,FiCheck,FiChevronRight,FiEdit2,FiExternalLink,FiFileText,FiFlag,FiGrid,FiImage,FiLogOut,FiMapPin,FiMoreHorizontal,FiPause,FiPlay,FiPlus,FiRefreshCw,FiSearch,FiShield,FiTrash2,FiUserCheck,FiUsers,FiX } from 'react-icons/fi';
+import { FiWifi,FiLock,FiActivity,FiArrowUp,FiBell,FiCheck,FiChevronRight,FiEdit2,FiExternalLink,FiFileText,FiFlag,FiGrid,FiImage,FiLogOut,FiMapPin,FiMoreHorizontal,FiPause,FiPlay,FiPlus,FiRefreshCw,FiSearch,FiShield,FiTrash2,FiUserCheck,FiUsers,FiX } from 'react-icons/fi';
 import { adminRoutes } from './admin-routes';
 import { adStatuses,statusColor,type Ad,type AdStatus,type CategoryGroup,type LocationCountry } from './admin-data';
 import { adminApi,useAdminResource } from './live-api';
@@ -13,6 +13,7 @@ import { Publisher,type PublishRequest } from './publisher';
 import { FoundPost } from './found-post';
 import { Monitoring } from './monitoring';
 import { SecurityCenter } from './security';
+import { VpnCenter } from './vpn';
 import { AdminMobileNavigation } from './mobile-navigation';
 import { PostCard } from '../../components/post-card';
 import { PostPagination } from '../../components/post-pagination';
@@ -24,7 +25,7 @@ type LiveRow={id:string;title?:string;description?:string;category_slug?:string;
 type Variants={card?:{url:string};full?:{url:string}};
 type Listing={items:LiveRow[];total:number;page:number;pageSize:number};
 type Summary={counts:{users:number;ads:number;published:number;pending:number;media:number;reports:number;verifications:number};daily:{day:string;ads:number;users:number}[]};
-const nav=[['Overview',FiGrid],['Ads',FiFileText],['Publish',FiPlus],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['Users',FiUsers],['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['System health',FiActivity],['Security',FiLock]] as const;
+const nav=[['Overview',FiGrid],['Ads',FiFileText],['Publish',FiPlus],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['Users',FiUsers],['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['System health',FiActivity],['Security',FiLock],['VPN',FiWifi]] as const;
 type Screen=typeof nav[number][0];
 const label=(screen:string)=>screen==='Ads'?'All Ads':screen==='Publish'?'Ad Publish':screen;
 function mapAd(row:LiveRow):Ad{return{id:Number(row.id),title:row.title||'',description:row.description||'',category:row.category_slug||'',owner:row.owner||'',targets:row.targets||[],images:(row.images||[]).flatMap(image=>image.variants.card?.url?[image.variants.card.url]:[]),status:(row.status[0].toUpperCase()+row.status.slice(1)) as AdStatus,updated:row.updated_at||row.created_at,age:row.age,location:row.location,phone:row.phone,email:row.contact_email||''};}
@@ -66,6 +67,7 @@ export function AdminDashboard({locations,categories}:{locations:LocationCountry
   {screen==='Overview'&&<Stack><SimpleGrid cols={{base:2,lg:4}}>{[['Published ads',summary.data?.counts.published,'Ads'],['Pending ads',summary.data?.counts.pending,'Ads'],['Member accounts',summary.data?.counts.users,'Users'],['Open reports',summary.data?.counts.reports,'Reports']].map(([name,count,destination])=><Paper key={String(name)} withBorder p="md" radius="md"><Text size="sm" c="dimmed">{name}</Text>{summary.loading?<Skeleton height={32} mt="xs"/>:<Title order={2}>{count??0}</Title>}<Button variant="subtle" size="compact-xs" mt="sm" onClick={()=>router.push(adminRoutes[destination as Screen])}>View {String(name).toLowerCase()}</Button></Paper>)}</SimpleGrid><Paper withBorder p="md" radius="md"><Title order={3} size="h4" mb="md">New ads and accounts · last 7 days</Title>{summary.loading?<Skeleton height={220}/>:summary.error?<EmptyState title="Activity could not load" description="Retry to get current figures." action="Retry" onAction={summary.reload}/>:<AreaChart h={220} data={summary.data?.daily||[]} dataKey="day" series={[{name:'ads',color:'indigo.6'},{name:'users',color:'teal.6'}]} withLegend/>}</Paper><Monitoring compact/></Stack>}
   {screen==='System health'&&<Monitoring/>}
   {screen==='Security'&&<SecurityCenter/>}
+  {screen==='VPN'&&<VpnCenter/>}
   {collection&&<Paper withBorder p={{base:'sm',md:'md'}} radius="md"><Stack><Group wrap="wrap"><TextInput style={{flex:1,minWidth:180}} leftSection={<FiSearch/>} placeholder={screen==='Ads'?'Search ID, title or owner':'Search records'} value={query} onChange={event=>{setQuery(event.currentTarget.value);setPage(1);}} aria-label="Search records"/>{screen!=='Media'&&<Select w={170} placeholder="All statuses" clearable value={status} onChange={value=>{setStatus(value);setPage(1);}} data={screen==='Ads'?adStatuses.map(value=>({label:value,value:value.toLowerCase()})):screen==='Users'?['active','suspended']:screen==='Reports'?['open','resolved','dismissed']:['pending','approved','rejected']} aria-label="Filter by status"/>}{screen==='Ads'&&<SegmentedControl value={view} onChange={setView} data={['List','Gallery']} aria-label="Ad layout"/>}</Group><Text size="xs" c="dimmed">{list.loading?'Updating records…':`${list.data?.total??0} records · page ${page}`}</Text>
    {list.loading?<LoadingRows/>:list.error?<EmptyState title="Records could not load" description="The server could not complete this request." action="Retry" onAction={list.reload}/>:!rows.length?<EmptyState title="No records found" description={query||status?'Try clearing your search or filters.':'New records will appear here when they are created.'}/>:<>
     {screen==='Ads'&&<ul className={view==='Gallery'?'post-list post-gallery':'post-list'}>{rows.map(row=>{const ad=mapAd(row);return <PostCard key={ad.id} title={ad.title} label={(ad.targets[0]&&countriesByCity.get(ad.targets[0])||'No destinations')+(ad.targets.length>1?` +${ad.targets.length-1} more`:'')} description={ad.description} details={<Group gap="xs"><Text size="xs">#{ad.id} · @{ad.owner}</Text><Status value={ad.status}/></Group>} actions={adMenu(ad)} thumbnail={ad.images?.[0]?<button className={styles.cardPhoto} aria-label="View ad image" onClick={()=>setPhoto(ad.images![0])}><img src={ad.images[0]} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover'}}/></button>:undefined}/>;})}</ul>}

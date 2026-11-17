@@ -18,6 +18,7 @@ import { s3, storageReady } from "./storage.mjs";
 import { emailReady, sendVerificationEmail, sendPasswordResetEmail } from "./email.mjs";
 import { adminManagement } from "./admin-routes.mjs";
 import { securityCenter, startupEdgeSync } from "./security-center.mjs";
+import { vpnRoutes } from "./vpn.mjs";
 
 const id = z.string().regex(/^\d+$/);
 const uuid = z.uuid();
@@ -658,6 +659,7 @@ export async function buildApp() {
   });
   adminManagement(app, { admin, fail });
   securityCenter(app, { admin, fail });
+  vpnRoutes(app, { admin, fail });
   app.addHook("onReady", async () => { void startupEdgeSync(); });
   app.get("/api/admin/health/system", { preHandler: admin }, async () => {
     const start = performance.now();

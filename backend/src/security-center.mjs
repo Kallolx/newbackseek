@@ -142,7 +142,7 @@ export function securityCenter(app, { admin, fail }) {
     const settings = await loadSettings(true);
     const { allow, ...publicSettings } = settings;
     const you = viewer(req);
-    return { settings: publicSettings, you: { ...you, allowlisted: isAllowlisted(settings.allow, you.ip), vpn: Boolean(config.ADMIN_VPN_IP && you.ip === config.ADMIN_VPN_IP) }, vpnIp: config.ADMIN_VPN_IP || '', hosts: { site: siteHost, admin: adminHost, media: mediaHost }, stats: await stats() };
+    return { settings: publicSettings, you: { ...you, allowlisted: isAllowlisted(settings.allow, you.ip) }, hosts: { site: siteHost, admin: adminHost, media: mediaHost }, stats: await stats() };
   });
 
   app.put('/api/admin/security', { preHandler: admin }, async (req) => {
@@ -151,8 +151,8 @@ export function securityCenter(app, { admin, fail }) {
     input.allowlist = [...new Set(input.allowlist)];
     const you = viewer(req);
     const preview = { ...input, allow: buildAllowList(input.allowlist) };
-    if (input.adminAllowlistOnly && !input.allowlist.length) throw fail(400, 'Add at least one allowlisted address (such as the admin VPN) before limiting the admin panel to the allowlist.');
-    if (decide(preview, { ...you, app: 'admin', viaCloudflare: true })) throw fail(409, 'These settings would lock you out of the admin panel. Connect through the admin VPN or add your IP to the allowlist first.');
+    if (input.adminAllowlistOnly && !input.allowlist.length) throw fail(400, 'Add at least one allowlisted address before limiting the admin panel to the allowlist.');
+    if (decide(preview, { ...you, app: 'admin', viaCloudflare: true })) throw fail(409, 'These settings would lock you out of the admin panel. Add your current IP to the allowlist first.');
     await sql.begin(async (tx) => {
       await tx`update security_settings set geo_enabled=${input.geoEnabled},blocked_countries=${input.blockedCountries},block_tor=${input.blockTor},block_unknown=${input.blockUnknown},protect_admin=${input.protectAdmin},cloudflare_only=${input.cloudflareOnly},admin_allowlist_only=${input.adminAllowlistOnly},allowlist=${input.allowlist},updated_by=${req.user.id},updated_at=now() where id=1`;
       await audit(tx, req.user.id, 'security.settings', 'security', { ...input, ip: you.ip, country: you.country });

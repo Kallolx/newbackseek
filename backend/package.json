@@ -20,6 +20,7 @@
     "ioredis": "^5.0.0",
     "nodemailer": "^10.6.0",
     "postgres": "^3.4.0",
+    "qrcode": "^1.5.4",
     "sharp": "^0.35.5",
     "zod": "^4.0.0"
   }
