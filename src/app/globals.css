@@ -171,14 +171,13 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 .post-thumbnail svg { width: 28px; }
 .header-member-nav { display: flex; justify-content: center; align-items: center; gap: 13px; }
 .header-member-nav[data-signed-in="true"] { font-size: 14px; }
-.site-toast { font-size:13px !important; line-height:1.5 !important; padding:13px 16px !important; background:#fff !important; color:#24354f !important; border:1px solid #dfe5ee !important; box-shadow:0 5px 20px #172f6314 !important; }
-.site-toast[data-type="error"] [data-icon] { color:#bd3544; }
-.site-toast[data-type="success"] [data-icon] { color:#21835b; }
-.site-toast[data-type="warning"] [data-icon] { color:#a96b12; }
+[data-sonner-toaster] .site-toast { width:max-content !important;max-width:100% !important;left:50% !important;translate:-50% 0;font-size:13px !important;line-height:1.5 !important;padding:10px 16px !important;background:#26312d !important;color:#fff !important;border:1px solid #ffffff14 !important;border-radius:999px !important;box-shadow:0 5px 18px #14251d29 !important;gap:9px !important; }
+.site-toast [data-icon] { color:#fff !important;flex-shrink:0; }
+.site-toast [data-icon] svg { width:17px;height:17px; }
+.site-toast [data-title] { font-weight:500 !important; }
 @media(max-width:600px) {
-  [data-sonner-toaster] { --width:min(340px,calc(100vw - 24px)) !important;width:min(340px,calc(100vw - 24px)) !important;left:50% !important;right:auto !important;transform:translateX(-50%) !important; }
-  [data-sonner-toaster] [data-sonner-toast] { width:100% !important; }
-  .site-toast { padding:11px 13px !important; font-size:12px !important; gap:9px !important; border-radius:9px !important; }
+  [data-sonner-toaster] { --width:min(320px,calc(100vw - 32px)) !important;width:min(320px,calc(100vw - 32px)) !important;left:50% !important;right:auto !important;transform:translateX(-50%) !important; }
+  [data-sonner-toaster] .site-toast { padding:9px 15px !important;font-size:12px !important; }
   .site-toast [data-icon] svg { width:16px; height:16px; }
 }
 @media(width < 62em) {

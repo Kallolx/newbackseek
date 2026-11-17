@@ -174,8 +174,13 @@ export async function buildApp() {
       return reply
         .code(400)
         .send({ error: "Invalid input", fields: error.flatten() });
-    if (error.code === "23505")
-      return reply.code(409).send({ error: "That record already exists" });
+    if (error.code === "23505") {
+      if (['users_email_key','users_live_email_key'].includes(error.constraint_name))
+        return reply.code(409).send({error:'This email already has an account. Log in or resend your verification email.',code:'EMAIL_IN_USE'});
+      if (['users_username_key','users_live_username_key'].includes(error.constraint_name))
+        return reply.code(409).send({error:'This username is taken. Please choose another.',code:'USERNAME_IN_USE'});
+      return reply.code(409).send({ error: "This item already exists. Refresh and try again." });
+    }
     if (error.code === "23503")
       return reply
         .code(400)
@@ -310,7 +315,7 @@ export async function buildApp() {
       if (!profile?.sub || !profile.email || !profile.email_verified) throw new Error("Google email is not verified");
       let [user] = await sql`select id,email,username,role from users where google_subject=${profile.sub} and status='active' and role='member'`;
       if (!user) {
-        const [existing] = await sql`select id from users where email=${profile.email}`;
+        const [existing] = await sql`select id from users where email=${profile.email} and status!='deleted'`;
         if (existing) return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?error=google_account_exists`);
         const username = await uniqueGoogleUsername(profile.email);
         [user] = await sql`insert into users (email,username,password_hash,google_subject,email_verified_at) values (${profile.email},${username},${await hashPassword(token())},${profile.sub},now()) returning id,email,username,role`;

@@ -14,6 +14,8 @@ test('live administration and public authentication lifecycle',{skip:process.env
   const register=await call('POST','/api/auth/register',{email:'member@example.com',username:'testmember',password,captchaToken:'test-only'});
   assert.equal(register.statusCode,201,register.body);assert.match(register.headers['set-cookie'],/bpn-session=;/,'signup clears old sessions instead of issuing a new session');
   const duplicate=await call('POST','/api/auth/register',{email:'member@example.com',username:'testmember',password,captchaToken:'test-only'});assert.equal(duplicate.statusCode,409);assert.equal(duplicate.headers['set-cookie'],undefined);
+  assert.equal(duplicate.json().code,'EMAIL_IN_USE');
+  const duplicateName=await call('POST','/api/auth/register',{email:'other@example.com',username:'testmember',password,captchaToken:'test-only'});assert.equal(duplicateName.statusCode,409);assert.equal(duplicateName.json().code,'USERNAME_IN_USE');
   const hash=await hashPassword(password);
   const [administrator]=await sql`insert into users(email,username,password_hash,role,email_verified_at) values('admin@example.com','testadmin',${hash},'admin',now()) returning id`;
   const blocked=await signIn('member@example.com');assert.equal(blocked.statusCode,403,blocked.body);assert.equal(blocked.json().code,'EMAIL_NOT_VERIFIED');assert.equal(blocked.headers['set-cookie'],undefined);
@@ -62,6 +64,7 @@ test('live administration and public authentication lifecycle',{skip:process.env
   assert.equal((await call('GET',new URL(handoff.json().url).pathname+new URL(handoff.json().url).search)).statusCode,400,'handoffs must be one-use');
   await call('POST','/api/account/impersonation/stop',{},supportCookie);assert.equal((await call('GET','/api/auth/me',undefined,supportCookie)).statusCode,401);
   assert.equal((await adminCall('PATCH',`/api/admin/users/${member.id}`,{status:'suspended'})).statusCode,200);
+  const suspendedSignup=await call('POST','/api/auth/register',{email:'member@example.com',username:'anothername',password,captchaToken:'test-only'});assert.equal(suspendedSignup.statusCode,409,'suspended accounts still reserve their email');assert.equal(suspendedSignup.json().code,'EMAIL_IN_USE');
   assert.equal((await call('GET','/api/auth/me',undefined,memberCookie)).statusCode,401);
   await adminCall('PATCH',`/api/admin/users/${member.id}`,{status:'active'});
   memberCookie=cookieOf(await signIn('member@example.com'));
@@ -71,6 +74,11 @@ test('live administration and public authentication lifecycle',{skip:process.env
   assert.equal((await adminCall('DELETE',`/api/admin/ads/${post.id}`)).statusCode,200);assert.equal((await call('GET',`/api/ads/${post.id}`)).statusCode,404);
   assert.equal((await adminCall('DELETE',`/api/admin/users/${member.id}`)).statusCode,200);assert.equal((await signIn('member@example.com')).statusCode,401);
   const summary=await adminCall('GET','/api/admin/summary');assert.equal(summary.statusCode,200,summary.body);assert.equal(summary.json().counts.ads,0);assert.equal(summary.json().counts.users,0);
+  const freshSignup=await call('POST','/api/auth/register',{email:'member@example.com',username:'testmember',password,captchaToken:'test-only'});assert.equal(freshSignup.statusCode,201,freshSignup.body);assert.notEqual(freshSignup.json().user.id,member.id,'reuse creates a fresh account without restoring deleted data');assert.equal(freshSignup.json().verificationRequired,true);
+  assert.equal((await sql`select count(*)::int as count from sessions where user_id=${freshSignup.json().user.id}`)[0].count,0);
+  assert.equal((await signIn('member@example.com')).statusCode,403,'new account must verify its own email');
+  assert.equal((await sql`select status from users where id=${member.id}`)[0].status,'deleted');
+  await adminCall('DELETE',`/api/admin/users/${freshSignup.json().user.id}`);
   const mediaList=await adminCall('GET','/api/admin/media');assert.equal(mediaList.statusCode,200,mediaList.body);assert.equal(mediaList.json().items.length,0,'private verification images must not enter the public media browser');
   const verificationSearch=await adminCall('GET','/api/admin/verifications?search=testmember&status=approved');assert.equal(verificationSearch.statusCode,200,verificationSearch.body);assert.equal(verificationSearch.json().total,1);
   const seeds=Array.from({length:51},(_,index)=>({email:`page${index}@example.com`,username:`pageuser${index}`,password_hash:hash}));await sql`insert into users ${sql(seeds)}`;
