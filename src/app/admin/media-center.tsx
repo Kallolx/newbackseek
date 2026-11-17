@@ -61,9 +61,8 @@ export function MediaCenter() {
 
   const data = report.data;
   return <Stack gap="md" className={styles.page}>
-    <Group justify="space-between" wrap="nowrap" gap="xs">
-      <Text size="sm" c="dimmed">Pictures, storage use and health of the image system. Pictures themselves are not shown here.</Text>
-      <Button variant="default" size="xs" leftSection={<FiRefreshCw />} loading={report.loading && Boolean(scan)} onClick={() => setScan(Date.now())}>Rescan</Button>
+    <Group justify="flex-end">
+      <Button variant="default" size="xs" leftSection={<FiRefreshCw />} loading={report.loading && Boolean(scan)} onClick={() => setScan(Date.now())}>Rescan storage</Button>
     </Group>
 
     {!data && report.loading ? <Stack>{[0, 1, 2].map(i => <Skeleton key={i} height={120} radius="md" />)}</Stack>
