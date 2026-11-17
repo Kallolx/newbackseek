@@ -16,13 +16,13 @@ read -r -s -p "Cloudflare API token (hidden): " TOKEN; echo
 read -r -p "Zone ID (Cloudflare → $DOMAIN → Overview, right side): " ZONE
 TOKEN="$(printf '%s' "$TOKEN" | tr -d '[:space:]')"; ZONE="$(printf '%s' "$ZONE" | tr -d '[:space:]' | tr 'A-F' 'a-f')"
 [[ "$TOKEN" =~ ^[A-Za-z0-9_-]{30,}$ ]] || { echo "That does not look like an API token. Nothing was changed."; exit 1; }
-[[ "$ZONE" =~ ^[a-f0-9]{32}$ ]] || { echo "The Zone ID must be 32 letters/numbers. Nothing was changed."; exit 1; }
+[[ "$ZONE" =~ ^[a-f0-9]{32}$ ]] || { echo "The Zone ID must be 32 letters/numbers (use 'Copy zone ID', not the Account ID). Nothing was changed."; exit 1; }
 
 call() { curl -sS -o /tmp/bpn-cf.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$CF$1"; }
 echo "Checking with Cloudflare…"
-[ "$(call /user/tokens/verify)" = 200 ] && grep -q '"status":"active"' /tmp/bpn-cf.json || { echo "✗ Cloudflare rejected the token (wrong, expired or revoked). Nothing was changed."; rm -f /tmp/bpn-cf.json; exit 1; }
-echo "✓ Token is active"
-[ "$(call /zones/$ZONE)" = 200 ] || { echo "✗ The token cannot read this zone. Check the Zone ID and that the token includes Zone → Zone → Read for $DOMAIN."; rm -f /tmp/bpn-cf.json; exit 1; }
+# Works for both user tokens and account tokens (cfat_…): reading the zone proves the token is valid.
+[ "$(call /zones/$ZONE)" = 200 ] || { echo "✗ Cloudflare would not let this token read the zone. Check the token (wrong, expired or revoked), the Zone ID, and that the token has Zone → Read for $DOMAIN."; rm -f /tmp/bpn-cf.json; exit 1; }
+echo "✓ Token is valid and can read the zone"
 grep -q "\"name\":\"$DOMAIN\"" /tmp/bpn-cf.json || { echo "✗ That Zone ID is not $DOMAIN. Nothing was changed."; rm -f /tmp/bpn-cf.json; exit 1; }
 echo "✓ Zone is $DOMAIN"
 CODE=$(call /zones/$ZONE/rulesets/phases/http_request_firewall_custom/entrypoint)
