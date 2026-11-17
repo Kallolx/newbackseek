@@ -80,19 +80,22 @@ export function ServiceListings({ city, service, groups, dating, initial }: Prop
   return (
     <>
       <h1 className="sr-only">{service.name} in {city.name}</h1>
-      {locked ? (
+      {ageReady && locked && (
         <dialog ref={dialog} className="dating-warning" aria-labelledby="dating-warning-title"
           onCancel={(event) => { event.preventDefault(); router.push(city.href); }}>
           <h2 id="dating-warning-title">Adults 18+ only</h2>
           <p>These listings may contain mature content. Continue only if you are 18 or older.</p>
           <p className="dating-notice">Illegal activity is prohibited.</p>
-          <button type="button" onClick={() => { try { sessionStorage.setItem('bpn-adult-confirmed', 'yes'); } catch {} dialog.current?.close(); setAccepted(true); }}>
+          <button type="button" onClick={() => { try { sessionStorage.setItem('bpn-adult-confirmed', 'yes'); } catch {} document.documentElement.dataset.adult = 'yes'; dialog.current?.close(); setAccepted(true); }}>
             I am 18 or older
           </button>
           <Link href={city.href}>Exit to categories</Link>
         </dialog>
-      ) : (
-        <section className="listings" aria-label="Posts">
+      )}
+      {/* Adult listings are in the page but stay hidden (CSS) until the visitor has confirmed 18+.
+          A tiny script in <head> marks returning visitors before the first paint. */}
+      {!(ageReady && locked) && (
+        <section className={dating ? 'listings adult-gated' : 'listings'} aria-label="Posts">
           <div className="listing-tools">
             <div className="service-dropdown" ref={dropdown}>
               <button

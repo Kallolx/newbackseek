@@ -16,7 +16,10 @@ export const metadata: Metadata = {
 export default function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Open the connection to the picture server before the first image is needed.
   preconnect(process.env.NEXT_PUBLIC_MEDIA_ORIGIN || 'https://media.backpagenew.com');
-  return <html lang="en"><body>
+  return <html lang="en" suppressHydrationWarning><head>
+    {/* Returning visitors who already confirmed 18+ see adult listings at first paint. */}
+    <script dangerouslySetInnerHTML={{ __html: "try{if(sessionStorage.getItem('bpn-adult-confirmed')==='yes')document.documentElement.dataset.adult='yes'}catch(e){}" }} />
+  </head><body>
     <a className="skip" href="#main">Skip to content</a>
     <SiteHeader />
     {children}
