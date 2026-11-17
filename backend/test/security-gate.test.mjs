@@ -48,7 +48,7 @@ test('country gate, Cloudflare-only origin and admin security settings', { skip:
     const bad = await adminCall('PUT', '/api/admin/security', { ...settings, allowlist: ['0.0.0.0/0'] }, cf('US'));
     assert.equal(bad.statusCode, 400);
     const view = await adminCall('GET', '/api/admin/security', undefined, cf('BD', '203.0.113.9'));
-    assert.equal(view.statusCode, 200); assert.deepEqual(view.json().you, { ip: '203.0.113.9', country: 'BD', allowlisted: true });
+    assert.equal(view.statusCode, 200); assert.deepEqual(view.json().you, { ip: '203.0.113.9', country: 'BD', allowlisted: true, vpn: false });
     assert.ok(view.json().stats.some((row) => row.reason === 'BD' && row.count >= 1), JSON.stringify(view.json().stats));
     assert.ok((await sql`select 1 from audit_events where action='security.settings'`).length >= 2);
 
