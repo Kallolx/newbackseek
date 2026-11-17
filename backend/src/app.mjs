@@ -19,6 +19,7 @@ import { emailReady, sendVerificationEmail, sendPasswordResetEmail } from "./ema
 import { adminManagement } from "./admin-routes.mjs";
 import { securityCenter, startupEdgeSync } from "./security-center.mjs";
 import { vpnRoutes } from "./vpn.mjs";
+import { storageReport } from "./storage-report.mjs";
 import { cached, publicDataChanged, changesPublicData } from "./public-cache.mjs";
 
 const id = z.string().regex(/^\d+$/);
@@ -590,11 +591,13 @@ export async function buildApp() {
           bytes: z.number().int().min(1).max(10485760),
           contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
           purpose: z.enum(["ad", "verification"]).default("ad"),
+          // Size of the original camera file before the browser shrank it (for storage reports).
+          originalBytes: z.number().int().min(1).max(209715200).optional(),
         })
         .parse(req.body);
       const key = "incoming/" + req.user.id + "/" + token();
       const [media] =
-        await sql`insert into media (owner_id,object_key,expected_bytes,content_type,purpose) values (${req.user.id},${key},${input.bytes},${input.contentType},${input.purpose}) returning id`;
+        await sql`insert into media (owner_id,object_key,expected_bytes,original_bytes,content_type,purpose) values (${req.user.id},${key},${input.bytes},${input.originalBytes ?? null},${input.contentType},${input.purpose}) returning id`;
       const url = await getSignedUrl(
         s3,
         new PutObjectCommand({
@@ -667,6 +670,7 @@ export async function buildApp() {
   adminManagement(app, { admin, fail });
   securityCenter(app, { admin, fail });
   vpnRoutes(app, { admin, fail });
+  storageReport(app, { admin });
   app.addHook("onReady", async () => { void startupEdgeSync(); });
   app.get("/api/admin/health/system", { preHandler: admin }, async () => {
     const start = performance.now();

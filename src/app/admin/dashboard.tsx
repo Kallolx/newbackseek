@@ -14,6 +14,7 @@ import { FoundPost } from './found-post';
 import { Monitoring } from './monitoring';
 import { SecurityCenter } from './security';
 import { VpnCenter } from './vpn';
+import { MediaCenter } from './media-center';
 import { AdminMobileNavigation } from './mobile-navigation';
 import { PostCard } from '../../components/post-card';
 import { PostPagination } from '../../components/post-pagination';
@@ -38,7 +39,7 @@ export function AdminDashboard({locations,categories}:{locations:LocationCountry
  const [opened,setOpened]=useState(false),[query,setQuery]=useState(''),[debounced]=useDebouncedValue(query,250),[status,setStatus]=useState<string|null>(null),[page,setPage]=useState(1),[view,setView]=useState('List');
  const [source,setSource]=useState<Ad>(),[postId,setPostId]=useState(''),[found,setFound]=useState<Ad>(),[finding,setFinding]=useState(false),[busy,setBusy]=useState(false),[photo,setPhoto]=useState('');
  const [confirm,setConfirm]=useState<{title:string;description:string;run:()=>Promise<unknown>}|null>(null);
- const collection=screen==='Ads'?'ads':screen==='Users'?'users':screen==='Media'?'media':screen==='Reports'?'reports':screen==='Verification'?'verifications':null;
+ const collection=screen==='Ads'?'ads':screen==='Users'?'users':screen==='Reports'?'reports':screen==='Verification'?'verifications':null;
  const list=useAdminResource<Listing>(collection?`/admin/${collection}?page=${page}&search=${encodeURIComponent(debounced)}&status=${status||''}`:'/admin/ads?page=1');
  const summary=useAdminResource<Summary>('/admin/summary');const me=useAdminResource<{user:{id:string;username:string}}>('/auth/me');
  useEffect(()=>{setQuery(screen==='Ads'?new URLSearchParams(window.location.search).get('owner')||'':'');setStatus(null);setPage(1);setOpened(false);},[screen]);
@@ -68,6 +69,7 @@ export function AdminDashboard({locations,categories}:{locations:LocationCountry
   {screen==='System health'&&<Monitoring/>}
   {screen==='Security'&&<SecurityCenter/>}
   {screen==='VPN'&&<VpnCenter/>}
+  {screen==='Media'&&<MediaCenter/>}
   {collection&&<Paper withBorder p={{base:'sm',md:'md'}} radius="md"><Stack><Group wrap="wrap"><TextInput style={{flex:1,minWidth:180}} leftSection={<FiSearch/>} placeholder={screen==='Ads'?'Search ID, title or owner':'Search records'} value={query} onChange={event=>{setQuery(event.currentTarget.value);setPage(1);}} aria-label="Search records"/>{screen!=='Media'&&<Select w={170} placeholder="All statuses" clearable value={status} onChange={value=>{setStatus(value);setPage(1);}} data={screen==='Ads'?adStatuses.map(value=>({label:value,value:value.toLowerCase()})):screen==='Users'?['active','suspended']:screen==='Reports'?['open','resolved','dismissed']:['pending','approved','rejected']} aria-label="Filter by status"/>}{screen==='Ads'&&<SegmentedControl value={view} onChange={setView} data={['List','Gallery']} aria-label="Ad layout"/>}</Group><Text size="xs" c="dimmed">{list.loading?'Updating records…':`${list.data?.total??0} records · page ${page}`}</Text>
    {list.loading?<LoadingRows/>:list.error?<EmptyState title="Records could not load" description="The server could not complete this request." action="Retry" onAction={list.reload}/>:!rows.length?<EmptyState title="No records found" description={query||status?'Try clearing your search or filters.':'New records will appear here when they are created.'}/>:<>
     {screen==='Ads'&&<ul className={view==='Gallery'?'post-list post-gallery':'post-list'}>{rows.map(row=>{const ad=mapAd(row);return <PostCard key={ad.id} title={ad.title} label={(ad.targets[0]&&countriesByCity.get(ad.targets[0])||'No destinations')+(ad.targets.length>1?` +${ad.targets.length-1} more`:'')} description={ad.description} details={<Group gap="xs"><Text size="xs">#{ad.id} · @{ad.owner}</Text><Status value={ad.status}/></Group>} actions={adMenu(ad)} thumbnail={ad.images?.[0]?<button className={styles.cardPhoto} aria-label="View ad image" onClick={()=>setPhoto(ad.images![0])}><img src={ad.images[0]} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover'}}/></button>:undefined}/>;})}</ul>}

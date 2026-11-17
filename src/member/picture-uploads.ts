@@ -124,7 +124,7 @@ export function usePictureUploads() {
       const body = await preparePhoto(file);
       if (removed.current.has(key)) return;
       patch(key, { progress: 10 });
-      const create = await fetch('/api/media/uploads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bytes: body.size, contentType: body.type, purpose: 'ad' }) });
+      const create = await fetch('/api/media/uploads', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bytes: body.size, originalBytes: file.size, contentType: body.type, purpose: 'ad' }) });
       const upload = await create.json().catch(() => ({}));
       if (!create.ok) throw new Error(upload.error || 'Could not start this upload.');
       if (removed.current.has(key)) return;

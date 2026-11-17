@@ -23,7 +23,7 @@ services:
       INTEGRATION_TEST: '1'
       ADMIN_VPN_IP: 192.0.2.10
     volumes: ['./test:/app/test:ro']
-    command: ['sh','-c','node src/migrate.mjs && node --test test/live-admin.test.mjs && node --test test/security-gate.test.mjs test/geo-policy.test.mjs && node --test test/vpn.test.mjs && node --test test/feed.test.mjs']
+    command: ['sh','-c','node src/migrate.mjs && node --test test/live-admin.test.mjs && node --test test/security-gate.test.mjs test/geo-policy.test.mjs && node --test test/vpn.test.mjs && node --test test/feed.test.mjs && node --test test/storage.test.mjs']
     depends_on:
       db:
         condition: service_healthy

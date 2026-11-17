@@ -28,7 +28,7 @@ const worker = new Worker('images', async job => {
     if (!['jpeg', 'png', 'webp'].includes(metadata.format) || (metadata.pages || 1) > 1) throw new Error('Unsupported image');
     if (media.purpose === 'verification') {
       // Verification photos stay under the private incoming prefix and never receive public URLs.
-      await sql`update media set status='ready',width=${metadata.width},height=${metadata.height} where id=${media.id}`;
+      await sql`update media set status='ready',width=${metadata.width},height=${metadata.height},processed_at=now() where id=${media.id}`;
       return;
     }
     const oriented = base.rotate();
@@ -42,7 +42,7 @@ const worker = new Worker('images', async job => {
       await s3.send(new PutObjectCommand({ Bucket: config.R2_PUBLIC_BUCKET, Key: key, Body: data, ContentType: 'image/webp', CacheControl: 'public,max-age=31536000,immutable' }));
       variants[name] = { url: config.MEDIA_PUBLIC_URL.replace(/\/$/, '') + '/' + key, width: info.width, height: info.height, bytes: data.length };
     }));
-    await sql`update media set status='ready',variants=${sql.json(variants)},width=${metadata.width},height=${metadata.height} where id=${media.id}`;
+    await sql`update media set status='ready',variants=${sql.json(variants)},width=${metadata.width},height=${metadata.height},processed_at=now() where id=${media.id}`;
     s3.send(new DeleteObjectCommand({ Bucket: config.R2_BUCKET, Key: media.object_key })).catch(error => console.error('Original cleanup failed', media.id, error.message));
   } catch (error) {
     await sql`update media set status='failed' where id=${media.id}`;

@@ -48,9 +48,10 @@ export function adminManagement(app, { admin, fail }) {
    rows=await sql`select id,email,username,role,status,email_verified_at,created_at,(select count(*)::int from ads where owner_id=u.id and status!='deleted') as ad_count from users u where ${filter} order by created_at desc limit 50 offset ${offset}`;
    [total]=await sql`select count(*)::int as count from users where ${filter}`;
   } else if(collection==='media') {
-   const filter=sql`m.purpose='ad' and (m.id::text ilike ${term} or coalesce(a.title,'') ilike ${term} or coalesce(a.id::text,'') ilike ${term})`;
-   rows=await sql`select m.id,m.ad_id,m.status,m.variants,m.created_at,m.expected_bytes,u.username as owner,a.title from media m join users u on u.id=m.owner_id left join ads a on a.id=m.ad_id where ${filter} order by m.created_at desc limit 50 offset ${offset}`;
-   [total]=await sql`select count(*)::int as count from media m left join ads a on a.id=m.ad_id where ${filter}`;
+   const filter=sql`m.purpose='ad' and (${q.status}='' or m.status=${q.status}) and (m.id::text ilike ${term} or coalesce(a.title,'') ilike ${term} or coalesce(a.id::text,'') ilike ${term} or u.username ilike ${term})`;
+   rows=await sql`select m.id,m.ad_id,m.status,m.created_at,m.expected_bytes,m.original_bytes,m.width,m.height,m.processed_at,a.status as ad_status,
+     (select coalesce(sum((v->>'bytes')::bigint),0) from jsonb_each(m.variants) e(k,v))::bigint as stored_bytes,u.username as owner,a.title from media m join users u on u.id=m.owner_id left join ads a on a.id=m.ad_id where ${filter} order by m.created_at desc limit 50 offset ${offset}`;
+   [total]=await sql`select count(*)::int as count from media m join users u on u.id=m.owner_id left join ads a on a.id=m.ad_id where ${filter}`;
   } else if(collection==='reports') {
    const filter=sql`(${q.status}='' or r.status=${q.status}) and (r.reason ilike ${term} or r.ad_id::text ilike ${term})`;
    rows=await sql`select r.*,a.title from reports r join ads a on a.id=r.ad_id where ${filter} order by r.created_at desc limit 50 offset ${offset}`;
