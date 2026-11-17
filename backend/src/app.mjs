@@ -100,8 +100,8 @@ export async function buildApp() {
     const [user] =
       await sql`select u.id,u.email,u.username,u.role,u.email_verified_at,s.actor_id,
       (select v.status from verifications v where v.user_id=u.id order by v.created_at desc limit 1) as verification_status from sessions s join users u on u.id=s.user_id
-     where s.token_hash=${digest(session)} and s.expires_at>now() and u.status='active'`;
-    if (!user) throw fail(401, "Please log in");
+     where s.token_hash=${digest(session)} and s.expires_at>now() and u.status='active' and u.email_verified_at is not null`;
+    if (!user) { await sql`delete from sessions where token_hash=${digest(session)}`; throw fail(401, "Please log in"); }
     req.user = user;
   }
   async function verifiedMember(req) {
@@ -115,6 +115,8 @@ export async function buildApp() {
       throw fail(403, "Administrator access required");
   }
   async function session(reply, userId, actorId = null, context = "public") {
+    const [eligible] = await sql`select id from users where id=${userId} and status='active' and email_verified_at is not null`;
+    if (!eligible) throw fail(403, 'Verify your email address before logging in.');
     const secret = token();
     await sql`insert into sessions (token_hash,user_id,actor_id,expires_at) values (${digest(secret)},${userId},${actorId},now()+interval '7 days')`;
     const name =
@@ -185,6 +187,7 @@ export async function buildApp() {
       .send({
         error:
           status >= 500 ? "Service temporarily unavailable" : error.message,
+        ...(error.publicCode ? {code:error.publicCode} : {}),
       });
   });
   app.get("/api/health", async () => ({ status: "ok" }));
@@ -237,6 +240,7 @@ export async function buildApp() {
       );
       if (!user || !valid || user.role !== "member")
         throw fail(401, "Incorrect email or password");
+      if (!user.email_verified_at) throw Object.assign(fail(403, 'Verify your email address before logging in. You can resend the verification email below.'), { publicCode: 'EMAIL_NOT_VERIFIED' });
       await session(reply, user.id);
       return {
         user: {
@@ -248,6 +252,15 @@ export async function buildApp() {
       };
     },
   );
+  app.post('/api/auth/resend-verification-public',{config:{rateLimit:{max:3,timeWindow:'1 hour'}}},async(req)=>{
+    const input=z.object({email:z.email().toLowerCase(),password:z.string().min(1).max(128),captchaToken:z.string().min(1).max(4096)}).parse(req.body);
+    await verifyCaptcha(input.captchaToken,req);
+    const [user]=await sql`select * from users where email=${input.email} and role='member' and status='active'`;
+    const valid=await verifyPassword(input.password,user?.password_hash||await hashPassword('dummy-password'));
+    if(!user||!valid)throw fail(401,'Incorrect email or password');
+    if(!user.email_verified_at)await issueVerification(user);
+    return {ok:true,alreadyVerified:Boolean(user.email_verified_at)};
+  });
   app.get("/api/auth/google/start", async (req, reply) => {
     if (appContext(req) !== "public" || !googleClient || !config.GOOGLE_CLIENT_SECRET || !config.GOOGLE_REDIRECT_URI)
       throw fail(503, "Google sign-in is not configured");
@@ -302,6 +315,7 @@ export async function buildApp() {
         const username = await uniqueGoogleUsername(profile.email);
         [user] = await sql`insert into users (email,username,password_hash,google_subject,email_verified_at) values (${profile.email},${username},${await hashPassword(token())},${profile.sub},now()) returning id,email,username,role`;
       }
+      await sql`update users set email_verified_at=coalesce(email_verified_at,now()) where id=${user.id}`;
       await session(reply, user.id);
       return reply.code(303).redirect(`${config.SITE_ORIGIN}/myaccount`);
     } catch (error) {
@@ -652,7 +666,7 @@ export async function buildApp() {
     async (req, reply) => {
       const userId = uuid.parse(req.params.id);
       const [user] =
-        await sql`select id from users where id=${userId} and status='active' and role='member'`;
+        await sql`select id from users where id=${userId} and status='active' and role='member' and email_verified_at is not null`;
       if (!user) throw fail(404, "Active member not found");
       await audit(sql, req.user.id, "user.impersonate", userId);
       const handoff = token();

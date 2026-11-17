@@ -16,7 +16,11 @@ test('live administration and public authentication lifecycle',{skip:process.env
   const duplicate=await call('POST','/api/auth/register',{email:'member@example.com',username:'testmember',password,captchaToken:'test-only'});assert.equal(duplicate.statusCode,409);assert.equal(duplicate.headers['set-cookie'],undefined);
   const hash=await hashPassword(password);
   const [administrator]=await sql`insert into users(email,username,password_hash,role,email_verified_at) values('admin@example.com','testadmin',${hash},'admin',now()) returning id`;
-  await sql`update users set email_verified_at=now() where username='testmember'`;
+  const blocked=await signIn('member@example.com');assert.equal(blocked.statusCode,403,blocked.body);assert.equal(blocked.json().code,'EMAIL_NOT_VERIFIED');assert.equal(blocked.headers['set-cookie'],undefined);
+  const legacyToken=token();await sql`insert into sessions(token_hash,user_id,expires_at) values(${digest(legacyToken)},${register.json().user.id},now()+interval '1 hour')`;
+  const legacyCookie='bpn-session='+legacyToken;assert.equal((await call('GET','/api/auth/me',undefined,legacyCookie)).statusCode,401,'old unverified sessions cannot access accounts');assert.equal((await call('GET','/api/account/ads',undefined,legacyCookie)).statusCode,401);
+  const verificationToken=token();await sql`insert into email_verifications(token_hash,user_id,expires_at) values(${digest(verificationToken)},${register.json().user.id},now()+interval '24 hours')`;
+  const verified=await call('GET','/api/auth/verify-email?token='+verificationToken);assert.equal(verified.statusCode,303,verified.body);assert.match(verified.headers.location,/auth\?email=verified/);assert.equal(verified.headers['set-cookie'],undefined,'verification does not silently sign in');
   const publicLogin=await signIn('member@example.com');assert.equal(publicLogin.statusCode,200,publicLogin.body);let memberCookie=cookieOf(publicLogin);
   const adminLogin=await signIn('admin@example.com','admin');assert.equal(adminLogin.statusCode,200,adminLogin.body);const adminCookie=cookieOf(adminLogin);
   assert.match(adminCookie,/bpn-admin-session=/);assert.equal((await signIn('admin@example.com')).statusCode,401);

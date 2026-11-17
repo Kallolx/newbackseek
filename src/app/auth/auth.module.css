@@ -115,5 +115,8 @@
 .switch { margin: 17px 0 0; text-align: center; }
 .switch a, .fieldHeading a, .consent a { text-decoration: underline; }
 .submit { cursor: pointer; }
+.verificationHelp { font-size:12px;line-height:1.6;color:var(--muted);text-align:center; }
+.resend { min-height:40px;padding:9px 12px;border:1px solid #ccd3de;border-radius:6px;background:white;color:#17356b;font:inherit;font-size:13px;font-weight:600;cursor:pointer; }
+.resend:disabled { opacity:.6;cursor:not-allowed; }
 .form :global(.turnstile-widget) { min-height: 65px; display: flex; justify-content: center; }
 .form :global(.security-error) { color: #9a311d; font-size: 13px; }

@@ -22,6 +22,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [captchaToken, setCaptchaToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [captchaAttempt, setCaptchaAttempt] = useState(0);
+  const [showResend,setShowResend]=useState(searchParams.get('verification')==='pending');
   const [message, setMessage] = useState(searchParams.get('error') ? 'Google sign-in could not be completed. Please try again or use email.' : '');
   useEffect(()=>{if(searchParams.get('email')==='verified')toast.success('Email verified. You can now log in.');if(searchParams.get('email')==='invalid')toast.error('This verification link has expired or was already used.');},[searchParams]);
 
@@ -29,6 +30,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     event.preventDefault();
     setMessage('');
     const data = new FormData(event.currentTarget);
+    const resend=(event.nativeEvent as SubmitEvent).submitter?.getAttribute('value')==='resend-verification';
     if ((signup && !gender) || ((signup || newPassword) && data.get('password') !== data.get('confirm'))) {
       setMessage(signup && !gender ? 'Select your gender.' : 'The passwords do not match.');
       return;
@@ -39,16 +41,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
       : { email: String(data.get('email')).trim(), password: String(data.get('password')), captchaToken };
     try {
       setBusy(true);
-      const response = await fetch(reset ? '/api/auth/request-password-reset' : newPassword ? '/api/auth/reset-password' : signup ? '/api/auth/register' : '/api/auth/login', {
+      const response = await fetch(resend ? '/api/auth/resend-verification-public' : reset ? '/api/auth/request-password-reset' : newPassword ? '/api/auth/reset-password' : signup ? '/api/auth/register' : '/api/auth/login', {
         method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || 'Unable to continue right now.');
+      if (!response.ok) {if(result.code==='EMAIL_NOT_VERIFIED')setShowResend(true);throw new Error(result.error || 'Unable to continue right now.');}
+      if (resend) {toast.success(result.alreadyVerified?'Your email is already verified. You can log in.':'Verification email sent. Check your inbox before logging in.');setCaptchaToken('');setCaptchaAttempt(value=>value+1);return;}
       if (reset) {toast.info('If this email belongs to an active member account, a reset link has been sent.');setCaptchaToken('');setCaptchaAttempt(value=>value+1);return;}
       if (newPassword) {window.dispatchEvent(new Event('bpn-session-change'));toast.success('Password updated. Log in with your new password.');router.replace('/auth');return;}
-      if (signup) toast[result.verificationEmailSent === false ? 'warning' : 'success'](result.verificationEmailSent === false ? 'Account created, but the email could not be sent. Log in and resend it from Account Settings.' : 'Account created. Check your inbox to verify your email, then log in.');
+      if (signup) toast[result.verificationEmailSent === false ? 'warning' : 'success'](result.verificationEmailSent === false ? 'Account created, but the email could not be sent. Use Resend verification email on the login screen.' : 'Account created. Check your inbox to verify your email, then log in.');
       window.dispatchEvent(new Event('bpn-session-change'));
-      router.replace(signup ? '/auth' : destination);
+      router.replace(signup ? '/auth?verification=pending' : destination);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to continue right now.');
@@ -75,6 +78,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           {newPassword && <label className={styles.field}>Confirm password<input name="confirm" type="password" autoComplete="new-password" required /></label>}
           <Turnstile key={captchaAttempt} onToken={setCaptchaToken} onError={() => setMessage('Security check could not load. Please refresh and try again.')} />
           <button className={styles.submit} type="submit" disabled={busy || !captchaToken}>{busy ? 'Please wait…' : reset ? 'Send reset link' : titles[mode]}</button>
+          {mode==='login'&&showResend&&<><p className={styles.verificationHelp}>Verify your email before logging in. To receive a new link, enter your email and password above and complete the security check.</p><button className={styles.resend} type="submit" value="resend-verification" disabled={busy||!captchaToken}>Resend verification email</button></>}
           <FeedbackToast message={message} />
           {mode === 'login' && <p className={styles.legal}>This site is protected by Cloudflare Turnstile and the <a href="https://www.cloudflare.com/privacypolicy/">Privacy Policy</a> and <a href="https://www.cloudflare.com/website-terms/">Terms of Service</a> apply.</p>}
         </form>

@@ -15,9 +15,11 @@ test('verification delivery addresses the registered user and includes the verif
     await sendVerificationEmail({ email: 'newuser@example.com', username: 'NewUser', verificationToken: 'test-token' });
     assert.equal(sent[0].to, 'newuser@example.com');
     assert.match(sent[0].text, /https:\/\/backpagenew.com\/api\/auth\/verify-email\?token=test-token/);
+    assert.match(sent[0].html,/role="presentation"/);assert.match(sent[0].html,/backpage-new-logo.png/);assert.match(sent[0].html,/Privacy Policy/);assert.match(sent[0].html,/Contact support/);
     await assert.rejects(sendVerificationEmail({ username: 'MissingEmail', verificationToken: 'test-token' }), /recipient is required/);
     assert.equal(sent.length, 1);
     await sendPasswordResetEmail({email:'newuser@example.com',resetToken:'reset-test-token'});
     assert.equal(sent[1].to,'newuser@example.com');assert.match(sent[1].text,/mode=newpassword/);assert.match(sent[1].text,/token=reset-test-token/);
+    await sendVerificationEmail({email:'newuser@example.com',username:'<script>unsafe</script>',verificationToken:'another-token'});assert.ok(!sent[2].html.includes('<script>'));assert.match(sent[2].html,/&lt;script&gt;/);
   } finally { transport.mock.restore(); }
 });
