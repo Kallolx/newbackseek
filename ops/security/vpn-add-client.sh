@@ -37,6 +37,6 @@ Endpoint = $ENDPOINT:$PORT
 AllowedIPs = 0.0.0.0/0, ::/0
 PersistentKeepalive = 25
 CONF
-qrencode -t png -o "$DIR/$NAME.png" -r "$DIR/$NAME.conf"
+qrencode -t png -s 8 -m 3 -o "$DIR/$NAME.png" -r "$DIR/$NAME.conf"
 wg syncconf wg0 <(wg-quick strip wg0) 2>/dev/null || systemctl restart wg-quick@wg0
 echo "Created $NAME ($NET.$HOST): $DIR/$NAME.conf and $DIR/$NAME.png"
