@@ -1,0 +1,406 @@
+# BackpageNew — Claude Project Handoff
+
+This is the operational handoff for BackpageNew. Read it before changing code, deploying, touching DNS, or modifying production data.
+
+## 1. Project identity
+
+- Repository: https://github.com/Kallolx/newbackseek.git
+- Local workspace: E:\Projects\Testing Projects\nazim-backseek
+- Main branch: main
+- Production commit at handoff: 9e54e6a
+- Product: BackpageNew, a location-based local classifieds/personal-ads site.
+- Public domain: https://backpagenew.com
+- Public www domain: https://www.backpagenew.com
+- Separate admin domain: https://admin.backpagenew.com
+- Public media domain: https://media.backpagenew.com
+- Hosting: RackNerd VPS, New York, USA.
+- VPS IPv4: 192.255.228.253
+- VPS SSH user: backpagenew
+- VPS app directory: /srv/backpagenew/app
+- Windows SSH key: C:\Users\khksn\.ssh\backpagenew-codex
+
+Never commit credentials, production cookies, database dumps, R2 secrets, OAuth secrets, SMTP passwords, or private verification photos.
+
+## 2. Architecture
+
+The system is a monorepo with two independent Next.js frontends and one Fastify backend.
+
+~~~text
+Browser
+  -> Cloudflare proxy/TLS
+  -> Caddy on VPS (:80/:443)
+     backpagenew.com       -> frontend :3000
+     admin.backpagenew.com -> admin :3001
+     /api/*                -> Fastify API :4000
+     media.backpagenew.com -> Cloudflare R2 public bucket
+
+Fastify API
+  -> PostgreSQL 18: users, ads, locations, sessions, reports, audit
+  -> Valkey 8: BullMQ queue
+  -> R2 private bucket: originals and verification photos
+  -> R2 public bucket: processed WebP ad images
+  -> Zoho SMTP
+  -> Google OAuth
+  -> Cloudflare Turnstile
+
+Worker
+  -> reads private R2 originals
+  -> creates 160px thumb, 480px card, 1280px full WebP
+  -> writes derivatives to public R2
+~~~
+
+The public and admin frontends are separate containers and separate authentication contexts.
+
+## 3. Frontends and routes
+
+### Public application
+
+Source: src/ and src/app/.
+
+- / — home and location browser.
+- /browse/... — country, region, city, category listings.
+- /browse/.../:id — public ad details.
+- /auth — login and signup.
+- /post — authenticated member ad posting.
+- /myaccount — member account.
+- /myaccount/posts/:id — same details component as public, with owner controls.
+- /myaccount/posts/:id/edit — owner edit form.
+- /privacy and /terms — legal pages.
+
+### Admin application
+
+Separate Next app: admin/. It is hosted only at admin.backpagenew.com.
+
+- /login — administrator login.
+- /admin — overview.
+- /admin/ads — all ads.
+- /admin/users — users.
+- /admin/reports — reports.
+- /admin/verification — verification submissions.
+- /admin/publish — ad publishing.
+- /admin/bump — bump by Post ID.
+- /admin/distribution — distribute by Post ID.
+- /admin/media — media management.
+- /admin/audit — audit records.
+- /admin/health — system health.
+
+Caddy redirects old public /admin paths to the admin host. Do not use the public host as an admin security boundary.
+
+### UI rules already implemented
+
+- Public and member details use the same post-detail.tsx and photo-gallery.tsx.
+- Cards have bounded image heights and use CDN variants.
+- Detail gallery has a fixed responsive frame, blurred side fill, controls, counter, and thumbnails.
+- Image selection only creates local previews. Upload/processing starts after final submit.
+- Admin mobile navigation is a dark floating five-item bar: Home, Ads, Create, Users, More.
+- More opens a compact content-height bottom sheet, not a full-height modal.
+- Destructive actions are red and confirmed.
+- Toasts are compact dark pills with white text/icons, above the mobile admin bar.
+- Do not restore the removed read-only login-email field. Public contact email is an optional ad field separate from login email.
+
+## 4. Backend
+
+Source: backend/src/. Runtime: Node 24, Fastify 5, PostgreSQL driver, Valkey/IORedis, BullMQ, Zod.
+
+- API listens on 4000 and is published only to 127.0.0.1:4000.
+- Caddy adds the public/admin app context header; backend still checks role and session.
+- Sessions are opaque random tokens stored hashed in PostgreSQL and sent in HttpOnly cookies.
+- Public and admin cookies are separate host-only names.
+- Mutations require an allowed Origin.
+- Public registration cannot create admins.
+- Public login rejects admins.
+- Email verification is required for protected member actions.
+
+Main API groups:
+
+Health/metadata:
+- GET /api/health
+- GET /api/ready
+- GET /api/locations
+- GET /api/categories
+
+Auth:
+- POST /api/auth/register
+- POST /api/auth/login
+- GET /api/auth/me
+- POST /api/auth/logout
+- GET /api/auth/google/start
+- GET /api/auth/google/callback
+- GET /api/auth/verify-email
+- POST /api/auth/resend-verification
+- POST /api/auth/resend-verification-public
+- POST /api/auth/request-password-reset
+- POST /api/auth/reset-password
+
+Public/media:
+- GET /api/ads
+- GET /api/ads/:id
+- POST /api/media/:id/complete
+- GET /api/media/:id
+- POST /api/reports
+
+Member:
+- GET/POST /api/account/ads
+- GET/PATCH/DELETE /api/account/ads/:id
+- POST /api/account/ads/:id/status
+- POST /api/account/verification
+- GET /api/auth/impersonate
+- POST /api/account/impersonation/stop
+
+Admin APIs are in backend/src/admin-routes.mjs and the admin section of backend/src/app.mjs. They support live collections, publishing/editing, Post ID lookup, bump, distribution, users, reports, verification review, media deletion, impersonation, audit, and health.
+
+## 5. Database
+
+PostgreSQL 18 runs in the db container with persistent volume postgres_data. Never delete this volume during normal deployment.
+
+Migrations in backend/migrations/:
+
+- 001_initial.sql — base schema, locations/categories, ads, media, sessions.
+- 002_auth_identities.sql — Google/auth identities.
+- 003_admin_management.sql — admin management and audit.
+- 004_password_reset.sql — reset tokens.
+- 005_verified_sessions.sql — verified sessions.
+- 006_reuse_deleted_identities.sql — deleted email/username/Google identities may register again; active/suspended identities remain unique.
+- 007_ad_contact_email.sql — optional public contact email on ads.
+
+Migrations are transactional and rerunnable. Never use production database for tests.
+
+## 6. R2 image storage
+
+Private bucket: backpagenew-private
+- Originals and private verification photos.
+- No public r2.dev access or public custom domain.
+- Presigned uploads expire in five minutes.
+- Verification photos stay private.
+
+Public bucket: backpagenew-public
+- Only processed ad-image variants.
+- Custom domain media.backpagenew.com.
+- Public objects have immutable cache headers.
+- Typical path: /public/{media-id}/{thumb|card|full}.webp.
+
+backend/src/worker.mjs uses Sharp to auto-orient, strip metadata, constrain dimensions, and create 160/480/1280 WebP variants. Never use originals in listing pages. Do not call Next image optimization against the media domain; use direct CDN URLs.
+
+## 7. Production environment keys
+
+Secrets live only in /srv/backpagenew/app/backend/.env. Do not print values or commit the file.
+
+Current key names:
+
+~~~text
+NODE_ENV
+PORT
+SITE_ORIGIN
+ADMIN_ORIGIN
+DB_PASSWORD
+DATABASE_URL
+REDIS_URL
+R2_ENDPOINT
+R2_ACCESS_KEY_ID
+R2_SECRET_ACCESS_KEY
+R2_BUCKET
+R2_PUBLIC_BUCKET
+MEDIA_PUBLIC_URL
+SMTP_HOST
+SMTP_PORT
+SMTP_SECURE
+SMTP_USER
+SMTP_PASSWORD
+EMAIL_FROM
+CAPTCHA_PROVIDER
+TURNSTILE_SITE_KEY
+TURNSTILE_SECRET_KEY
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI
+~~~
+
+Conceptual production values:
+
+- SITE_ORIGIN=https://backpagenew.com
+- ADMIN_ORIGIN=https://admin.backpagenew.com
+- R2_BUCKET=backpagenew-private
+- R2_PUBLIC_BUCKET=backpagenew-public
+- MEDIA_PUBLIC_URL=https://media.backpagenew.com
+- Public Google callback: https://backpagenew.com/api/auth/google/callback
+- Admin callback: https://admin.backpagenew.com/api/admin/auth/google/callback
+- EMAIL_FROM is a verified BackpageNew sender.
+
+The root frontend receives the Turnstile site key at Docker build time. The Turnstile secret remains backend-only.
+
+## 8. Cloudflare, Hostinger, Zoho, Google
+
+Cloudflare is authoritative. Hostinger nameservers:
+
+- blair.ns.cloudflare.com
+- west.ns.cloudflare.com
+
+Important DNS records conceptually:
+
+- @ A 192.255.228.253, proxied.
+- www CNAME backpagenew.com, proxied.
+- admin A 192.255.228.253, proxied.
+- media CNAME to the R2 custom-domain target, DNS-only as required.
+- Zoho MX mx.zoho.com priority 10, mx2.zoho.com priority 20, mx3.zoho.com priority 50, all DNS-only.
+- Zoho verification, SPF, DKIM (zoho._domainkey), and DMARC (_dmarc) TXT records, DNS-only.
+
+Cloudflare SSL/TLS is Full (strict). Do not change to Flexible. Error 525 means inspect Caddy/origin TLS and container status.
+
+Keep the old Cloudflare public-directory cache rule disabled. Public HTML must revalidate; account/API responses must not be publicly cached. If an old unstyled page appears, inspect cache rules and purge Cloudflare cache from the dashboard. Never delete static volumes.
+
+Zoho mailboxes include admin@backpagenew.com and support@backpagenew.com. SMTP uses a Zoho app password in SMTP_PASSWORD, not the normal mailbox password.
+
+Google OAuth can be owned by any Google account; it does not require admin@backpagenew.com to be a Google Workspace account.
+
+OAuth origins:
+- https://backpagenew.com
+- https://www.backpagenew.com
+- https://admin.backpagenew.com
+
+OAuth callbacks:
+- https://backpagenew.com/api/auth/google/callback
+- https://admin.backpagenew.com/api/admin/auth/google/callback
+
+Turnstile uses one public site key and backend secret. If the UI says security check unavailable, verify build-time site key and backend secret.
+
+## 9. VPS commands
+
+From Windows PowerShell:
+
+~~~powershell
+ssh -i "$env:USERPROFILE\.ssh\backpagenew-codex" backpagenew@192.255.228.253
+~~~
+
+On the VPS:
+
+~~~bash
+cd /srv/backpagenew/app
+git status --short
+git log -1 --oneline
+docker compose --env-file backend/.env --profile backend --profile admin ps
+docker compose --env-file backend/.env --profile backend --profile admin logs --tail=100 api
+docker compose --env-file backend/.env --profile backend --profile admin logs --tail=100 worker
+docker compose --env-file backend/.env --profile backend --profile admin logs --tail=100 caddy
+curl -fsS https://backpagenew.com/api/health
+curl -fsS https://backpagenew.com/api/ready
+curl -I https://backpagenew.com
+curl -I https://admin.backpagenew.com/login
+~~~
+
+Production Compose services:
+
+- frontend — public Next app, localhost 3000.
+- admin — separate Next app, localhost 3001.
+- db — PostgreSQL 18.
+- valkey — Valkey 8 with append-only queue persistence.
+- migrate — migrations and directory seed.
+- api — Fastify API, localhost 4000.
+- worker — image processing worker, memory 768 MB and one CPU.
+- caddy — public TLS/reverse proxy.
+
+## 10. Deployment procedure
+
+From /srv/backpagenew/app:
+
+~~~bash
+git fetch origin
+git checkout main
+git pull --ff-only origin main
+docker compose --env-file backend/.env --profile backend --profile admin build frontend admin api worker
+docker compose --env-file backend/.env --profile backend --profile admin up -d --force-recreate frontend admin migrate api worker
+docker compose --env-file backend/.env --profile backend --profile admin up -d --force-recreate caddy
+docker compose --env-file backend/.env --profile backend --profile admin ps
+~~~
+
+Recreate Caddy when Caddyfile changes. Do not use down -v, docker volume prune, or delete public_static, admin_static, postgres_data, queue_data, caddy_data, or caddy_config.
+
+Persistent static asset volumes:
+
+- public_static -> frontend /app/static-archive -> Caddy /srv/static/public
+- admin_static -> admin /app/static-archive -> Caddy /srv/static/admin
+
+At startup, each frontend copies new hashed Next assets into its archive. This protects old tabs/cached HTML. For legacy recovery use ops/recover-static-assets.sh before deleting old images. See ops/README.md.
+
+## 11. First admin
+
+There are no default admin credentials. On the VPS:
+
+~~~bash
+cd /srv/backpagenew/app/backend
+export ADMIN_EMAIL='admin@backpagenew.com'
+export ADMIN_USERNAME='backpagenewadmin'
+export ADMIN_PASSWORD='new-random-password-at-least-16-characters'
+node --env-file=.env src/create-admin.mjs
+unset ADMIN_EMAIL ADMIN_USERNAME ADMIN_PASSWORD
+~~~
+
+The script hashes the password and inserts an email-verified administrator. Remove bootstrap values immediately.
+
+## 12. Tests
+
+Before deployment:
+
+~~~bash
+npm ci
+npm run typecheck
+npm run lint
+npm run build
+node --test tests/session.test.cjs tests/picture-selection.test.cjs
+~~~
+
+Browser tests use isolated fixtures, never production accounts:
+
+~~~powershell
+$env:BPN_PLAYWRIGHT_MODULE='E:\Projects\Testing Projects\nazim-backseek\artifacts\browser-tests\node_modules\playwright'
+node tests/card-images-browser-smoke.cjs
+node tests/owner-ad-browser-smoke.cjs
+~~~
+
+Backend disposable regression:
+
+~~~bash
+docker compose -p bpn-admin-regression -f backend/compose.test.yml up --build --abort-on-container-exit --exit-code-from tests
+docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove-orphans
+~~~
+
+## 13. Important pitfalls
+
+1. Keep public HTML revalidation and account/API no-store behavior.
+2. Keep Zoho MX/TXT and R2 custom-domain records DNS-only where required.
+3. Full (strict) Cloudflare mode requires working Caddy origin TLS.
+4. Admin context headers are not authorization; backend role/session checks remain mandatory.
+5. Use direct media CDN URLs; Next remote optimizer is not configured for media.backpagenew.com.
+6. Keep upload and processing deferred until final submit.
+7. Never expose a member login email as an ad contact email.
+8. Existing owner city placements are preserved during edit.
+9. Bump and distribution are separate Post ID pages and show only the cover image.
+10. The original README describes the old in-memory prototype; this handoff and backend README describe the live architecture.
+
+## 14. Safe Claude workflow
+
+1. Read this file, backend/README.md, ops/README.md, Caddyfile, and docker-compose.production.yml.
+2. Inspect git status --short and preserve unrelated changes. The worktree may intentionally show D backend/.env.example; do not restore or stage it without owner instruction.
+3. Make the smallest focused change.
+4. Run typecheck, lint, build, and relevant isolated tests.
+5. Commit clearly on main unless another branch is requested.
+6. Push origin/main only after verification.
+7. Pull on the VPS, build affected images, run the migration-aware Compose deployment, recreate Caddy if routing changed, then check health, readiness, public pages, member auth, and admin login.
+8. Report commit, deployment, tests, and any user-side action needed. Do not claim Cloudflare cache was purged unless it actually was.
+
+## 15. Release state at handoff
+
+Completed:
+
+- Persistent hashed static assets across deployments.
+- Live backend auth, verification, password reset, Google OAuth, Turnstile, and admin separation.
+- Zoho SMTP integration points and verified DNS records.
+- R2 private/public image pipeline and WebP worker.
+- Shared public/member gallery and contact facts.
+- Owner edit, pause/resubmit, and delete controls.
+- Live admin collections, publishing, bump, distribution, users, reports, verification, media, audit, and health.
+- Dark compact mobile admin navigation and compact bottom sheet.
+- Compact responsive toast system.
+- Deferred public/admin image upload processing.
+
+Verify live DNS, Cloudflare rules, container status, and backend/.env contents without printing secrets before changing anything.
+
