@@ -91,7 +91,7 @@ Caddy redirects old public /admin paths to the admin host. Do not use the public
 - Public and member details use the same post-detail.tsx and photo-gallery.tsx.
 - Cards have bounded image heights and use CDN variants.
 - Detail gallery has a fixed responsive frame, blurred side fill, controls, counter, and thumbnails.
-- Image selection only creates local previews. Upload/processing starts after final submit.
+- Member post form uploads each picture as soon as it is chosen (3 in parallel), shows a blurred tile with a 0-100% ring that turns sharp when processed, and submit shows a Pictures / Saving / Done card. Abandoned, never-attached uploads are swept by the worker after 24 hours. The admin publisher still uploads on submit (in parallel).
 - Admin mobile navigation is a dark floating five-item bar: Home, Ads, Create, Users, More.
 - More opens a compact content-height bottom sheet, not a full-height modal.
 - Destructive actions are red and confirmed.
@@ -162,6 +162,7 @@ Migrations in backend/migrations/:
 - 005_verified_sessions.sql — verified sessions.
 - 006_reuse_deleted_identities.sql — deleted email/username/Google identities may register again; active/suspended identities remain unique.
 - 007_ad_contact_email.sql — optional public contact email on ads.
+- 008_performance_and_upload_cleanup.sql — hot-path indexes and media.ever_attached for the abandoned-upload sweep.
 
 Migrations are transactional and rerunnable. Never use production database for tests.
 
@@ -295,21 +296,33 @@ Production Compose services:
 - valkey — Valkey 8 with append-only queue persistence.
 - migrate — migrations and directory seed.
 - api — Fastify API, localhost 4000.
-- worker — image processing worker, memory 768 MB and one CPU.
+- worker — image processing worker, 4 parallel jobs, 1.5 GB and two CPUs.
 - caddy — public TLS/reverse proxy.
 
 ## 10. Deployment procedure
 
-From /srv/backpagenew/app:
+Docker on the VPS needs sudo, and the live Compose project is `app` using docker-compose.production.yml. From /srv/backpagenew/app:
 
 ~~~bash
+C="sudo docker compose -p app -f docker-compose.production.yml --env-file backend/.env --profile backend --profile admin"
 git fetch origin
 git checkout main
 git pull --ff-only origin main
-docker compose --env-file backend/.env --profile backend --profile admin build frontend admin api worker
-docker compose --env-file backend/.env --profile backend --profile admin up -d --force-recreate frontend admin migrate api worker
-docker compose --env-file backend/.env --profile backend --profile admin up -d --force-recreate caddy
-docker compose --env-file backend/.env --profile backend --profile admin ps
+# Back up before any migration
+F=/srv/backpagenew/backups/pre-$(git rev-parse --short HEAD)-$(date +%Y%m%d-%H%M%S).dump
+sudo docker exec app-db-1 pg_dump -U backpagenew -d backpagenew -Fc > "$F" && chmod 600 "$F"
+# migrate has its OWN image: always build it with api/worker or new migrations will not run
+$C build frontend admin migrate api worker
+$C up -d db
+$C up -d --force-recreate frontend admin migrate api worker
+$C up -d --force-recreate caddy   # only when Caddyfile changed
+$C ps
+~~~
+
+Verify the latest migration actually applied:
+
+~~~bash
+sudo docker exec app-db-1 psql -U backpagenew -d backpagenew -Atc "select name from migrations order by name desc limit 1"
 ~~~
 
 Recreate Caddy when Caddyfile changes. Do not use down -v, docker volume prune, or delete public_static, admin_static, postgres_data, queue_data, caddy_data, or caddy_config.
@@ -370,7 +383,7 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 3. Full (strict) Cloudflare mode requires working Caddy origin TLS.
 4. Admin context headers are not authorization; backend role/session checks remain mandatory.
 5. Use direct media CDN URLs; Next remote optimizer is not configured for media.backpagenew.com.
-6. Keep upload and processing deferred until final submit.
+6. Pictures upload on select; ads may attach pictures that are still queued/processing (the worker finishes them).
 7. Never expose a member login email as an ad contact email.
 8. Existing owner city placements are preserved during edit.
 9. Bump and distribution are separate Post ID pages and show only the cover image.
