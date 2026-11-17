@@ -207,8 +207,14 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 .pagination button[aria-current="page"] { border-color: #123168; background: #123168; color: white; }
 .pagination button:disabled { color: #a4acb8; cursor: default; }
 .post-copy h2 a { color: inherit; }
-.post-detail > h1 { font-size: 23px; margin-block: 10px 4px; }
+.post-detail > h1, .post-title-row h1 { font-size: 23px; margin-block: 10px 4px; }
+.post-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.post-title-row h1 { min-width: 0; overflow-wrap: anywhere; }
+.post-back-link { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--link); font-size: 14px; font-weight: 600; text-decoration: none; }
+.post-back-link svg { width: 16px; height: 16px; }
+.post-back-link:hover { text-decoration: underline; }
 .post-detail .browse-crumbs a { color: var(--link); }
+.post-meta p { margin: 0; }
 .post-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13px; }
 .favorite-button { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid #ddd; border-radius: 20px; background: white; color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; }
 .favorite-button svg { width: 15px; height: 15px; color: #c8203f; }
@@ -224,10 +230,10 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 .post-thumbnails { display: flex; justify-content: center; gap: 9px; margin: 12px 0 30px; }
 .post-thumbnails button { flex: 0 1 52px; min-width: 0; aspect-ratio: 1; padding: 0; border: 1px solid #ccd3de; border-radius: 5px; background: #e3eaf5; cursor: pointer; }
 .post-thumbnails button[aria-pressed="true"] { outline: 2px solid #398de0; }
-.post-facts { padding-left: 14px; border-left: 1px solid #aaa; }
-.post-facts div { display: flex; gap: 5px; margin-block: 5px; }
+.post-facts { padding-left: 14px; border-left: 1px solid #aaa; font-size: 14px; line-height: 1.45; }
+.post-facts div { display: flex; gap: 5px; margin-block: 3px; }
 .post-facts dt::after { content: ':'; }
-.post-facts dd { margin:0;font-weight:700;min-width:0;overflow-wrap:anywhere; }
+.post-facts dd { margin:0;font-weight:600;min-width:0;overflow-wrap:anywhere; }
 .post-facts dt { flex-shrink:0; }
 .post-description { margin-top: 28px; font-size: 16px; line-height: 1.65; overflow-wrap: anywhere; }
 .post-description h2 { margin-block: 18px 8px; font-size: 19px; }
@@ -239,7 +245,8 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 .recent-posts { margin-top: 22px; border-top: 1px solid #ddd; padding-top: 14px; }
 .recent-posts h2 { margin-bottom: 8px; font-size: 14px; text-transform: uppercase; }
 .recent-posts article { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 10px; padding: 9px 3px; border-bottom: 1px solid #eee; }
-.recent-post-thumbnail { width: 44px; height: 44px; border-radius: 4px; background: #e3eaf5; }
+.recent-post-thumbnail { display: block; width: 44px; height: 44px; overflow: hidden; border-radius: 4px; background: #e3eaf5; }
+.recent-post-thumbnail img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .recent-post-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 16px; line-height: 1.25; overflow-wrap: anywhere; }
 .recent-posts article small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
 .recent-posts > a { display: block; margin-top: 12px; text-align: right; font-size: 13px; }

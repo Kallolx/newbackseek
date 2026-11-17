@@ -18,7 +18,10 @@ const {chromium}=require(process.env.BPN_PLAYWRIGHT_MODULE||'playwright');
    return route.fulfill({json:path.endsWith('/1001')?{post,images:photos,cities:[{href:post.city_href}]}:{posts:deleted?[]:[{...post,image:photos[0]?.variants,images:photos.map(photo=>photo.variants),media_ids:photos.map(photo=>photo.id)}]}});
   });
   const page=await context.newPage();await page.goto('http://localhost:3107/myaccount/posts/1001',{waitUntil:'domcontentloaded'});
-  await page.getByRole('link',{name:'Edit ad',exact:true}).click();
+  const menu=()=>page.getByRole('button',{name:'Manage this ad',exact:true});const item=async name=>{await menu().click();await page.getByRole('menuitem',{name,exact:true}).click();};
+  await menu().waitFor();assert.equal(await page.locator('.browse-crumbs').count(),0,'owner view has no city/category breadcrumb');assert.equal(await page.getByRole('menuitem').count(),0,'owner actions stay inside the closed menu');
+  await page.getByRole('button',{name:'Open picture 1 full screen'}).click();const viewer=page.getByRole('dialog',{name:/pictures$/});await viewer.waitFor();await page.keyboard.press('ArrowRight');await viewer.getByText('2 / 3').waitFor();await page.keyboard.press('Escape');await viewer.waitFor({state:'hidden'});
+  await item('Edit ad');
   await page.getByRole('heading',{name:'Edit ad',exact:true}).waitFor();
   assert.equal(await page.locator('input[name="headline"]').inputValue(),post.title);
   assert.equal(await page.locator('input[type=email]').count(),1,'only the editable public contact email is shown');
@@ -29,15 +32,15 @@ const {chromium}=require(process.env.BPN_PLAYWRIGHT_MODULE||'playwright');
   await page.locator('input[name=contactEmail]').fill('changed@example.com');
   await page.locator('input[type=checkbox]').check();
   await page.getByRole('button',{name:'Save changes for review'}).click();
-  await page.getByRole('link',{name:'Edit ad',exact:true}).waitFor();assert.equal(mutations[0].method,'PATCH');assert.equal(mutations[0].body.keepMediaIds.length,2);assert.equal(mutations[0].body.contactEmail,'changed@example.com');assert.equal(mutations[0].body.cityIds,undefined,'edits preserve all existing city placements');
-  post.status='published';await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Pause',exact:true}).click();
-  await page.getByRole('button',{name:'Submit for review',exact:true}).click();await page.getByRole('link',{name:'Edit ad',exact:true}).waitFor();
+  await menu().waitFor();assert.equal(mutations[0].method,'PATCH');assert.equal(mutations[0].body.keepMediaIds.length,2);assert.equal(mutations[0].body.contactEmail,'changed@example.com');assert.equal(mutations[0].body.cityIds,undefined,'edits preserve all existing city placements');
+  post.status='published';await page.reload({waitUntil:'domcontentloaded'});await item('Pause');
+  await page.getByText('Paused',{exact:true}).waitFor();await item('Submit for review');await page.getByText('Pending',{exact:true}).waitFor();
   assert.ok(mutations.some(action=>action.body?.status==='paused'));assert.ok(mutations.some(action=>action.body?.status==='pending'));
-  await page.getByRole('button',{name:'Delete',exact:true}).click();await page.getByRole('button',{name:'Keep ad',exact:true}).click();assert.equal(deleted,false);
-  await page.getByRole('button',{name:'Delete',exact:true}).click();await page.getByRole('button',{name:'Delete ad',exact:true}).click();await page.getByRole('heading',{name:'My ads',exact:true}).waitFor();assert.equal(deleted,true);
+  await item('Delete');await page.getByRole('button',{name:'Keep ad',exact:true}).click();assert.equal(deleted,false);
+  await item('Delete');await page.getByRole('button',{name:'Delete ad',exact:true}).click();await page.getByRole('heading',{name:'My ads',exact:true}).waitFor();assert.equal(deleted,true);
   await page.goto('http://localhost:3107/admin/distribute',{waitUntil:'domcontentloaded'});
   // The navigation is present independently of the mocked admin list resources.
   if(width===390){const bar=page.getByRole('navigation',{name:'Mobile admin navigation'});await bar.waitFor();assert.equal(await bar.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(17, 31, 54)');await page.getByRole('button',{name:'More admin pages',exact:true}).click();const sheet=page.getByRole('dialog');await sheet.waitFor();await page.waitForTimeout(300);const bounds=await sheet.boundingBox();assert.ok(bounds.height<350&&bounds.y>400,JSON.stringify(bounds));await page.screenshot({path:'artifacts/admin-dark-bar-compact-sheet.png'});}
-  console.log(`${width}px: shared details, edit/save, deferred photo removal, pause/review, delete confirmation and compact navigation passed`);await context.close();
+  console.log(`${width}px: shared details, 3-dot menu, full-screen viewer, edit/save, deferred photo removal, pause/review, delete confirmation and compact navigation passed`);await context.close();
  }}finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

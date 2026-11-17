@@ -1,13 +1,42 @@
 .gallery { margin-block:20px;min-width:0; }
 .frame { position:relative;isolation:isolate;height:clamp(280px,55vw,480px);overflow:hidden;border-radius:8px;background:#182130; }
 .backdrop { position:absolute;inset:-24px;background-position:center;background-size:cover;filter:blur(20px) brightness(.55);pointer-events:none; }
+.open { position:absolute;inset:0;display:block;width:100%;height:100%;padding:0;border:0;background:transparent;cursor:zoom-in; }
 .image { position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain; }
-.count { position:absolute;right:10px;top:10px;padding:4px 8px;border-radius:6px;background:#101722c9;color:white;font-size:12px;line-height:1.3; }
+.count { position:absolute;right:10px;top:10px;padding:4px 8px;border-radius:6px;background:#101722c9;color:white;font-size:12px;line-height:1.3;pointer-events:none; }
+.expand { position:absolute;right:10px;bottom:10px;display:grid;place-items:center;width:30px;height:30px;border-radius:6px;background:#101722b8;color:white;pointer-events:none; }
+.expand svg { width:15px;height:15px; }
 .previous,.next { position:absolute;top:50%;translate:0 -50%;display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid #ffffff30;border-radius:50%;background:#101722b8;color:white;cursor:pointer; }
 .previous { left:10px; }.next { right:10px; }.previous svg,.next svg { width:23px;height:23px; }
+/* Centered thumbnails that still scroll from the first item when they overflow. */
 .thumbnails { display:flex;gap:8px;overflow-x:auto;padding:4px 3px;margin-top:9px; }
+.thumbnails > :first-child { margin-left:auto; }
+.thumbnails > :last-child { margin-right:auto; }
 .thumbnails button { flex:0 0 64px;height:56px;padding:2px;border:2px solid transparent;border-radius:7px;background:#eef1f6;overflow:hidden;cursor:pointer; }
 .thumbnails button[aria-pressed=true] { border-color:#315bb4; }
 .thumbnails img { display:block;width:100%;height:100%;object-fit:cover;border-radius:3px; }
-.previous:focus-visible,.next:focus-visible,.thumbnails button:focus-visible { outline:3px solid #7eacff;outline-offset:2px; }
-@media(max-width:600px) { .thumbnails button { flex-basis:56px;height:50px; } }
+.previous:focus-visible,.next:focus-visible,.thumbnails button:focus-visible,.open:focus-visible,.viewerClose:focus-visible,.viewerPrevious:focus-visible,.viewerNext:focus-visible { outline:3px solid #7eacff;outline-offset:2px; }
+
+/* Full-screen viewer */
+.viewer { width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;padding:0;border:0;background:#05080df7;color:white;display:flex;flex-direction:column;overflow:hidden; }
+.viewer:not([open]) { display:none; }
+.viewer::backdrop { background:#05080dee; }
+.viewerTop { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;font-size:14px; }
+.viewerClose { display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid #ffffff30;border-radius:50%;background:#ffffff14;color:white;cursor:pointer; }
+.viewerClose svg { width:22px;height:22px; }
+.viewerStage { position:relative;flex:1;min-height:0;display:grid;place-items:center;padding:0 64px; }
+.viewerImage { display:block;max-width:100%;max-height:100%;object-fit:contain;user-select:none; }
+.viewerPrevious,.viewerNext { position:absolute;top:50%;translate:0 -50%;display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid #ffffff30;border-radius:50%;background:#ffffff1a;color:white;cursor:pointer; }
+.viewerPrevious:hover,.viewerNext:hover,.viewerClose:hover { background:#ffffff2e; }
+.viewerPrevious { left:12px; }.viewerNext { right:12px; }
+.viewerPrevious svg,.viewerNext svg { width:28px;height:28px; }
+.viewerThumbnails { flex-shrink:0;margin:0;padding:12px 16px 16px; }
+.viewerThumbnails button { background:#ffffff14; }
+.viewerThumbnails button[aria-pressed=true] { border-color:white; }
+
+@media(max-width:600px) {
+  .thumbnails button { flex-basis:56px;height:50px; }
+  .viewerStage { padding:0; }
+  .viewerPrevious,.viewerNext { width:38px;height:38px;background:#05080d99; }
+  .viewerPrevious { left:8px; }.viewerNext { right:8px; }
+}
