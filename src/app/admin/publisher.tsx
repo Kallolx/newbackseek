@@ -1,5 +1,6 @@
 'use client';
 
+import { FeedbackToast } from '../../components/toast';
 import { Accordion, Alert, Badge, Button, Checkbox, FileInput, Group, Modal, NumberInput, Paper, ScrollArea, Select, SimpleGrid, Stack, Stepper, Text, TextInput, Title } from '@mantine/core';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
@@ -94,7 +95,7 @@ export function Publisher({ locations, categories, source, mode, onSubmit }: { l
     </Stack></Paper></div>
     <div style={{ display: step === 1 ? undefined : 'none' }}><Paper withBorder p={{ base: 'sm', sm: 'lg' }} radius="md"><Stack><Title order={3} size="h4">Choose destination cities</Title>{mode === 'copy' && <Alert color="blue">Ad #{source?.id}: {source?.title}. Existing destinations are disabled. Pictures are reused rather than duplicated.</Alert>}<CityPicker locations={locations} selected={selected} onChange={setSelected} excluded={mode === 'copy' ? source?.targets : []} /></Stack></Paper></div>
     {step === 2 && review && <Paper withBorder p="lg" radius="md"><Stack gap="md"><Title order={3} size="h4">Review your changes</Title><SimpleGrid cols={3}><div><Text size="xs" c="dimmed">Ads</Text><Text fw={700}>{review.titles.length}</Text></div><div><Text size="xs" c="dimmed">Cities per ad</Text><Text fw={700}>{selected.length}</Text></div><div><Text size="xs" c="dimmed">Placements</Text><Text fw={700}>{selected.length * review.titles.length}</Text></div></SimpleGrid><Text size="sm">Owner: @{review.owner} · {categories.flatMap((item) => item.services).find((item) => item.slug === review.category)?.name}</Text><Paper withBorder p="sm"><Text fw={600} size="sm">{review.titles[0]}</Text><Text size="sm" c="dimmed" lineClamp={3}>{review.description}</Text>{review.titles.length > 1 && <Text size="xs">Plus {review.titles.length - 1} other titles</Text>}</Paper><Text size="sm" fw={600}>Destination cities</Text><ScrollArea.Autosize mah={220}><Stack gap={7}>{all.filter((city) => selected.includes(city.id)).map((city) => <Text size="sm" key={city.id}>{city.name}<Text span size="xs" c="dimmed"> · {city.region} · {city.country}</Text></Text>)}</Stack></ScrollArea.Autosize><Alert color="blue">Preview only. Changes apply to this admin session. Public publishing and server processing will be connected with the backend.</Alert></Stack></Paper>}
-    {error && <Alert color="red" mt="md" role="alert">{error}</Alert>}
+    <FeedbackToast message={error} />
     <Paper withBorder p="sm" radius="md" mt="md"><Group justify="space-between"><Button variant="default" leftSection={<FiArrowLeft />} disabled={step === 0 || (mode === 'copy' && step === 1)} onClick={() => setStep(step - 1)}>Back</Button><Button type="submit" loading={busy} rightSection={step === 2 ? <FiCheck /> : <FiArrowRight />}>{step === 0 ? 'Choose cities' : step === 1 ? 'Review changes' : mode === 'edit' ? 'Save changes' : mode === 'copy' ? 'Add destinations' : 'Publish ads'}</Button></Group></Paper>
   </form>;
 }

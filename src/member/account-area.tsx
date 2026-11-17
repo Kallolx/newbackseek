@@ -1,5 +1,6 @@
 'use client';
 
+import { FeedbackToast } from '../components/toast';
 import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -77,7 +78,7 @@ function MemberDetails({ member, id }: { member: MemberSession; id: string }) {
     <Link className={styles.back} href="/myaccount"><FiArrowLeft aria-hidden="true" /> My ads</Link>
     <h1>{post.title}</h1><p>{post.cityName} › {post.category} › <strong>{post.service}</strong></p>
     <div className={styles.heading}><span className={styles.postStatus}>{post.status}</span></div>
-    {message && <p role="status" className={styles.notice}>{message}</p>}
+    <FeedbackToast message={message} type="info" />
     {!post.images.length && <EmptyState kind="photo" compact title="No pictures in this ad" description="This ad was posted without photos. Its details are available below." />}
     {!!post.images.length && <><div className={styles.mainPhoto}><Image src={post.images[image]} alt={post.title} width={1000} height={700} unoptimized={post.images[image].startsWith('data:')} /></div>
       {post.images.length > 1 && <div className={styles.thumbnails}>{post.images.map((src, index) => <button key={index} type="button" aria-label={'Show photo ' + (index + 1)} aria-pressed={index === image} onClick={() => setImage(index)}><Image src={src} alt="" width={90} height={70} unoptimized={src.startsWith('data:')} /></button>)}</div>}</>}
@@ -99,7 +100,7 @@ function Settings({ member }: { member: MemberSession }) {
       <label>Username<input value={member.username} readOnly /></label>
       <label>Email<input type="email" value={member.email} readOnly /></label>
       <p className={styles.notice}>{member.emailVerified ? 'Your email address is verified.' : 'Verify your email before publishing ads or uploading pictures.'}</p>
-      {!member.emailVerified && <button className={styles.primary} type="submit">Resend verification email</button>}{message && <p role="status">{message}</p>}
+      {!member.emailVerified && <button className={styles.primary} type="submit">Resend verification email</button>}<FeedbackToast message={message} type="info" />
     </form>
   </section>;
 }

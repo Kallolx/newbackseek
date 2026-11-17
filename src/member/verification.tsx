@@ -1,5 +1,6 @@
 'use client';
 
+import { FeedbackToast } from '../components/toast';
 import Image from 'next/image';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { FiShield, FiUser, FiCamera, FiCheckCircle, FiX, FiLock } from 'react-icons/fi';
@@ -63,7 +64,7 @@ export function Verification({ member }: { member: MemberSession }) {
         <label>Additional information <span className={styles.help}>Optional</span><textarea name="additionalInformation" rows={4} maxLength={1000} placeholder="Links to verified profiles or any details that may help with your review…" /></label>
         <label className={styles.check}><input type="checkbox" required /><span>I confirm that the photo is unedited, my face is clearly visible, and my handwritten details are included.</span></label>
         <p className={styles.notice}><strong>Private review:</strong> This picture is stored separately from public ad images and is visible only to authorized reviewers.</p>
-        {error && <p className={styles.error} role="alert">{error}</p>}
+        <FeedbackToast message={error} />
         <button type="submit" className={styles.primary}><FiShield aria-hidden="true" /> Submit for verification</button>
       </form>
       <div className={styles.verifyPrivacy}><FiLock aria-hidden="true" /><p><strong>Your privacy matters.</strong> Verification photos are used only for account review and never appear on public ads.</p></div>

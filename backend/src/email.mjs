@@ -23,13 +23,14 @@ export async function verifyEmailTransport() {
   await transporter.verify();
 }
 
-export async function sendVerificationEmail({ to, username, verificationToken }) {
+export async function sendVerificationEmail({ email, username, verificationToken }) {
   if (!transporter) throw new Error('Email delivery is not configured');
+  if (!email) throw new Error('Verification email recipient is required');
   const url = new URL('/api/auth/verify-email', config.SITE_ORIGIN);
   url.searchParams.set('token', verificationToken);
   await transporter.sendMail({
     from: config.EMAIL_FROM,
-    to,
+    to: email,
     subject: 'Verify your BackpageNew email address',
     text: `Hi ${username},\n\nVerify your email address to finish setting up your BackpageNew account:\n${url}\n\nThis link expires in 24 hours. If you did not create this account, you can ignore this email.`,
     html: `<p>Hi ${escapeHtml(username)},</p><p>Verify your email address to finish setting up your BackpageNew account.</p><p><a href="${url.toString()}">Verify email address</a></p><p>This link expires in 24 hours. If you did not create this account, you can ignore this email.</p>`,

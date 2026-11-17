@@ -170,6 +170,7 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 }
 .post-thumbnail svg { width: 28px; }
 .header-member-nav { display: flex; justify-content: center; align-items: center; gap: 13px; }
+.header-member-nav[data-signed-in="true"] { font-size: 14px; }
 .header-member-nav button { border: 0; background: none; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
 .header-member-nav > * + * { position: relative; margin-left: 1px; }
 .header-member-nav > * + *::before { content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 1px; height: 13px; background: #d3d7df; }

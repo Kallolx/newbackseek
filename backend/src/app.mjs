@@ -200,8 +200,10 @@ export async function buildApp() {
       const [user] =
         await sql`insert into users (email,username,password_hash) values (${input.email},${input.username},${await hashPassword(input.password)}) returning id,email,username,role`;
       await session(reply, user.id);
-      await issueVerification(user);
-      return reply.code(201).send({ user, verificationRequired: true });
+      let verificationEmailSent = true;
+      try { await issueVerification(user); }
+      catch (error) { verificationEmailSent = false; req.log.error({ err: error }, 'Verification delivery failed after account creation'); }
+      return reply.code(201).send({ user, verificationRequired: true, verificationEmailSent });
     },
   );
   app.post(

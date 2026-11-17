@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { FeedbackToast } from '../../components/toast';
 import { usePathname, useRouter } from 'next/navigation';
 import { adminRoutes } from './admin-routes';
 import { ActionIcon, Alert, AppShell, Avatar, Badge, Box, Breadcrumbs, Burger, Button, Group, Menu, Modal, NativeSelect, NavLink, Paper, ScrollArea, SegmentedControl, SimpleGrid, Stack, Table, Text, TextInput, ThemeIcon, Title } from '@mantine/core';
@@ -213,7 +214,7 @@ export function AdminDashboard({ locations, categories }: { locations: LocationC
             <div><h1>{pageLabel(screen)}</h1><p>{screen === 'Overview' ? 'Manage listings, accounts, and media across all markets.' : screen === 'Publish' ? 'Prepare ads and choose where they should appear.' : ''}</p></div>
             {(screen === 'Overview' || screen === 'Ads') && <Button className={styles.primary} leftSection={<FiPlus size={15} />} type="button" onClick={() => openPublisher('create')}>Create ad</Button>}
           </div>
-          {message && <Alert role="status" color="indigo" mb="md" withCloseButton onClose={() => setMessage('')}>{message}</Alert>}
+          <FeedbackToast message={message} type="info" />
 
           {screen === 'Overview' && <>
             <SimpleGrid cols={{ base: 2, lg: 4 }} spacing="sm" mb="lg">

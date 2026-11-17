@@ -1,5 +1,6 @@
 import { SiteHeader } from '../components/site-header';
 import { SiteFooter } from '../components/site-footer';
+import { SiteToaster } from '../components/toast';
 import type { Metadata } from 'next';
 import '@fontsource-variable/inter/wght.css';
 import '@fontsource-variable/manrope/wght.css';
@@ -17,6 +18,7 @@ export default function Layout({ children }: Readonly<{ children: React.ReactNod
     <SiteHeader />
     {children}
     <SiteFooter />
+    <SiteToaster />
   </body></html>;
 }
 

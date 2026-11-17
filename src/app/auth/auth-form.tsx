@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { SiteSelect } from '../../components/site-select';
+import { FeedbackToast, toast } from '../../components/toast';
 import { Turnstile } from '../../components/turnstile';
 import styles from './auth.module.css';
 
@@ -19,6 +20,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [gender, setGender] = useState('');
   const [captchaToken, setCaptchaToken] = useState('');
   const [busy, setBusy] = useState(false);
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
   const [message, setMessage] = useState(searchParams.get('error') ? 'Google sign-in could not be completed. Please try again or use email.' : '');
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -41,11 +43,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Unable to continue right now.');
+      window.dispatchEvent(new Event('bpn-session-change'));
+      if (signup) toast[result.verificationEmailSent === false ? 'warning' : 'success'](result.verificationEmailSent === false ? 'Account created. Please resend your verification email from Account Settings.' : 'Account created. Check your email for the verification link.');
       router.replace(signup ? `${destination}?email=pending` : destination);
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to continue right now.');
-      setCaptchaToken('');
+      setCaptchaToken(''); setCaptchaAttempt(value => value + 1);
     } finally { setBusy(false); }
   }
 
@@ -65,9 +69,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <label className={styles.field}>Email<input name="email" type="email" autoComplete={mode === 'login' ? 'username' : 'email'} placeholder="you@example.com" required /></label>
           {!reset && <><div className={styles.field}><div className={styles.fieldHeading}><label htmlFor="account-password">Password</label>{!signup && <Link href="/auth?mode=reset">Forgot password?</Link>}</div><input id="account-password" name="password" type="password" autoComplete={signup ? 'new-password' : 'current-password'} placeholder={signup ? 'At least 12 characters' : 'Enter your password'} minLength={signup ? 12 : undefined} required /></div><p className={styles.notice}>{signup ? 'Choose a password you only use for BackpageNew.' : 'BackpageNew will never ask you to share your password by email or chat.'}</p></>}
           {signup && <><label className={styles.field}>Confirm password<input name="confirm" type="password" autoComplete="new-password" placeholder="Enter your password again" required /></label><div className={styles.consent}><input id="account-terms" type="checkbox" required /><div><label htmlFor="account-terms">I agree to the </label><Link href="/terms">Terms of Service</Link> and have read the <Link href="/privacy">Privacy Policy</Link>.</div></div></>}
-          {!reset && <Turnstile onToken={setCaptchaToken} onError={() => setMessage('Security check could not load. Please refresh and try again.')} />}
+          {!reset && <Turnstile key={captchaAttempt} onToken={setCaptchaToken} onError={() => setMessage('Security check could not load. Please refresh and try again.')} />}
           <button className={styles.submit} type="submit" disabled={busy || (!reset && !captchaToken)}>{busy ? 'Please wait…' : reset ? 'Send reset link' : titles[mode]}</button>
-          {message && <p role="alert">{message}</p>}
+          <FeedbackToast message={message} />
           {mode === 'login' && <p className={styles.legal}>This site is protected by Cloudflare Turnstile and the <a href="https://www.cloudflare.com/privacypolicy/">Privacy Policy</a> and <a href="https://www.cloudflare.com/website-terms/">Terms of Service</a> apply.</p>}
         </form>
       </div>

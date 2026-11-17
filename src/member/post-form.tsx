@@ -1,5 +1,6 @@
 'use client';
 
+import { FeedbackToast } from '../components/toast';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -147,14 +148,14 @@ export function MemberPostForm({ member }: { member: MemberSession }) {
         </div>
         {pictures.length > 0 && <div className={styles.photos}>{pictures.map((picture, index) => <div key={picture.preview}><Image src={picture.preview} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />{index === 0 && <span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove picture ' + (index + 1)} onClick={() => setPictures((previous) => previous.filter((_, item) => item !== index))}><FiX /></button></div>)}</div>}
         <p className={styles.help}>Pictures are prepared automatically and optimized after upload.</p>
-        {photoError && <p className={styles.error} role="alert">{photoError}</p>}
+        <FeedbackToast message={photoError} />
       </section>
       <section className={styles.section} aria-labelledby="post-privacy-heading">
         <h2 id="post-privacy-heading"><FiShield aria-hidden="true" /> Privacy & legal</h2>
         <label className={styles.check}><input type="checkbox" required /><span>I am 18 or older. I have permission to publish this content and agree to the <Link href="/terms">Terms of Service</Link> and <Link href="/privacy">Privacy Policy</Link>.</span></label>
         <p className={styles.notice}>Your listing is sent for review. Pictures are optimized securely after upload and only approved ads appear publicly.</p>
       </section>
-      {error && <p className={styles.error} role="alert">{error}</p>}
+      <FeedbackToast message={error} />
       <div className={styles.publish}><Link href="/myaccount">Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{processing ? 'Submitting…' : 'Submit ad for review'}</button></div>
     </form>
   </div>;

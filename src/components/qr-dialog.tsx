@@ -1,5 +1,6 @@
 'use client';
 
+import { FeedbackToast } from './toast';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { FiCheck, FiCopy, FiDownload, FiShare2, FiX } from 'react-icons/fi';
@@ -71,7 +72,7 @@ export function QrDialog({ onClose }: { onClose: () => void }) {
         <button type="button" onClick={() => void share()}><FiShare2 aria-hidden="true" />Share</button>
         <button type="button" onClick={() => void copy()}>{message.startsWith('Site link copied') ? <FiCheck aria-hidden="true" /> : <FiCopy aria-hidden="true" />}Copy link</button>
       </div>
-      <p className="qr-feedback" role="status">{message}</p>
+      <FeedbackToast message={message} type="info" />
     </dialog>
   );
 }

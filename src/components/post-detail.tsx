@@ -1,5 +1,6 @@
 'use client';
 
+import { FeedbackToast } from './toast';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { EmptyState } from './page-state';
@@ -38,7 +39,7 @@ export function PostDetail({ city, region, service, postId }: { city: Place; reg
     {photos.length > 0 && <><div className="post-gallery-viewer"><button type="button" aria-label="Previous photo" onClick={() => setPhoto((photo + photos.length - 1) % photos.length)}>‹</button><div className="post-main-photo"><img src={photos[photo].variants.full?.url} alt={post.title} style={{ maxWidth: '100%', height: 'auto' }} /><small>{photo + 1} / {photos.length}</small></div><button type="button" aria-label="Next photo" onClick={() => setPhoto((photo + 1) % photos.length)}>›</button></div></>}
     <dl className="post-facts"><div><dt>Age</dt><dd>{post.age}</dd></div><div><dt>Location</dt><dd>{post.location || `${city.name}, ${region.name}`}</dd></div></dl>
     <section className="post-description"><h2>About this post</h2><p style={{ whiteSpace: 'pre-wrap' }}>{post.description}</p>{post.phone && <p>Phone: <a href={`tel:${post.phone}`}>{post.phone}</a></p>}</section>
-    <div className="post-actions"><span>[AD ID: {postId}]</span><button type="button" onClick={async () => { try { if (navigator.share) await navigator.share({ title: post.title, url: window.location.href }); else { await navigator.clipboard.writeText(window.location.href); setMessage('Link copied.'); } } catch {} }}>Share</button><button type="button" onClick={async () => { const reason = window.prompt('Why are you reporting this ad?'); if (!reason) return; const response = await fetch('/api/reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ adId: Number(postId), reason }) }); setMessage(response.ok ? 'Report submitted.' : 'Please sign in to report this ad.'); }}>Report this ad</button></div>{message && <p role="status">{message}</p>}
+    <div className="post-actions"><span>[AD ID: {postId}]</span><button type="button" onClick={async () => { try { if (navigator.share) await navigator.share({ title: post.title, url: window.location.href }); else { await navigator.clipboard.writeText(window.location.href); setMessage('Link copied.'); } } catch {} }}>Share</button><button type="button" onClick={async () => { const reason = window.prompt('Why are you reporting this ad?'); if (!reason) return; const response = await fetch('/api/reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ adId: Number(postId), reason }) }); setMessage(response.ok ? 'Report submitted.' : 'Please sign in to report this ad.'); }}>Report this ad</button></div><FeedbackToast message={message} type="info" />
     {recent.length > 0 && <section className="recent-posts"><h2>Recent Ads by Other Users</h2>{recent.map(item => <article key={item.id}><Link href={`${city.href}/${service.slug}/${item.id}`}>{item.title}</Link></article>)}</section>}
   </main>;
 }

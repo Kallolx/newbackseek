@@ -37,12 +37,18 @@ export function useMember() {
       const ads = await fetch('/api/account/ads', { credentials: 'same-origin', cache: 'no-store' });
       const data = ads.ok ? await ads.json() : { posts: [] };
       setMember({ id: user.id, email: user.email, username: user.username, emailVerified: Boolean(user.email_verified_at), posts: (data.posts || []).map(mapPost) });
-    } finally { setReady(true); }
+    } catch { setMember(null); } finally { setReady(true); }
   }, []);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+    const changed = () => { void refresh(); };
+    window.addEventListener('bpn-session-change', changed);
+    return () => window.removeEventListener('bpn-session-change', changed);
+  }, [refresh]);
   return { member, ready, refresh };
 }
 
 export async function logOut() {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  window.dispatchEvent(new Event('bpn-session-change'));
 }
