@@ -4,6 +4,7 @@
 // privately and queues the worker, which converts it to WebP in three sizes and
 // deletes the original. Nothing is uploaded before the member presses Submit.
 import sharp from 'sharp';
+import { z } from 'zod';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { sql } from './db.mjs';
 import { config } from './config.mjs';
@@ -30,6 +31,17 @@ export async function inspectPicture(buffer) {
 }
 
 export function pictureUpload(app, { member, verifiedMember, fail }) {
+  // The browser reports why an upload finally failed (never the picture or its name),
+  // so connection problems on members' phones can be diagnosed from the server log.
+  app.post('/api/media/upload-problem', { preHandler: member, config: { rateLimit: { max: 30, timeWindow: '1 hour' } } }, async (req, reply) => {
+    const report = z.object({
+      phase: z.enum(['read', 'upload']), size: z.number().int().min(0).max(1e9), type: z.string().max(40), status: z.number().int().min(0).max(999),
+      attempts: z.number().int().min(0).max(10), online: z.boolean(), network: z.string().max(12), agent: z.string().max(160),
+    }).safeParse(req.body);
+    if (report.success) req.log.warn({ uploadProblem: report.data }, 'member picture upload failed in the browser');
+    return reply.code(204).send();
+  });
+
   // The picture file is the request body (not JSON).
   app.addContentTypeParser(ACCEPTED_TYPES, { parseAs: 'buffer', bodyLimit: MAX_PICTURE_BYTES }, (req, body, done) => done(null, body));
 

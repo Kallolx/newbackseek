@@ -39,6 +39,12 @@ test('upload endpoint guards', { skip: process.env.INTEGRATION_TEST !== '1' }, a
     assert.equal(big.statusCode, 413); assert.match(big.json().error, /under 15 MB/);
     assert.equal((await post({ 'content-type': 'image/jpeg', cookie })).statusCode, 503, 'no storage in the test stack');
     assert.equal((await post({ 'content-type': 'image/jpeg', cookie, origin: 'https://evil.example.com' })).statusCode, 403, 'other sites cannot upload');
+    // Failure reports from the browser: members only, tolerant of bad input, never an error for the phone.
+    const report = (headers, payload) => app.inject({ method: 'POST', url: '/api/media/upload-problem', payload, headers: { origin: process.env.SITE_ORIGIN, 'x-backpagenew-app': 'public', 'content-type': 'application/json', ...headers } });
+    const good = { phase: 'upload', size: 4200000, type: 'image/jpeg', status: 0, attempts: 3, online: true, network: '4g', agent: 'test' };
+    assert.equal((await report({}, good)).statusCode, 401);
+    assert.equal((await report({ cookie }, good)).statusCode, 204);
+    assert.equal((await report({ cookie }, { phase: 'nonsense' })).statusCode, 204, 'bad reports are ignored, not errors');
   } finally {
     await sql`delete from sessions where user_id=${user.id}`; await sql`delete from users where id=${user.id}`;
     await app.close();
