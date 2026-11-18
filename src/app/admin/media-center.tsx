@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Accordion, ActionIcon, Alert, Badge, Button, Checkbox, Group, Menu, Modal, Pagination, Paper, Progress, Select, SimpleGrid, Skeleton, Stack, Text, TextInput, Title, UnstyledButton } from '@mantine/core';
+import { Accordion, ActionIcon, Alert, Badge, Button, Checkbox, Group, Menu, Modal, Pagination, Paper, Select, SimpleGrid, Skeleton, Stack, Text, TextInput, Title, UnstyledButton } from '@mantine/core';
 import { BarChart } from '@mantine/charts';
 import { FiAlertTriangle, FiCheckCircle, FiCloud, FiCopy, FiCpu, FiImage, FiLock, FiMoreVertical, FiRefreshCw, FiRotateCw, FiSearch, FiSettings, FiTrash2, FiX, FiXCircle } from 'react-icons/fi';
 import { adminApi, useAdminResource } from './live-api';
@@ -22,7 +22,6 @@ type Picture = { id: string; ad_id: string | null; ad_status: string | null; tit
 type Pictures = { items: Picture[]; total: number; page: number; pageSize: number; counts: { all: number; ready: number; processing: number; failed: number; in_ad: number; not_in_ad: number } };
 
 const PAGE_SIZE = 20;
-const FREE_TIER = 10 * 1073741824;
 export const formatBytes = (value: number | null | undefined) => {
   const bytes = Number(value || 0);
   if (bytes < 1024) return `${bytes} B`;
@@ -125,7 +124,7 @@ export function MediaCenter() {
 
         <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm">
           <Tile icon={<FiImage />} label="Pictures" value={data.pictures.ready.toLocaleString()} hint={`in ${data.pictures.ads_with_pictures} ad${data.pictures.ads_with_pictures === 1 ? '' : 's'}`} />
-          <Tile icon={<FiCloud />} label="Space used" value={formatBytes(used)} hint={`of ${formatBytes(FREE_TIER)} free`}><Progress mt={8} size="sm" radius="xl" value={Math.max(1, Math.min(100, (used / FREE_TIER) * 100))} /></Tile>
+          <Tile icon={<FiCloud />} label="Space used" value={formatBytes(used)} hint={data.buckets.public ? `${data.buckets.public.objects.toLocaleString()} stored files` : 'all picture sizes together'} />
           <Tile icon={<FiRotateCw />} label="Saved by optimizing" value={data.bytes.saved ? formatBytes(data.bytes.saved) : '—'} hint={data.bytes.saved ? `${data.bytes.savedPercent}% smaller than the originals` : 'Counting from new uploads'} />
           <Tile icon={<FiCheckCircle />} label="Added this week" value={thisWeek.toLocaleString()} hint={data.pictures.in_progress ? `${data.pictures.in_progress} processing now` : 'none processing now'} />
         </SimpleGrid>

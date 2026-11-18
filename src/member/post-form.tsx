@@ -38,17 +38,6 @@ function UploadTile({ item, index, cover, onRemove, onRetry, disabled }: { item:
   </div>;
 }
 
-function SubmitOverlay({ state }: { state: SubmitStep }) {
-  const steps = ['Pictures', 'Saving', 'Done'];
-  return <div className={styles.submitOverlay} role="status" aria-live="polite">
-    <div className={styles.submitCard}>
-      <div className={styles.submitSpinner} data-done={state.step === 2}>{state.step === 2 ? <FiCheck aria-hidden="true" /> : <span aria-hidden="true" />}</div>
-      <strong>{state.title}</strong>
-      <p>{state.detail}</p>
-      <ol className={styles.submitSteps}>{steps.map((name, index) => <li key={name} data-state={index < state.step ? 'done' : index === state.step ? 'active' : 'todo'}>{name}</li>)}</ol>
-    </div>
-  </div>;
-}
 
 export function MemberPostForm({ member,post }: { member: MemberSession;post?:MemberPost }) {
   const router = useRouter();
@@ -95,7 +84,7 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
     const phone = String(data.get('phone')).trim();
     const contactEmail = String(data.get('contactEmail')||'').trim();
     const age = Number(data.get('age'));
-    if (!title || !location || !phone || description.trim().length < 30 || description.length > 2950 || !Number.isInteger(age) || age < 18 || age > 120) {
+    if (!title || !location || description.trim().length < 30 || description.length > 2950 || !Number.isInteger(age) || age < 18 || age > 120) {
       setError('Complete all required fields. Use an age of 18 or over and a description between 30 and 2950 characters.'); return;
     }
     setProcessing(true);
@@ -104,14 +93,14 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
       const settled = await uploads.settle(list => {
         const done = list.filter(item => item.stage === 'ready').length;
         const uploading = list.some(item => ['waiting', 'preparing', 'uploading'].includes(item.stage));
-        if (total) setSubmitState({ step: 0, title: uploading ? 'Uploading your pictures' : 'Finishing your pictures', detail: `${done} of ${total} ready` });
+        if (total) setSubmitState({ step: 0, title: `${uploading ? 'Uploading' : 'Finishing'} pictures ${done}/${total}`, detail: '' });
       });
       const mediaIds = settled.flatMap(item => item.mediaId && item.stage !== 'failed' ? [item.mediaId] : []);
-      setSubmitState({ step: 1, title: post ? 'Saving your changes' : 'Saving your ad', detail: 'This only takes a moment.' });
+      setSubmitState({ step: 1, title: 'Saving…', detail: '' });
       const response = await fetch('/api/account/ads'+(post?'/'+post.id:''), { method: post?'PATCH':'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, contactEmail, ...(post?{keepMediaIds:saved.flatMap(photo=>photo.id?[photo.id]:[])}:{cityHref:city.href}), mediaIds }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not submit your ad.');
-      setSubmitState({ step: 2, title: post ? 'Changes submitted' : 'Ad submitted', detail: 'Sent for review. Taking you back…' });
+      setSubmitState({ step: 2, title: 'Submitted', detail: '' });
       window.dispatchEvent(new Event('bpn-session-change'));
       toast.success(post?'Changes submitted for review.':'Ad submitted for review.');
       router.replace(post?'/myaccount/posts/'+post.id:'/myaccount'); router.refresh();
@@ -127,8 +116,8 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
           <SiteSelect label="Country" disabled={Boolean(post)} required value={countryCode} options={countries.map((item) => ({ value: item.code, label: item.name }))} placeholder="Choose your country" onChange={(value) => { setCountry(value); setRegion(''); setCity(''); }} />
           <SiteSelect label="State or region" required value={regionHref} disabled={Boolean(post)||!country} placeholder={country ? 'Choose your state or region' : 'Select a country first'} options={country?.regions.map((item) => ({ value: item.href, label: item.name })) ?? []} onChange={(value) => { setRegion(value); setCity(''); }} />
           <SiteSelect label="City" required value={cityHref} disabled={Boolean(post)||!region} placeholder={region ? 'Pick your city' : 'Select a state or region first'} options={region?.cities.map((item) => ({ value: item.href, label: item.name })) ?? []} onChange={setCity} />
-          <SiteSelect label="Category" required value={groupName} placeholder="Choose your category" options={serviceGroups.map((item) => ({ value: item.name, label: item.name }))} onChange={(value) => { setGroup(value); setService(''); }} />
-          <SiteSelect label="Subcategory" required value={serviceSlug} disabled={!group} placeholder={group ? 'Choose your subcategory' : 'Select a category first'} options={group?.services.map((item) => ({ value: item.slug, label: item.name })) ?? []} onChange={setService} />
+          <SiteSelect label="Category" required value={groupName} placeholder="Choose your category" options={serviceGroups.map((item) => ({ value: item.name, label: item.name, strong: item.name === 'Dating' || item.name === 'Adult' }))} onChange={(value) => { setGroup(value); setService(''); }} />
+          <SiteSelect label="Subcategory" required value={serviceSlug} disabled={!group} placeholder={group ? 'Choose your subcategory' : 'Select a category first'} options={group?.services.map((item) => ({ value: item.slug, label: item.name, strong: item.slug === 'women-seeking-men' })) ?? []} onChange={setService} />
         </div>
       </section>
       <aside className={styles.rules}>
@@ -141,7 +130,7 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
           <label className={styles.full}>Headline *<input name="headline" defaultValue={post?.title} required maxLength={140} placeholder="Give your ad a clear, descriptive title" /></label>
           <label>Age *<input name="age" defaultValue={post?.age} type="number" required min={18} max={120} step={1} inputMode="numeric" placeholder="Your age (18+)" /></label>
           <label>Location *<input name="location" defaultValue={post?.location} required maxLength={120} placeholder="Neighborhood or nearby area" /></label>
-          <label>Phone number *<input name="phone" defaultValue={post?.phone} type="tel" required maxLength={40} autoComplete="tel" placeholder="e.g. +1 202 555 0142" /></label>
+          <label>Phone number<input name="phone" defaultValue={post?.phone} type="tel" maxLength={40} autoComplete="tel" placeholder="e.g. +1 202 555 0142" /></label>
           <label>Contact email<input name="contactEmail" defaultValue={post?.contactEmail} type="email" maxLength={254} placeholder="Public contact email (optional)" /><small>This address will be visible on your ad.</small></label>
           <div className={styles.full}><p className={styles.editorLabel}>Description *</p><DescriptionEditor content={post?.descriptionHtml||post?.description||''} onChange={(text, html) => { setDescription(text); setDescriptionHtml(html); }} /></div>
         </div>
@@ -163,8 +152,7 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
         <p className={styles.notice}>Your listing is sent for review. Pictures are optimized securely after upload and only approved ads appear publicly.</p>
       </section>
       <FeedbackToast message={error} />
-      <div className={styles.publish}><Link href={post?'/myaccount/posts/'+post.id:'/myaccount'}>Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{post?'Save changes for review':'Submit ad for review'}</button></div>
-      {submitState && <SubmitOverlay state={submitState} />}
+      <div className={styles.publish}><Link href={post?'/myaccount/posts/'+post.id:'/myaccount'}>Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{processing ? <><span className={styles.buttonSpinner} aria-hidden="true" /><span aria-live="polite">{submitState?.title ?? 'Saving…'}</span></> : post?'Save changes for review':'Submit ad for review'}</button></div>
     </form>
   </div>;
 }

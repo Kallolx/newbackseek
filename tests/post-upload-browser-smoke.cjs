@@ -53,16 +53,20 @@ const base = process.env.BPN_TEST_BASE || 'http://localhost:3107';
       await pick('Country', 'United States'); await pick('State or region', 'Alabama'); await pick('City', 'Auburn');
       await pick('Category', 'Dating'); await pick('Subcategory', 'Women Seeking Men');
       await page.locator('input[name=headline]').fill('Upload flow browser check');
-      await page.locator('input[name=age]').fill('25'); await page.locator('input[name=location]').fill('Downtown'); await page.locator('input[name=phone]').fill('+1 202 555 0142');
+      await page.locator('input[name=age]').fill('25'); await page.locator('input[name=location]').fill('Downtown'); // Phone is optional: left empty on phones, filled on desktop.
+      if (width !== 390) await page.locator('input[name=phone]').fill('+1 202 555 0142');
       await page.locator('.ProseMirror').click(); await page.keyboard.type('A detailed description that is long enough for the form to accept it.');
       await page.locator('input[type=checkbox]').check();
       await page.getByRole('button', { name: 'Submit ad for review' }).click();
-      await page.getByRole('status').filter({ hasText: /Saving your ad/ }).waitFor();
-      if (width === 390) { await page.waitForTimeout(250); await page.screenshot({ path: 'artifacts/post-submit-overlay.png' }); }
+      // No overlay: the submit button itself shows a spinner and short progress text.
+      await page.getByRole('button', { name: /Saving|Submitted/ }).waitFor();
+      assert.equal(await page.locator('[class*=submitOverlay]').count(), 0, 'no overlay on submit');
+      if (width === 390) await page.locator('button[type=submit]').screenshot({ path: 'artifacts/post-submit-button.png' });
       await page.waitForURL('**/myaccount', { timeout: 15000 });
       assert.equal(created.cityHref, '/browse/us/alabama/auburn', 'city is sent directly, no extra lookup');
       assert.equal(created.mediaIds.length, 5, 'removed picture is not attached');
-      console.log(`${width}px: upload-on-select, progress ring + blur to sharp, batched status, remove, submit overlay, cityHref save passed`);
+      assert.equal(created.phone, width === 390 ? '' : '+1 202 555 0142', 'phone is optional');
+      console.log(`${width}px: upload-on-select, progress ring + blur to sharp, batched status, remove, submit button spinner, optional phone, cityHref save passed`);
       await context.close();
     }
   } finally { await browser.close(); }

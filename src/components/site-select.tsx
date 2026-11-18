@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { FiCheck, FiChevronDown, FiSearch } from 'react-icons/fi';
 import styles from './site-select.module.css';
 
-type Option = { value: string; label: string };
+type Option = { value: string; label: string; strong?: boolean };
 
 export function SiteSelect({ label, value, options, onChange, placeholder = 'Select an option', disabled = false, name, required = false }: {
   label: string;
@@ -56,7 +56,7 @@ export function SiteSelect({ label, value, options, onChange, placeholder = 'Sel
             event.preventDefault(); setQuery(''); setActive(0); setOpen(true);
           }
         }}>
-        <span className={!selected ? styles.placeholder : undefined}>{selected?.label ?? placeholder}</span>
+        <span className={!selected ? styles.placeholder : undefined}>{selected?.strong ? <strong>{selected.label}</strong> : selected?.label ?? placeholder}</span>
         <FiChevronDown aria-hidden="true" />
       </button>
       {open && (
@@ -84,7 +84,7 @@ export function SiteSelect({ label, value, options, onChange, placeholder = 'Sel
                 data-active={active === index || undefined}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => choose(option.value)}>
-                <span>{option.label}</span>{value === option.value && <FiCheck aria-hidden="true" />}
+                <span>{option.strong ? <strong>{option.label}</strong> : option.label}</span>{value === option.value && <FiCheck aria-hidden="true" />}
               </li>
             ))}
           </ul>
