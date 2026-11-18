@@ -20,6 +20,7 @@ import { adminManagement } from "./admin-routes.mjs";
 import { securityCenter, startupEdgeSync } from "./security-center.mjs";
 import { vpnRoutes } from "./vpn.mjs";
 import { storageReport } from "./storage-report.mjs";
+import { pictureUpload, MAX_PICTURE_BYTES } from "./picture-upload.mjs";
 import { cached, publicDataChanged, changesPublicData } from "./public-cache.mjs";
 
 const id = z.string().regex(/^\d+$/);
@@ -198,6 +199,10 @@ export async function buildApp() {
         return reply.code(409).send({error:'This username is taken. Please choose another.',code:'USERNAME_IN_USE'});
       return reply.code(409).send({ error: "This item already exists. Refresh and try again." });
     }
+    if (error.code === "FST_ERR_CTP_BODY_TOO_LARGE")
+      return reply.code(413).send({ error: `Each picture must be under ${Math.round(MAX_PICTURE_BYTES / 1048576)} MB.` });
+    if (error.code === "FST_ERR_CTP_INVALID_MEDIA_TYPE")
+      return reply.code(415).send({ error: "This file is not a picture we can use. Choose a JPG, PNG, WebP or AVIF photo." });
     if (error.code === "23503")
       return reply
         .code(400)
@@ -671,6 +676,7 @@ export async function buildApp() {
   securityCenter(app, { admin, fail });
   vpnRoutes(app, { admin, fail });
   storageReport(app, { admin, fail });
+  pictureUpload(app, { member, verifiedMember, fail });
   app.addHook("onReady", async () => { void startupEdgeSync(); });
   app.get("/api/admin/health/system", { preHandler: admin }, async () => {
     const start = performance.now();

@@ -25,7 +25,8 @@ const worker = new Worker('images', async job => {
     // Decode once, then derive every size from the same pipeline.
     const base = sharp(input, { limitInputPixels: 120000000, animated: false });
     const metadata = await base.metadata();
-    if (!['jpeg', 'png', 'webp'].includes(metadata.format) || (metadata.pages || 1) > 1) throw new Error('Unsupported image');
+    // AVIF is reported as heif/av1. Multi-page files (animations) use the first frame.
+    if (!['jpeg', 'png', 'webp'].includes(metadata.format) && !(metadata.format === 'heif' && metadata.compression === 'av1')) throw new Error('Unsupported image');
     if (media.purpose === 'verification') {
       // Verification photos stay under the private incoming prefix and never receive public URLs.
       await sql`update media set status='ready',width=${metadata.width},height=${metadata.height},processed_at=now() where id=${media.id}`;

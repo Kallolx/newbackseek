@@ -91,7 +91,7 @@ Caddy redirects old public /admin paths to the admin host. Do not use the public
 - Public and member details use the same post-detail.tsx and photo-gallery.tsx.
 - Cards have bounded image heights and use CDN variants.
 - Detail gallery has a fixed responsive frame, blurred side fill, controls, counter, and thumbnails.
-- Member post form uploads each picture as soon as it is chosen (3 in parallel), shows a blurred tile with a 0-100% ring that turns sharp when processed, and submit shows a Pictures / Saving / Done card. Abandoned, never-attached uploads are swept by the worker after 24 hours. The admin publisher still uploads on submit (in parallel).
+- Member post form: pictures stay on the phone (local previews only) until Submit. Then each ORIGINAL file is POSTed to /api/media/upload (raw body, ≤15 MB, 2 at a time, progress in the submit button). The API checks it with sharp (JPG/PNG/WebP/AVIF; HEIC and SVG refused with a clear message), stores it privately and queues the worker, which converts to WebP (160/480/1280) and deletes the original. The phone never decodes or re-encodes photos. A rejected picture stops the save, its tile shows Failed, and the next Submit sends only that picture. Unattached uploads are still swept after 24 h.
 - Admin mobile navigation is a dark floating five-item bar: Home, Ads, Create, Users, More.
 - More opens a compact content-height bottom sheet, not a full-height modal.
 - Destructive actions are red and confirmed.
@@ -391,7 +391,7 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 
 ## 12c. Public page speed
 
-- Ads lists and ad pages are server-rendered with their data (ISR, tag public-ads). The site server reads the API at API_INTERNAL_URL (http://api:4000). After any successful write to /api/account/ads or /api/admin/{ads,users,media}, the API calls http://frontend:3000/bpn-internal/revalidate with REVALIDATE_SECRET (backend/.env, shared with the frontend through Compose). /bpn-internal is hidden by Caddy. 60 s time-based fallback.
+- /browse/* is rendered live on every visit (force-dynamic). Saved ISR copies previously made new ads look missing in cities nobody had visited; never reintroduce page caching there without a working purge. Lists and ad pages are server-rendered with their data. The site server reads the API at API_INTERNAL_URL (http://api:4000). After any successful write to /api/account/ads or /api/admin/{ads,users,media}, the API calls http://frontend:3000/bpn-internal/revalidate with REVALIDATE_SECRET (backend/.env, shared with the frontend through Compose). /bpn-internal is hidden by Caddy. 60 s time-based fallback.
 - If the site server cannot reach the API, pages still render and the browser loads the data itself.
 - 40 ads per page. Feeds use placements_public_feed_idx; placements.category_slug/published are copies kept exact by triggers (migration 012). Never update those columns by hand.
 - The API caches public reads briefly (backend/src/public-cache.mjs), clears them on every write, and serves the last good answer if the database errors.
@@ -411,7 +411,7 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 3. Full (strict) Cloudflare mode requires working Caddy origin TLS. Certificates renew over HTTP-01 through Cloudflare (origin lock allows Cloudflare only); check Caddy logs for renewal errors around day 60 of each certificate.
 4. Admin context headers are not authorization; backend role/session checks remain mandatory.
 5. Use direct media CDN URLs; Next remote optimizer is not configured for media.backpagenew.com.
-6. Pictures upload on select; ads may attach pictures that are still queued/processing (the worker finishes them).
+6. Pictures upload on Submit only (to our API, not straight to R2); ads attach pictures that are still queued/processing and the worker finishes them.
 7. Never expose a member login email as an ad contact email.
 8. Existing owner city placements are preserved during edit.
 9. Bump and distribution are separate Post ID pages and show only the cover image.

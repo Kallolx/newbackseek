@@ -27,11 +27,11 @@ function ProgressRing({ value }: { value: number }) {
 }
 
 function UploadTile({ item, index, cover, onRemove, onRetry, disabled }: { item: PictureUpload; index: number; cover: boolean; onRemove: () => void; onRetry: () => void; disabled: boolean }) {
-  const label = item.stage === 'ready' ? 'Ready' : item.stage === 'failed' ? 'Failed' : item.stage === 'waiting' ? 'Waiting' : item.stage === 'processing' ? 'Optimizing' : 'Uploading';
+  // Before submit the picture is shown as-is; the ring only appears while it uploads.
   return <div className={styles.uploadTile} data-stage={item.stage}>
     <Image src={item.preview} alt={'Ad picture ' + (index + 1)} width={200} height={160} unoptimized />
-    {item.stage !== 'ready' && item.stage !== 'failed' && <div className={styles.tileProgress} role="progressbar" aria-label={`Picture ${index + 1} ${label.toLowerCase()}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={item.progress}><ProgressRing value={item.progress} /><strong>{item.progress}%</strong></div>}
-    {item.stage === 'ready' && <span className={styles.tileDone} aria-label={`Picture ${index + 1} ready`}><FiCheck aria-hidden="true" /></span>}
+    {item.stage === 'uploading' && <div className={styles.tileProgress} role="progressbar" aria-label={`Picture ${index + 1} uploading`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={item.progress}><ProgressRing value={item.progress} /><strong>{item.progress}%</strong></div>}
+    {item.stage === 'uploaded' && <span className={styles.tileDone} aria-label={`Picture ${index + 1} uploaded`}><FiCheck aria-hidden="true" /></span>}
     {item.stage === 'failed' && <div className={styles.tileFailed} title={item.error}><FiAlertCircle aria-hidden="true" /><small>Failed<span className={styles.srOnly}>: {item.error || 'Upload failed'}</span></small><button type="button" className={styles.tileRetry} onClick={onRetry}><FiRotateCw aria-hidden="true" /> Retry</button></div>}
     {cover && item.stage !== 'failed' && <span className={styles.coverLabel}>Cover photo</span>}
     <button type="button" className={styles.tileRemove} disabled={disabled} aria-label={'Remove picture ' + (index + 1)} onClick={onRemove}><FiX /></button>
@@ -89,13 +89,8 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
     }
     setProcessing(true);
     try {
-      const total = pictures.length;
-      const settled = await uploads.settle(list => {
-        const done = list.filter(item => item.stage === 'ready').length;
-        const uploading = list.some(item => ['waiting', 'preparing', 'uploading'].includes(item.stage));
-        if (total) setSubmitState({ step: 0, title: `${uploading ? 'Uploading' : 'Finishing'} pictures ${done}/${total}`, detail: '' });
-      });
-      const mediaIds = settled.flatMap(item => item.mediaId && item.stage !== 'failed' ? [item.mediaId] : []);
+      // Pictures leave the phone only now; the server converts them to WebP.
+      const mediaIds = pictures.length ? await uploads.uploadAll((done, total, percent) => setSubmitState({ step: 0, title: `Uploading pictures ${Math.min(done + 1, total)}/${total} · ${percent}%`, detail: '' })) : [];
       setSubmitState({ step: 1, title: 'Saving…', detail: '' });
       const response = await fetch('/api/account/ads'+(post?'/'+post.id:''), { method: post?'PATCH':'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: description.trim(), categorySlug: service.slug, age, location, phone, contactEmail, ...(post?{keepMediaIds:saved.flatMap(photo=>photo.id?[photo.id]:[])}:{cityHref:city.href}), mediaIds }) });
       const result = await response.json().catch(() => ({}));
@@ -138,12 +133,12 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
       <section className={styles.section} aria-labelledby="post-pictures-heading">
         <h2 id="post-pictures-heading"><FiImage aria-hidden="true" /> Your pictures <span className={styles.help}>{saved.length+pictures.length} / 6</span></h2>
         <div className={styles.upload} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addPictures(Array.from(event.dataTransfer.files)); }}>
-          <FiUploadCloud aria-hidden="true" /><strong>Add pictures to your ad</strong><p>Drop images here or choose files. JPG, PNG, WebP or AVIF, up to 10 MB each. Pictures upload right away while you finish the form.</p>
+          <FiUploadCloud aria-hidden="true" /><strong>Add pictures to your ad</strong><p>Drop images here or choose files. JPG, PNG, WebP or AVIF, up to 15 MB each. Pictures are sent when you submit your ad.</p>
           <button className={styles.secondary} type="button" disabled={processing || saved.length+pictures.length >= 6} onClick={() => fileInput.current?.click()}>Choose pictures</button>
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden aria-label="Upload ad pictures" onChange={(event) => addPictures(Array.from(event.target.files ?? []))} />
         </div>
         {(saved.length+pictures.length)>0&&<div className={styles.photos}>{saved.map((photo,index)=><div key={photo.src}><Image src={photo.src} alt={'Saved ad picture '+(index+1)} width={200} height={160} unoptimized/>{index===0&&<span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove saved picture '+(index+1)} onClick={()=>setSaved(previous=>previous.filter((_,item)=>item!==index))}><FiX/></button></div>)}{pictures.map((picture, index) => <UploadTile key={picture.key} item={picture} index={index} cover={index === 0 && !saved.length} disabled={processing} onRemove={() => uploads.remove(picture.key)} onRetry={() => uploads.retry(picture.key)} />)}</div>}
-        <p className={styles.help}>Each picture uploads and is optimized as soon as you add it. It turns sharp when it reaches 100%.</p>
+        <p className={styles.help}>Pictures are uploaded when you submit, then optimized on our servers.</p>
         <FeedbackToast message={photoError} />
       </section>
       <section className={styles.section} aria-labelledby="post-privacy-heading">

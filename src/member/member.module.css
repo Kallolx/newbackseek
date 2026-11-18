@@ -148,7 +148,7 @@
 
 /* Upload-on-select picture tiles */
 .uploadTile img { transition: filter .45s ease, transform .45s ease; }
-.uploadTile:not([data-stage=ready]) img { filter: blur(7px) brightness(.72) saturate(.85); transform: scale(1.06); }
+.uploadTile[data-stage=uploading] img { filter: brightness(.6); }
 .uploadTile[data-stage=failed] img { filter: blur(7px) brightness(.45) grayscale(.6); }
 .tileProgress { position: absolute; inset: 0; display: grid; place-items: center; color: white; pointer-events: none; }
 .tileProgress > * { grid-area: 1 / 1; }
