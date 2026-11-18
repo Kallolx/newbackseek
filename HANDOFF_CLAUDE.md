@@ -404,6 +404,12 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - media.original_bytes (camera size sent by the post form) and media.processed_at (migration 013) drive the savings and processing-time figures; older rows have no original size.
 - Cloudflare edge connection: run `sudo bash ops/security/set-cloudflare.sh` on the VPS (asks for the token hidden + Zone ID, verifies, saves, restarts api). Works with account tokens (cfat_…). Token permissions: Zone → Zone → Read and App Security → Zone WAF Rules → Edit, scoped to Specified Domains → backpagenew.com. The panel owns the WAF custom rules with refs bpn_geo_block and bpn_admin_lock; do not edit them in Cloudflare.
 
+## 12e. Ad page gallery loading
+
+- PhotoGallery shows the medium (card, 480 px) picture immediately while the large (1280 px) one downloads, then fades the large one in. Switching pictures shows a preview at once if the target is not downloaded yet.
+- The picture on screen loads with high priority; the next picture's medium preview is fetched as soon as the current preview shows, and after the large one is in the others are downloaded quietly in order (next, previous, then the rest). The thumbnail strip is low priority.
+- Worker now writes WebP quality 74 (was 78) to make new pictures lighter; existing pictures are unchanged.
+
 ## 13. Important pitfalls
 
 1. Keep public HTML revalidation and account/API no-store behavior.

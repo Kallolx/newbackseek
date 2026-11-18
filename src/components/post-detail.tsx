@@ -71,7 +71,7 @@ export function PostDetail({ city, region, service, postId, account = false, ini
       <p suppressHydrationWarning>Posted: {hours === 1 ? '1 hour ago' : `${hours} hours ago`}</p>
       {!account && <button className="favorite-button" type="button" aria-pressed={favorite} onClick={toggleFavorite}><FiHeart aria-hidden="true" fill={favorite ? 'currentColor' : 'none'} />{favorite ? 'Saved to Favorites' : 'Save to Favorites'}</button>}
     </div>
-    <PhotoGallery title={post.title} photos={photos.filter(photo => photo.variants.full?.url || photo.variants.card?.url).map(photo => ({ src: (photo.variants.full?.url || photo.variants.card?.url)!, thumbnail: photo.variants.thumb?.url || photo.variants.card?.url }))} />
+    <PhotoGallery title={post.title} photos={photos.filter(photo => photo.variants.full?.url || photo.variants.card?.url).map(photo => ({ src: (photo.variants.full?.url || photo.variants.card?.url)!, thumbnail: photo.variants.thumb?.url || photo.variants.card?.url, preview: photo.variants.card?.url }))} />
     <dl className="post-facts"><div><dt>Age</dt><dd>{post.age}</dd></div><div><dt>Location</dt><dd>{post.location || (region && region.name !== city.name ? `${city.name}, ${region.name}` : city.name)}</dd></div><div><dt>Phone</dt><dd>{post.phone ? <a href={`tel:${post.phone.replace(/[^+\d]/g, '')}`}>{post.phone}</a> : 'Not provided'}</dd></div><div><dt>Contact email</dt><dd>{post.contact_email ? <a href={`mailto:${post.contact_email}`}>{post.contact_email}</a> : 'Not provided'}</dd></div></dl>
     <section className="post-description"><h2>About this post</h2><p style={{ whiteSpace: 'pre-wrap' }}>{post.description}</p>{post.phone && <p>Phone: <a href={`tel:${post.phone}`}>{post.phone}</a></p>}</section>
     <div className="post-actions">

@@ -34,7 +34,7 @@ const worker = new Worker('images', async job => {
     }
     const oriented = base.rotate();
     const rendered = await Promise.all(SIZES.map(async ([name, width]) => {
-      const { data, info } = await oriented.clone().resize({ width, withoutEnlargement: true }).webp({ quality: 78, effort: 3 }).toBuffer({ resolveWithObject: true });
+      const { data, info } = await oriented.clone().resize({ width, withoutEnlargement: true }).webp({ quality: 74, effort: 4 }).toBuffer({ resolveWithObject: true });
       return { name, data, info };
     }));
     const variants = {};
