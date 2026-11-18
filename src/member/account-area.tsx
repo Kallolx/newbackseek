@@ -86,7 +86,7 @@ function MemberPosts({ member }: { member: MemberSession }) {
     {matches.length ? <ul className={gallery ? 'post-list post-gallery' : 'post-list'}>
       {matches.slice((currentPage - 1) * 10, currentPage * 10).map((post) => <PostCard key={post.id}
         title={post.title} label={post.location} description={post.description}
-        href={'/myaccount/posts/' + post.id} verified={member.verificationStatus === 'approved'}
+        href={'/myaccount/posts/' + post.id} verified={Boolean(member.verified) || member.verificationStatus === 'approved'}
         thumbnail={post.images[0] ? <Image src={post.coverImage||post.images[0]} alt="" width={320} height={220} unoptimized /> : undefined}
         details={<><span>Age: {post.age} · {post.cityName}</span><span className={styles.postStatus} data-paused={post.status === 'Paused'}>{post.status}</span></>} />)}
     </ul> : query ? <EmptyState kind="search" title="No matching ads" description="Try a shorter search or clear your search to see all your ads." action="Clear search" onAction={() => { setQuery(''); setPage(1); }} /> : <EmptyState title="Your first ad starts here" description="Once you publish an ad, you can find it here, view its pictures and manage its status." href="/myaccount/post" action="Create your first ad" />}

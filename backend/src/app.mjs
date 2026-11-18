@@ -117,7 +117,8 @@ export async function buildApp() {
     if (!session) throw fail(401, "Please log in");
     const [user] =
       await sql`select u.id,u.email,u.username,u.role,u.email_verified_at,s.actor_id,
-      (select v.status from verifications v where v.user_id=u.id order by v.created_at desc limit 1) as verification_status from sessions s join users u on u.id=s.user_id
+      (select v.status from verifications v where v.user_id=u.id order by v.created_at desc limit 1) as verification_status,
+      (u.verified_at is not null or exists(select 1 from verifications v where v.user_id=u.id and v.status='approved')) as verified from sessions s join users u on u.id=s.user_id
      where s.token_hash=${digest(session)} and s.expires_at>now() and u.status='active' and u.email_verified_at is not null`;
     if (!user) { await sql`delete from sessions where token_hash=${digest(session)}`; throw fail(401, "Please log in"); }
     req.user = user;
@@ -487,7 +488,7 @@ export async function buildApp() {
       const rows =
         await sql`select a.id,a.title,left(a.description,240) as description,a.age,a.location,p.ranked_at,
        (select variants from media where ad_id=a.id and status='ready' and purpose='ad' order by created_at,id limit 1) as image,
-       exists(select 1 from verifications v where v.user_id=a.owner_id and v.status='approved') as verified
+       (coalesce((select o.verified_at is not null from users o where o.id=a.owner_id),false) or exists(select 1 from verifications v where v.user_id=a.owner_id and v.status='approved')) as verified
        from placements p join ads a on a.id=p.ad_id
        where p.city_id=coalesce(${q.cityId ?? null}::bigint,(select id from cities where href=${q.cityHref || ''}))
          and p.category_slug=${q.category} and p.published and a.status='published'
@@ -500,7 +501,7 @@ export async function buildApp() {
     const adId = id.parse(req.params.id);
     const result = await cached(`ad:${adId}`, 30000, async () => {
       const [[ad], images, cities] = await Promise.all([
-        sql`select id,title,description,age,location,phone,contact_email,category_slug,created_at,exists(select 1 from verifications v where v.user_id=ads.owner_id and v.status='approved') as verified from ads where id=${adId} and status='published'`,
+        sql`select id,title,description,age,location,phone,contact_email,category_slug,created_at,(coalesce((select o.verified_at is not null from users o where o.id=ads.owner_id),false) or exists(select 1 from verifications v where v.user_id=ads.owner_id and v.status='approved')) as verified from ads where id=${adId} and status='published'`,
         sql`select id,variants,width,height from media where ad_id=${adId} and status='ready' and purpose='ad' order by created_at,id`,
         sql`select c.* from placements p join cities c on c.id=p.city_id where p.ad_id=${adId}`,
       ]);
@@ -721,6 +722,17 @@ export async function buildApp() {
         await tx`update ads set status=${status},updated_at=now() where id=${adId}`;
       }
       await audit(tx, req.user.id, "ad." + action, adId, req.body || {});
+    });
+    return { ok: true };
+  });
+  // Admin switches a member's "Verified" badge on or off (admin accounts included, so ads published as the team can carry it).
+  app.patch("/api/admin/users/:id/verified", { preHandler: admin }, async (req) => {
+    const userId = uuid.parse(req.params.id);
+    const { verified } = z.object({ verified: z.boolean() }).parse(req.body);
+    await sql.begin(async (tx) => {
+      const changed = await tx`update users set verified_at=case when ${verified} then coalesce(verified_at, now()) else null end where id=${userId} and status!='deleted' returning id`;
+      if (!changed.length) throw fail(404, "Account not found");
+      await audit(tx, req.user.id, "user.verified", userId, { verified });
     });
     return { ok: true };
   });

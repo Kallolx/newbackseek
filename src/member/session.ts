@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useSyncExternalStore } from 'react';
 export type MemberPost={id:string;title:string;description:string;descriptionHtml?:string;age:number;location:string;phone:string;contactEmail?:string;mediaIds?:string[];cityName:string;cityHref:string;category:string;service:string;images:string[];coverImage?:string;thumbnails?:string[];status:'Published'|'Paused'|'Pending'|'Rejected';sample:false;createdAt:string};
-export type MemberSession={id:string;email:string;username:string;emailVerified:boolean;posts:MemberPost[];actorId?:string;verificationStatus?:string;verificationRequested?:boolean};
+export type MemberSession={id:string;email:string;username:string;emailVerified:boolean;verified?:boolean;posts:MemberPost[];actorId?:string;verificationStatus?:string;verificationRequested?:boolean};
 // postsLoading is true only while the very first list of ads is loading. After that the account is
 // refreshed quietly in the background: the screen keeps showing what it has (no skeleton flashes).
 type Snapshot={member:MemberSession|null;ready:boolean;error:string;postsLoading:boolean;postsLoaded:boolean};
@@ -25,7 +25,7 @@ export function refreshMember(force=false):Promise<void>{
   // Publish the identity immediately, without waiting for the ads request.
   const previous=snapshot.member;
   const sameUser=Boolean(previous&&previous.id===user.id&&snapshot.postsLoaded);
-  if(version===generation)publish({member:{id:user.id,email:user.email,username:user.username,emailVerified:Boolean(user.email_verified_at),actorId:user.actor_id,verificationStatus:user.verification_status,posts:sameUser?previous!.posts:[]},ready:true,error:'',postsLoading:!sameUser,postsLoaded:sameUser});
+  if(version===generation)publish({member:{id:user.id,email:user.email,username:user.username,emailVerified:Boolean(user.email_verified_at),verified:Boolean(user.verified),actorId:user.actor_id,verificationStatus:user.verification_status,posts:sameUser?previous!.posts:[]},ready:true,error:'',postsLoading:!sameUser,postsLoaded:sameUser});
   const ads=await fetch('/api/account/ads',{credentials:'same-origin',cache:'no-store'});
   if(!ads.ok)throw new Error('Unable to load your ads. Please retry.');
   const body=await ads.json();

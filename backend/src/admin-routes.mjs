@@ -45,7 +45,7 @@ export function adminManagement(app, { admin, fail }) {
    [total]=await sql`select count(*)::int as count from ads a join users u on u.id=a.owner_id where ${filter}`;
   } else if(collection==='users') {
    const filter=sql`status!='deleted' and (email ilike ${term} or username ilike ${term}) and (${q.status}='' or status=${q.status})`;
-   rows=await sql`select id,email,username,role,status,email_verified_at,created_at,(select count(*)::int from ads where owner_id=u.id and status!='deleted') as ad_count from users u where ${filter} order by created_at desc limit 50 offset ${offset}`;
+   rows=await sql`select id,email,username,role,status,email_verified_at,created_at,(verified_at is not null) as verified_by_admin,(verified_at is not null or exists(select 1 from verifications v where v.user_id=u.id and v.status='approved')) as verified,(select count(*)::int from ads where owner_id=u.id and status!='deleted') as ad_count from users u where ${filter} order by created_at desc limit 50 offset ${offset}`;
    [total]=await sql`select count(*)::int as count from users where ${filter}`;
   } else if(collection==='media') {
    const filter=sql`m.purpose='ad' and (${q.status}='' or m.status=${q.status}) and (m.id::text ilike ${term} or coalesce(a.title,'') ilike ${term} or coalesce(a.id::text,'') ilike ${term} or u.username ilike ${term})`;

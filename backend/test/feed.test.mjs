@@ -43,8 +43,19 @@ test('public feed: 40 per page, category index kept in sync, cache cleared on wr
     const after = (await feed('category=feed-a')).json().posts;
     assert.ok(after.length && after.every((post) => post.verified === true), 'approved owner shows the badge on the very next request');
     assert.equal((await app.inject({ method: 'GET', url: `/api/ads/${ids[1]}` })).json().post.verified, true, 'ad page data carries it too');
-    await sql`delete from sessions where user_id=${admin.id}`; await sql`delete from audit_events where actor_id=${admin.id}`; await sql`delete from users where id=${admin.id}`;
     await sql`delete from verifications where user_id=${owner.id}`; await sql`delete from media where owner_id=${owner.id}`;
+    assert.equal((await feed('category=feed-a')).json().posts[0].verified, false, 'no approval, no badge');
+    // Admin switch: Admin → Users → Mark as Verified / Remove Verified badge.
+    const toggle = (verified, cookie, app2 = 'admin') => app.inject({ method: 'PATCH', url: `/api/admin/users/${owner.id}/verified`, payload: { verified }, headers: { origin: app2 === 'admin' ? process.env.ADMIN_ORIGIN : process.env.SITE_ORIGIN, 'x-backpagenew-app': app2, cookie } });
+    assert.equal((await toggle(true, `bpn-session=${secret}`, 'public')).statusCode, 404, 'members cannot verify anyone');
+    assert.equal((await toggle(true, `bpn-admin-session=${adminSecret}`)).statusCode, 200);
+    assert.ok((await feed('category=feed-a')).json().posts.every((post) => post.verified === true), 'switch on: badge on the very next request');
+    const me = await app.inject({ method: 'GET', url: '/api/auth/me', headers: { 'x-backpagenew-app': 'public', cookie: `bpn-session=${secret}` } });
+    assert.equal(me.json().user.verified, true, 'the member sees it on their own cards');
+    assert.equal((await toggle(false, `bpn-admin-session=${adminSecret}`)).statusCode, 200);
+    assert.equal((await feed('category=feed-a')).json().posts[0].verified, false, 'switch off: badge gone');
+    assert.ok((await sql`select 1 from audit_events where action='user.verified' and actor_id=${admin.id}`).length === 2, 'both changes are audited');
+    await sql`delete from sessions where user_id=${admin.id}`; await sql`delete from audit_events where actor_id=${admin.id}`; await sql`delete from users where id=${admin.id}`;
 
     // Category change keeps the copy exact.
     await sql`update ads set category_slug='feed-b' where id=${ids[1]}`;
