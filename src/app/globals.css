@@ -286,3 +286,11 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 
 /* Adult listings stay hidden until 18+ is confirmed (see layout head script). */
 html:not([data-adult="yes"]) .adult-gated { display: none; }
+
+/* Password box with show/hide eye (public sign-in, sign-up, reset and admin sign-in) */
+.password-field { position: relative; display: block; width: 100%; }
+.password-field input { width: 100%; padding-right: 44px !important; }
+.password-field .password-toggle { position: absolute; top: 50%; right: 4px; translate: 0 -50%; display: grid; place-items: center; width: 38px; height: 38px; min-height: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 6px; background: transparent !important; color: #5d6a80 !important; cursor: pointer; }
+.password-field .password-toggle:hover { color: #1b2840 !important; background: #eef1f6 !important; }
+.password-field .password-toggle:focus-visible { outline: 2px solid #4f7fd6; outline-offset: -2px; }
+.password-field .password-toggle svg { width: 18px; height: 18px; }
