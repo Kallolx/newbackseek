@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState, useSyncExternalStore } from 'react';
+import { FormEvent, useEffect, useState, useSyncExternalStore } from 'react';
 import { FeedbackToast } from '../../../src/components/toast';
 import { Turnstile } from '../../../src/components/turnstile';
 import { PasswordField } from '../../../src/components/password-field';
@@ -14,6 +14,7 @@ export default function AdminLogin() {
   const [captchaToken, setCaptchaToken] = useState('');
   // The same login page serves the admin panel and the manager portal (manager.* host).
   const manager = useSyncExternalStore(() => () => {}, () => window.location.hostname.startsWith('manager.'), () => false);
+  useEffect(() => { document.title = manager ? 'Manager sign in – BackpageNew' : 'Administrator sign in – BackpageNew'; }, [manager]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setMessage('');
     const form = new FormData(event.currentTarget);

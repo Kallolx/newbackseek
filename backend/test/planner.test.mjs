@@ -75,7 +75,8 @@ test('post planner: cards, schedule, publish now, publish all, worker, failures,
     assert.ok((await sql`select ad_id from media where id=${picture.id}`)[0].ad_id, 'picture attached to the new ad');
 
     // Duplicate (without pictures) and delete.
-    const copy = (await call('POST', `/api/admin/planner/${c}/duplicate`)).json().id;
+    const keep = (await call('POST', '/api/admin/planner', { post: post('Card to copy') })).json().id;
+    const copy = (await call('POST', `/api/admin/planner/${keep}/duplicate`)).json().id;
     assert.ok(copy);
     assert.equal((await call('DELETE', `/api/admin/planner/${copy}`)).statusCode, 200);
 

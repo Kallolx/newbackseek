@@ -51,6 +51,8 @@ export function AdminDashboard({locations,categories}:{locations:LocationCountry
  
  useEffect(()=>{setQuery(screen==='Ads'?new URLSearchParams(window.location.search).get('owner')||'':'');setStatus(null);setPage(1);setOpened(false);},[screen]);
  const [navigationQuery,setNavigationQuery]=useState('');
+ // The manager portal is the same app: name its browser tab "BackpageNew Manager".
+ useEffect(()=>{if(!window.location.hostname.startsWith('manager.'))return;const fix=()=>{if(/BackpageNew Admin|^Admin – /.test(document.title))document.title=document.title.replace('BackpageNew Admin','BackpageNew Manager').replace(/^Admin – /,'Manager – ');};fix();const timer=setTimeout(fix,300);return()=>clearTimeout(timer);},[pathname]);
  // A section this account cannot open: go to the first one it can.
  const firstAllowed=menu[0]?.[0];
  useEffect(()=>{if(account&&!allowed&&firstAllowed)router.replace(adminRoutes[firstAllowed]);},[account,allowed,firstAllowed,router]);
