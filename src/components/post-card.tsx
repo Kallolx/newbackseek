@@ -10,7 +10,7 @@ export function PostCard({ title, label, description, details, href, thumbnail, 
   href?: string;
   thumbnail?: ReactNode;
   actions?: ReactNode;
-  /** The poster passed verification: shows a green badge under the picture. */
+  /** The poster passed verification: shows a badge above the picture. */
   verified?: boolean;
 }) {
   const image = thumbnail ?? (
@@ -24,10 +24,10 @@ export function PostCard({ title, label, description, details, href, thumbnail, 
   return (
     <li>
       <div className="post-media">
+        {verified ? <span className="verified-badge" title="This poster has been verified"><MdVerified aria-hidden="true" /> Verified</span> : <span className="verified-space" aria-hidden="true" />}
         {href
           ? <Link className="post-thumbnail" href={href} prefetch={false} aria-label={'View ' + title}>{image}</Link>
           : <div className="post-thumbnail">{image}</div>}
-        {verified && <span className="verified-badge" title="This poster has been verified"><MdVerified aria-hidden="true" /> Verified</span>}
       </div>
       <div className="post-copy">
         <div className="post-card-heading">

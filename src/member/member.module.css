@@ -251,3 +251,9 @@
   .settings .fields { grid-template-columns: minmax(0, 1fr); }
   .balance strong { font-size: 28px; }
 }
+
+/* Dot on the Verification link until the account is verified: amber = not done, blue = under review. */
+.pendingDot { display: inline-block; width: 8px; height: 8px; margin-left: 5px; border-radius: 50%; background: #f59e0b; vertical-align: 1px; box-shadow: 0 0 0 0 #f59e0b88; animation: pendingPulse 2.4s ease-out infinite; }
+.pendingDot[data-review] { background: #3b82f6; box-shadow: 0 0 0 0 #3b82f688; }
+@keyframes pendingPulse { 70%, 100% { box-shadow: 0 0 0 6px #f59e0b00; } }
+@media (prefers-reduced-motion: reduce) { .pendingDot { animation: none; } }

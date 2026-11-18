@@ -54,7 +54,7 @@ export function AccountArea() {
     <main id="main" onClickCapture={accountLinkClick} className={'shell ' + styles.page}>
       <nav className={styles.menu} aria-label="Account menu">
         {[['post', 'Post an Ad'], ['wallet', 'Wallet'], ['verification', 'Verification'], ['settings', 'Account Settings']].map(([path, label]) => (
-          <span key={path}>[ <Link href={'/myaccount/' + path} aria-current={current === path ? 'page' : undefined}>{label}</Link> ]</span>
+          <span key={path}>[ <Link href={'/myaccount/' + path} aria-current={current === path ? 'page' : undefined}>{label}{path === 'verification' && !(member.verified || member.verificationStatus === 'approved') && <i className={styles.pendingDot} role="img" aria-label={member.verificationStatus === 'pending' ? 'Verification under review' : 'Verification not completed'} data-review={member.verificationStatus === 'pending' || undefined} />}</Link> ]</span>
         ))}
       </nav>
       {member.actorId && <p className={styles.notice}>Support session for @{member.username}. <button type="button" onClick={async()=>{await fetch('/api/account/impersonation/stop',{method:'POST'});window.location.replace('/auth');}}>End support session</button></p>}
