@@ -31,8 +31,13 @@ const users = Array.from({ length: 45 }, (_, i) => ({ id: 'u' + i, username: i =
       assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, 'no sideways scroll');
       await page.screenshot({ path: `${shots}/users-${name}.png` });
       // Menu holds the details and actions.
+      // Details are in a tooltip on the info icon, not in the menu.
+      await page.locator('[aria-label="Details for member1"]').hover();
+      await page.getByText('Joined Feb 2, 2026').waitFor();
+      await page.screenshot({ path: `${shots}/users-${name}-tip.png` });
+      await page.mouse.move(5, 5);
       await page.locator('[aria-label="Details and actions for member1"]').click();
-      await page.getByText('Joined').waitFor();
+      assert.equal(await page.getByRole('menu').getByText('Joined').count(), 0, 'menu has no details');
       for (const text of ['View ads', 'Mark as Verified', 'Suspend account', 'Sign in as user', 'Delete account']) assert.ok(await page.getByRole('menuitem', { name: new RegExp(text) }).isVisible(), text);
       await page.screenshot({ path: `${shots}/users-${name}-menu.png` });
       await page.keyboard.press('Escape');
