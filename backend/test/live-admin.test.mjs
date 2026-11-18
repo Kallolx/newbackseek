@@ -110,7 +110,7 @@ test('live administration and public authentication lifecycle',{skip:process.env
   const mediaList=await adminCall('GET','/api/admin/media');assert.equal(mediaList.statusCode,200,mediaList.body);assert.equal(mediaList.json().items.length,0,'private verification images must not enter the public media browser');
   const verificationSearch=await adminCall('GET','/api/admin/verifications?search=testmember&status=approved');assert.equal(verificationSearch.statusCode,200,verificationSearch.body);assert.equal(verificationSearch.json().total,1);
   const seeds=Array.from({length:51},(_,index)=>({email:`page${index}@example.com`,username:`pageuser${index}`,password_hash:hash}));await sql`insert into users ${sql(seeds)}`;
-  const page2=await adminCall('GET','/api/admin/users?search=pageuser&page=2');assert.equal(page2.statusCode,200,page2.body);assert.equal(page2.json().total,51);assert.equal(page2.json().items.length,1);
+  const page2=await adminCall('GET','/api/admin/users?search=pageuser&page=2');assert.equal(page2.statusCode,200,page2.body);assert.equal(page2.json().total,51);assert.equal(page2.json().items.length,20);assert.equal(page2.json().pageSize,20);const page3=await adminCall('GET','/api/admin/users?search=pageuser&page=3');assert.equal(page3.json().items.length,11);
   assert.equal((await call('GET','/api/auth/google/callback?code=fake&state=fake')).statusCode,303);
   assert.equal((await adminCall('GET','/api/admin/auth/google/start')).statusCode,404,'admin Google sign-in is removed');
   assert.equal((await adminCall('GET','/api/admin/auth/google/callback?code=fake&state=fake')).statusCode,404,'admin Google sign-in is removed');

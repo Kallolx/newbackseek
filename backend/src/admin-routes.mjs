@@ -37,7 +37,8 @@ export function adminManagement(app, { admin, fail }) {
  app.get('/api/admin/:collection',{preHandler:admin},async(req)=>{
   const collection=z.enum(['users','ads','media','reports','verifications']).parse(req.params.collection);
   const q=z.object({page:z.coerce.number().int().min(1).default(1),search:z.string().max(120).default(''),status:z.string().max(30).default('')}).parse(req.query);
-  const offset=(q.page-1)*50, term='%'+q.search+'%';
+  // Users show 20 per page (compact list); the other lists 50.
+  const size=collection==='users'?20:50, offset=(q.page-1)*size, term='%'+q.search+'%';
   let rows, total;
   if(collection==='ads') {
    const filter=sql`a.status!='deleted' and (${q.status}='' or a.status=${q.status}) and (a.id::text ilike ${term} or a.title ilike ${term} or u.username ilike ${term})`;
@@ -45,7 +46,7 @@ export function adminManagement(app, { admin, fail }) {
    [total]=await sql`select count(*)::int as count from ads a join users u on u.id=a.owner_id where ${filter}`;
   } else if(collection==='users') {
    const filter=sql`status!='deleted' and role!='manager' and (email ilike ${term} or username ilike ${term}) and (${q.status}='' or status=${q.status})`;
-   rows=await sql`select id,email,username,role,status,email_verified_at,created_at,(verified_at is not null) as verified_by_admin,(verified_at is not null or exists(select 1 from verifications v where v.user_id=u.id and v.status='approved')) as verified,(select count(*)::int from ads where owner_id=u.id and status!='deleted') as ad_count from users u where ${filter} order by created_at desc limit 50 offset ${offset}`;
+   rows=await sql`select id,email,username,role,status,email_verified_at,created_at,(verified_at is not null) as verified_by_admin,(verified_at is not null or exists(select 1 from verifications v where v.user_id=u.id and v.status='approved')) as verified,(select count(*)::int from ads where owner_id=u.id and status!='deleted') as ad_count,(select max(s.created_at) from sessions s where s.user_id=u.id) as last_login,(select v.status from verifications v where v.user_id=u.id order by v.created_at desc limit 1) as verification_status from users u where ${filter} order by created_at desc limit ${size} offset ${offset}`;
    [total]=await sql`select count(*)::int as count from users where ${filter}`;
   } else if(collection==='media') {
    const filter=sql`m.purpose='ad' and (${q.status}='' or m.status=${q.status}) and (m.id::text ilike ${term} or coalesce(a.title,'') ilike ${term} or coalesce(a.id::text,'') ilike ${term} or u.username ilike ${term})`;
@@ -61,7 +62,7 @@ export function adminManagement(app, { admin, fail }) {
    rows=await sql`select v.*,u.username,u.email from verifications v join users u on u.id=v.user_id where ${filter} order by v.created_at desc limit 50 offset ${offset}`;
    [total]=await sql`select count(*)::int as count from verifications v join users u on u.id=v.user_id where ${filter}`;
   }
-  return {items:rows,total:total.count,page:q.page,pageSize:50};
+  return {items:rows,total:total.count,page:q.page,pageSize:size};
  });
  app.get('/api/admin/ads/:id',{preHandler:admin},async(req)=>{
   const [post]=await sql`select ${projection} from ads a join users u on u.id=a.owner_id where a.id=${integer.parse(req.params.id)} and a.status!='deleted'`;
