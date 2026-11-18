@@ -21,6 +21,7 @@ import { securityCenter, startupEdgeSync } from "./security-center.mjs";
 import { vpnRoutes } from "./vpn.mjs";
 import { storageReport } from "./storage-report.mjs";
 import { teamRoutes, managerMay } from "./team.mjs";
+import { plannerRoutes } from "./planner.mjs";
 import { accountSecurity, startSecondStep } from "./account-security.mjs";
 import { pictureUpload, MAX_PICTURE_BYTES } from "./picture-upload.mjs";
 import { cached, publicDataChanged, changesPublicData } from "./public-cache.mjs";
@@ -663,6 +664,7 @@ export async function buildApp() {
   securityCenter(app, { admin, fail });
   vpnRoutes(app, { admin, fail });
   teamRoutes(app, { admin, fail });
+  plannerRoutes(app, { admin, fail });
   accountSecurity(app, { member, fail, session, sessionCookie, cookieOptions });
   // Contact page: kept in the database and emailed to support (reply goes to the sender).
   app.post("/api/contact", { config: { rateLimit: { max: 5, timeWindow: "1 hour" } } }, async (req) => {

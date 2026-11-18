@@ -4,6 +4,7 @@ export const adminRoutes = {
   Publish: '/admin/ad-publish',
   'Bump post': '/admin/bump',
   'Distribute post': '/admin/distribute',
+  'Post planner': '/admin/planner',
   Users: '/admin/users',
   Media: '/admin/media',
   Reports: '/admin/reports',

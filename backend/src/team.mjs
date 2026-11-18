@@ -6,7 +6,7 @@ import { hashPassword } from './security.mjs';
 
 export const PERMISSIONS = [
   ['overview', 'Overview'], ['ads', 'All Ads'], ['publish', 'Ad Publish'], ['bump', 'Bump post'], ['distribute', 'Distribute post'],
-  ['users', 'Users'], ['media', 'Media'], ['reports', 'Reports'], ['verification', 'Verification'], ['health', 'System health'],
+  ['planner', 'Post planner'], ['users', 'Users'], ['media', 'Media'], ['reports', 'Reports'], ['verification', 'Verification'], ['health', 'System health'],
   ['security', 'Security'], ['vpn', 'VPN'],
 ];
 const KEYS = PERMISSIONS.map(([key]) => key);
@@ -21,7 +21,15 @@ const routes = {
   'PATCH /api/admin/ads/:id': ['ads', 'publish'],
   'POST /api/admin/ads/:id/destinations': ['distribute'],
   'DELETE /api/admin/ads/:id': ['ads'],
-  'POST /api/admin/media/upload': ['publish', 'distribute'],
+  'POST /api/admin/media/upload': ['publish', 'distribute', 'planner'],
+  'GET /api/admin/planner': ['planner'],
+  'POST /api/admin/planner': ['planner'],
+  'PATCH /api/admin/planner/:id': ['planner'],
+  'POST /api/admin/planner/:id/schedule': ['planner'],
+  'POST /api/admin/planner/:id/publish': ['planner'],
+  'POST /api/admin/planner/publish-all': ['planner'],
+  'POST /api/admin/planner/:id/duplicate': ['planner'],
+  'DELETE /api/admin/planner/:id': ['planner'],
   'DELETE /api/admin/media/:id': ['media'],
   'GET /api/admin/pictures': ['media'],
   'POST /api/admin/pictures/delete': ['media'],

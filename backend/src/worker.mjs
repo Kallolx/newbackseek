@@ -5,6 +5,8 @@ import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand, DeleteObjectsC
 import { sql } from './db.mjs';
 import { config } from './config.mjs';
 import { s3 } from './storage.mjs';
+import { publishDueDrafts } from './planner.mjs';
+import { publicDataChanged } from './public-cache.mjs';
 
 // Several small jobs run in parallel; each job uses one libvips thread so
 // concurrent uploads from different members never wait on each other.
@@ -56,7 +58,8 @@ worker.on('failed', (job, error) => console.error('Image job failed', job?.id, e
 // that were abandoned (never attached to any ad) after a day.
 async function sweepAbandonedUploads() {
   try {
-    const rows = await sql`select id,object_key,variants from media where ad_id is null and not ever_attached and purpose='ad' and created_at < now() - interval '24 hours' and status in ('ready','failed','uploading') order by created_at limit 200`;
+    const rows = await sql`select id,object_key,variants from media where ad_id is null and not ever_attached and purpose='ad' and created_at < now() - interval '24 hours' and status in ('ready','failed','uploading')
+      and not exists (select 1 from ad_drafts d where d.status <> 'published' and media.id = any(d.media_ids)) order by created_at limit 200`;
     for (const media of rows) {
       const publicKeys = Object.values(media.variants || {}).map(variant => variant?.url).filter(Boolean).map(url => decodeURIComponent(new URL(url).pathname.slice(1)));
       if (publicKeys.length) await s3.send(new DeleteObjectsCommand({ Bucket: config.R2_PUBLIC_BUCKET, Delete: { Objects: publicKeys.map(Key => ({ Key })) } }));
@@ -67,6 +70,22 @@ async function sweepAbandonedUploads() {
   } catch (error) { console.error('Abandoned upload sweep failed', error.message); }
 }
 const sweep = setInterval(sweepAbandonedUploads, 60 * 60 * 1000);
+
+// Post planner: publish cards that are due (queued now, or scheduled time reached), a few at a time.
+let planning = false;
+async function runPlanner() {
+  if (planning) return;
+  planning = true;
+  try {
+    // Keep going while there is work, so a batch of 20 finishes in well under a minute.
+    for (let round = 0; round < 10; round++) {
+      const { claimed } = await publishDueDrafts({ onPublished: () => publicDataChanged() });
+      if (!claimed) break;
+    }
+  } catch (error) { console.error('Post planner run failed', error.message); }
+  finally { planning = false; }
+}
+const planner = setInterval(runPlanner, 10 * 1000);
 setTimeout(sweepAbandonedUploads, 60 * 1000);
 
-for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, async () => { clearInterval(sweep); await worker.close(); await connection.quit(); await sql.end(); process.exit(0); });
+for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, async () => { clearInterval(sweep); clearInterval(planner); await worker.close(); await connection.quit(); await sql.end(); process.exit(0); });

@@ -88,3 +88,26 @@ body:has(.admin) > :global(.footer) { display: none; }
 .miniStat { display: grid; justify-items: center; gap: 1px; padding: 8px 4px; border-radius: 8px; background: #f4f6fb; min-width: 0; }
 .miniStat strong { font-size: 18px; line-height: 1.2; color: #172744; }
 .miniStat span { font-size: 11px; color: #6b768a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* Post planner */
+.plannerActions { margin-left: auto; }
+.planCard { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.planCard[data-status=publishing], .planCard[data-status=queued] { opacity: .85; }
+.planCard[data-status=failed] { border-color: var(--mantine-color-red-3); }
+.planCover { position: relative; aspect-ratio: 16 / 9; background: #eef2f8; }
+.planCover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.planCover > span:first-child { position: absolute; inset: 0; display: grid; place-items: center; color: #9aa7bb; font-size: 32px; }
+.planStatus { position: absolute; top: 10px; left: 10px; box-shadow: 0 2px 8px #0003; }
+.planCount { position: absolute; right: 10px; bottom: 10px; padding: 2px 8px; border-radius: 6px; background: #101722c4; color: white; font-size: 11px; }
+.planWhen { display: flex; align-items: flex-start; gap: 6px; padding: 8px 10px; border-radius: 8px; background: #f4f6fb; color: #3d4a60; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.planWhen svg { flex-shrink: 0; margin-top: 2px; }
+.planWhen[data-status=scheduled] { background: #eef1fe; color: #3640a8; }
+.planWhen[data-status=failed] { background: #fff1f1; color: #b42318; }
+.planWhen[data-status=publishing], .planWhen[data-status=queued] { background: #fff6e8; color: #9a5b00; }
+.planAdd { display: grid; place-items: center; align-content: center; gap: 6px; min-height: 220px; border: 2px dashed #c6d0e0; border-radius: var(--mantine-radius-md); color: #4c5d7a; background: #fafbfe; transition: background .15s, border-color .15s; }
+.planAdd:hover { background: #f0f4fb; border-color: #8ea0c0; }
+.planRecent + .planRecent { border-top: 1px solid #eef1f5; }
+.progressWaiting { background-image: linear-gradient(90deg, #dfe4ec 0, #eef1f6 50%, #dfe4ec 100%); background-size: 200% 100%; animation: plannerWait 1.4s linear infinite; }
+@keyframes plannerWait { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .progressWaiting { animation: none; } }
+@media (max-width: 600px) { .plannerActions { width: 100%; margin-left: 0; } .plannerActions > * { flex: 1 1 auto; } }

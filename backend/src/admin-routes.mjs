@@ -5,10 +5,10 @@ import { s3 } from './storage.mjs';
 import { DeleteObjectsCommand,PutObjectCommand } from '@aws-sdk/client-s3';
 import { images } from './queue.mjs';
 import { token } from './security.mjs';
+import { adSchema, insertAd } from './ad-writer.mjs';
 
 const integer = z.coerce.number().int().positive();
 const statusValues = ['draft','pending','published','paused','rejected','deleted'];
-const adSchema = z.object({ title:z.string().trim().min(5).max(140),description:z.string().trim().min(20).max(6000),categorySlug:z.string().min(1),owner:z.string().min(1),cityHrefs:z.array(z.string().startsWith('/browse/')).min(1).max(1500),age:z.number().int().min(18).max(120).optional(),location:z.string().max(200).default(''),phone:z.string().max(40).default(''),contactEmail:z.union([z.email().max(254),z.literal('')]).default(''),mediaIds:z.array(z.uuid()).max(12).default([]) });
 
 export function adminManagement(app, { admin, fail }) {
  app.post('/api/admin/media/upload',{preHandler:admin,bodyLimit:7500000,config:{rateLimit:{max:200,timeWindow:'1 hour'}}},async(req)=>{
@@ -69,6 +69,7 @@ export function adminManagement(app, { admin, fail }) {
  });
  async function saveAd(req, editing) {
   const input=adSchema.parse(req.body);
+  if(!editing) return sql.begin(async tx=>({post:await insertAd(tx,req.user.id,input)}));
   return sql.begin(async tx=>{
    const [owner]=await tx`select id from users where username=${input.owner} and status='active'`;
    if(!owner)throw fail(400,'Choose an existing active owner username');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { requiredPermissions, managerMay, DEFAULT_PERMISSIONS } from '../src/team.mjs';
 
 test('manager permissions: listed routes only, everything else is administrator-only', () => {
-  assert.deepEqual(DEFAULT_PERMISSIONS, ['overview', 'ads', 'publish', 'bump', 'distribute', 'media', 'reports', 'verification', 'health', 'security', 'vpn']);
+  assert.deepEqual(DEFAULT_PERMISSIONS, ['overview', 'ads', 'publish', 'bump', 'distribute', 'planner', 'media', 'reports', 'verification', 'health', 'security', 'vpn']);
   assert.equal(managerMay(['media'], 'GET', '/api/admin/:collection', { collection: 'media' }), true);
   assert.equal(managerMay(['media'], 'GET', '/api/admin/:collection', { collection: 'users' }), false);
   assert.equal(managerMay(['bump'], 'POST', '/api/admin/ads/:id/:action', { action: 'bump' }), true);

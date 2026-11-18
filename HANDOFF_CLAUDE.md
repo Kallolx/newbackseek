@@ -430,6 +430,14 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - Public pages: /blog (+5 articles in src/content/blog.ts; photos hotlinked from images.unsplash.com), /contact (POST /api/contact → contact_messages table + email to CONTACT_EMAIL, default support@backpagenew.com, reply-to the sender), /guidelines, /refund-policy.
 - Security: the manager portal has its own switches (protect_manager, manager_allowlist_only; migration 016 copied the admin values). The gate receives X-Gate-App manager. The lockout check uses the portal the saver is on.
 
+## 12h. Post planner (Admin → Post planner)
+
+- Cards = rows in ad_drafts (migration 018): status draft | scheduled | queued | publishing | published | failed; payload = the same fields as Ad Publish (adSchema in backend/src/ad-writer.mjs); media_ids = pictures uploaded through the normal form. Each person sees only their own cards; max 20 open cards (PLANNER_LIMIT).
+- API (backend/src/planner.mjs): GET/POST /api/admin/planner, PATCH /:id, POST /:id/schedule {publishAt|null}, /:id/publish, /publish-all (drafts + failed → queue; scheduled keep their time), /:id/duplicate (without pictures), DELETE /:id. Team permission key: planner.
+- Publishing happens in the WORKER (worker.mjs runPlanner every 10 s → publishDueDrafts): claims due rows with SKIP LOCKED, waits for pictures still processing (retries every 10 s, gives up after ~10 min), calls insertAd (the same code as Ad Publish, audited as ad.publish with details.planner), then bumps the public cache. Cards stuck in "publishing" for 10 min go back to the queue. Failures show the reason on the card.
+- The abandoned-upload sweep skips pictures that are on an open card.
+- UI: src/app/admin/planner.tsx (reuses Publisher with heading/submitLabel/removableSaved). Tests: backend/test/planner.test.mjs, tests/planner-smoke.cjs.
+
 ## 13. Important pitfalls
 
 1. Keep public HTML revalidation and account/API no-store behavior.
