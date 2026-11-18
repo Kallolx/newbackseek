@@ -17,9 +17,10 @@ export async function generateMetadata({ params }: { params: Promise<{ location?
   return { title: place ? `${service ? service.name + ' in ' : ''}${place.name} Classifieds & Personal Ads` : 'Browse Cities' };
 }
 
-// City pages are static. Listing and ad pages are rendered with their data and
-// cached; the API refreshes them the moment ads change (60 s fallback).
-export const revalidate = 3600;
+// Always rendered live: a newly published ad must show in every city on the very
+// first visit. (Saved page copies made ads look missing in cities nobody had
+// visited recently.) Data comes from the API's own cache, cleared on every write.
+export const dynamic = 'force-dynamic';
 
 const allCities = countries.flatMap((country) =>
   country.regions.flatMap((region) => region.cities),
@@ -33,13 +34,6 @@ const popularCities = popularCityNames.flatMap((name) =>
   allCities.filter((city) => city.name === name),
 );
 
-export function generateStaticParams() {
-  const paths = countries.flatMap((country) => [
-    country.href,
-    ...country.regions.flatMap((region) => [region.href, ...region.cities.map((city) => city.href)]),
-  ]);
-  return [{ location: [] }, ...paths.map((href) => ({ location: href.split('/').slice(2) }))];
-}
 
 function LocationLinks({ places }: { places: Place[] }) {
   return (
