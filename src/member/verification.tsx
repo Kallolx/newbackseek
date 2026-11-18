@@ -3,7 +3,7 @@
 import { FeedbackToast } from '../components/toast';
 import Image from 'next/image';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { FiShield, FiUser, FiCamera, FiCheckCircle, FiX, FiLock } from 'react-icons/fi';
+import { FiShield, FiCamera, FiCheckCircle, FiX, FiLock } from 'react-icons/fi';
 import { EmptyState } from '../components/page-state';
 import { type MemberSession } from './session';
 import styles from './member.module.css';
@@ -54,7 +54,7 @@ export function Verification({ member }: { member: MemberSession }) {
       <p className={styles.intro}>Follow the steps below to prepare your verification photo. Your verification picture is separate from your public ad pictures.</p>
       <section className={styles.verifyInstructions}><h2><span>1</span> Prepare your handwritten note</h2><p>Write these details clearly on a piece of paper:</p><ul><li>Username <strong>{member.username}</strong></li><li>Current date <strong>{date}</strong></li><li>Email <strong>{member.email}</strong></li></ul></section>
       <section className={styles.verifyInstructions}><h2><span>2</span> Take a clear photo</h2><p>Hold the note beside you. Your face, arm and the entire note should be visible. Use good lighting, no filters or edits, and write the details by hand in English.</p>
-        <div className={styles.verifyExample} aria-label="Illustrated example of a person holding a verification note"><FiUser aria-hidden="true" /><div><span>Handwritten note</span><strong>{member.username}</strong><span>{date}</span><span>{member.email}</span></div></div><p className={styles.help}>Illustrated example · keep both your face and the note in the frame.</p>
+        <figure className={styles.verifyExample}><Image src="/verification-example.webp" alt="Example verification photo: a person holding a handwritten note with username, date and email" width={720} height={720} sizes="(max-width: 600px) 100vw, 360px" /><figcaption>Example · keep both your face and the note in the frame.</figcaption></figure>
       </section>
       <form onSubmit={submit} className={styles.form}>
         <section className={styles.verifyInstructions}><h2><span>3</span> Add your verification photo</h2>
