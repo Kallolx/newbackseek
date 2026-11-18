@@ -43,3 +43,8 @@ export async function sendPasswordResetEmail({email,resetToken}) {
  const url=new URL('/auth',config.SITE_ORIGIN);url.searchParams.set('mode','newpassword');url.searchParams.set('token',resetToken);
  await transporter.sendMail({from:config.EMAIL_FROM,to:email,subject:'Reset your BackpageNew password',text:`Reset your password using this link:\n${url}\n\nThis link expires in 30 minutes and can only be used once. If you did not request it, ignore this email.`,html:accountEmail({origin:config.SITE_ORIGIN,title:'Choose a new password',preheader:'Your secure BackpageNew password reset link.',greeting:'Let’s get you back into your account.',description:'We received a request to reset your password. Use the button below to choose a new, unique password.',button:'Reset password',url:url.toString(),expiry:'This link expires in 30 minutes and can only be used once.',security:'Didn’t request a password reset? Ignore this email—your password stays unchanged. Never share this link or your password with anyone.'})});
 }
+
+export async function sendContactMessage({id,name,email,topic,message}) {
+ if(!transporter)throw new Error('Email delivery is not configured');
+ await transporter.sendMail({from:config.EMAIL_FROM,to:config.CONTACT_EMAIL,replyTo:{name,address:email},subject:`[Contact #${id}] ${topic} — ${name}`.slice(0,180),text:`From: ${name} <${email}>\nTopic: ${topic}\nMessage #${id}\n\n${message}`});
+}

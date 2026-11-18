@@ -73,7 +73,7 @@ async function open(browser, user, extra = {}) {
     assert.ok(await admin.page.getByText('Password: ' + generated).isVisible(), 'credentials shown once to copy');
     await admin.page.getByRole('button', { name: 'Done' }).click(); await admin.page.waitForTimeout(600);
     await admin.page.getByText('Rita Jones', { exact: true }).waitFor();
-    assert.ok(await admin.page.getByText('10 of 12 sections').isVisible());
+    assert.ok(await admin.page.getByText('10/12 sections').isVisible());
     const adminLinks = await admin.page.locator('.mantine-AppShell-navbar a').allInnerTexts();
     assert.ok(adminLinks.some((t) => t.trim() === 'Team') && adminLinks.some((t) => t.trim() === 'Users'), 'admin sees everything');
     await admin.page.screenshot({ path: process.env.BPN_SHOT || 'manager-team.png', fullPage: true });

@@ -34,6 +34,10 @@ test('country gate, Cloudflare-only origin and admin security settings', { skip:
     assert.equal(withAllow.statusCode, 200, withAllow.body);
     assert.equal((await gate(cf('BD', '203.0.113.9'), 'admin')).statusCode, 204);
     assert.equal((await gate(cf('BD', '192.0.2.50'), 'admin')).statusCode, 403);
+    assert.equal((await gate(cf('BD', '192.0.2.50'), 'manager')).statusCode, 204, 'manager portal has its own switch');
+    assert.equal((await adminCall('PUT', '/api/admin/security', { ...settings, protectAdmin: true, protectManager: true, allowlist: ['203.0.113.0/24'] }, cf('BD', '203.0.113.9'))).statusCode, 200);
+    assert.equal((await gate(cf('BD', '192.0.2.50'), 'manager')).statusCode, 403);
+    assert.equal((await gate(cf('BD', '203.0.113.9'), 'manager')).statusCode, 204);
 
     // VPN-only admin panel: refused unless the saver is allowlisted; then strangers are refused.
     assert.equal((await adminCall('PUT', '/api/admin/security', { ...settings, adminAllowlistOnly: true, allowlist: [] }, cf('US', '198.51.100.20'))).statusCode, 400);

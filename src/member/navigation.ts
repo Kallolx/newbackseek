@@ -25,7 +25,7 @@ export function accountLinkClick(event: MouseEvent) {
   goTo(url.pathname + url.search);
 }
 
-const SECTIONS = ['post', 'verification', 'settings'];
+const SECTIONS = ['post', 'wallet', 'verification', 'settings'];
 /** Section segments for a /myaccount path, or null when the address is not an account page. */
 export function accountSection(pathname: string): string[] | null {
   const section = pathname.replace(/^\/myaccount\/?/, '').split('/').filter(Boolean);

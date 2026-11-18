@@ -64,10 +64,18 @@ test('admin lock edge expression', () => {
   assert.equal(adminLockExpression({ ...base, adminAllowlistOnly: false, allowlist: ['192.0.2.10'] }, hosts), '');
 });
 
-test('manager portal gets the same edge protection as the admin panel', () => {
+test('manager portal has its own country blocking and allowlist-only switches', () => {
   const hosts = { site: 'backpagenew.com', admin: 'admin.backpagenew.com', manager: 'manager.backpagenew.com', media: 'media.backpagenew.com' };
-  assert.equal(adminLockExpression({ ...base, adminAllowlistOnly: true, allowlist: ['192.0.2.10'] }, hosts), '(http.host in {"admin.backpagenew.com" "manager.backpagenew.com"} and not ip.src in {192.0.2.10})');
-  assert.match(edgeExpression({ ...base, protectAdmin: true }, hosts), /"manager[.]backpagenew[.]com"/);
-  assert.doesNotMatch(edgeExpression(base, hosts), /manager/, 'unprotected when admin protection is off');
-  assert.equal(adminLockExpression({ ...base, adminAllowlistOnly: true, allowlist: ['192.0.2.10'] }, { ...hosts, manager: 'bad host' }), '(http.host eq "admin.backpagenew.com" and not ip.src in {192.0.2.10})');
+  const lock = (extra) => adminLockExpression({ ...base, allowlist: ['192.0.2.10'], ...extra }, hosts);
+  assert.equal(lock({ adminAllowlistOnly: true }), '(http.host eq "admin.backpagenew.com" and not ip.src in {192.0.2.10})');
+  assert.equal(lock({ managerAllowlistOnly: true }), '(http.host eq "manager.backpagenew.com" and not ip.src in {192.0.2.10})');
+  assert.equal(lock({ adminAllowlistOnly: true, managerAllowlistOnly: true }), '(http.host in {"admin.backpagenew.com" "manager.backpagenew.com"} and not ip.src in {192.0.2.10})');
+  assert.equal(lock({}), '');
+  assert.match(edgeExpression({ ...base, protectManager: true }, hosts), /"manager[.]backpagenew[.]com"/);
+  assert.doesNotMatch(edgeExpression({ ...base, protectAdmin: true }, hosts), /manager/, 'admin switch does not cover the manager portal');
+  const s = settings({ protectManager: true });
+  assert.equal(decide(s, visit({ app: 'manager' })), 'BD');
+  assert.equal(decide(settings(), visit({ app: 'manager' })), '', 'off by default');
+  assert.equal(decide(settings({ managerAllowlistOnly: true, allowlist: ['192.0.2.10'] }), visit({ app: 'manager', country: 'US' })), 'manager');
+  assert.equal(decide(settings({ managerAllowlistOnly: true, allowlist: ['192.0.2.10'] }), visit({ app: 'admin', country: 'US' })), '', 'admin panel unaffected');
 });

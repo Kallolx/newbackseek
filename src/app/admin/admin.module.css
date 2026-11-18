@@ -82,3 +82,9 @@ body:has(.admin) > :global(.footer) { display: none; }
   .admin .sidebar { width: min(245px, 80vw); box-shadow: 8px 0 24px #101c3626; }
   .admin :global(.mantine-AppShell-main) { padding-bottom:calc(110px + env(safe-area-inset-bottom)); }
 }
+
+/* Team: one card per manager */
+.managerCard { display: flex; flex-direction: column; min-width: 0; }
+.miniStat { display: grid; justify-items: center; gap: 1px; padding: 8px 4px; border-radius: 8px; background: #f4f6fb; min-width: 0; }
+.miniStat strong { font-size: 18px; line-height: 1.2; color: #172744; }
+.miniStat span { font-size: 11px; color: #6b768a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }

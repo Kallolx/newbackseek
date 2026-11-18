@@ -421,6 +421,15 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - DNS: Cloudflare A record `manager` → 192.255.228.253, Proxied. Caddy gets the certificate over HTTP-01 through Cloudflare.
 - Test: backend/test/team.test.mjs (unit + integration); tests/manager-portal-smoke.cjs (browser, mocked API).
 
+## 12g. Account settings, wallet, content pages
+
+- Account → Settings (src/member/account-settings.tsx, backend/src/account-security.mjs, migration 017): profile facts, change/set password (signs out other devices), two-step verification (TOTP via any authenticator app + 10 one-time backup codes, hashed), signed-in devices (sessions now store user_agent/ip/country) with per-device and "all others" sign-out, delete account (DELETE + password + code when 2-step is on; ads deleted, sessions removed).
+- Login with 2-step on: /api/auth/login (and the Google callback) return/redirect without a session and set a 5-minute httpOnly ticket cookie (bpn-2fa, Redis key bpn:2fa:*); /api/auth/login/two-factor finishes (5 wrong codes kill the ticket). A TOTP code works once (users.totp_last_counter). Pure TOTP code lives in backend/src/totp.mjs (RFC 6238 test vectors in test/account-security.test.mjs).
+- users.password_set=false for Google accounts that never chose a password: they can set one without the current password.
+- Account → Wallet (src/member/wallet.tsx) is a DESIGN ONLY: no API, no payment addresses. "Coming soon" screen after choosing amount + coin. Do not show real or sample addresses until payments are actually implemented.
+- Public pages: /blog (+5 articles in src/content/blog.ts; photos hotlinked from images.unsplash.com), /contact (POST /api/contact → contact_messages table + email to CONTACT_EMAIL, default support@backpagenew.com, reply-to the sender), /guidelines, /refund-policy.
+- Security: the manager portal has its own switches (protect_manager, manager_allowlist_only; migration 016 copied the admin values). The gate receives X-Gate-App manager. The lockout check uses the portal the saver is on.
+
 ## 13. Important pitfalls
 
 1. Keep public HTML revalidation and account/API no-store behavior.

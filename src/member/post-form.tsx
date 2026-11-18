@@ -137,13 +137,12 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden aria-label="Upload ad pictures" onChange={(event) => addPictures(Array.from(event.target.files ?? []))} />
         </div>
         {(saved.length+pictures.length)>0&&<div className={styles.photos}>{saved.map((photo,index)=><div key={photo.src}><Image src={photo.src} alt={'Saved ad picture '+(index+1)} width={200} height={160} unoptimized/>{index===0&&<span>Cover photo</span>}<button type="button" disabled={processing} aria-label={'Remove saved picture '+(index+1)} onClick={()=>setSaved(previous=>previous.filter((_,item)=>item!==index))}><FiX/></button></div>)}{pictures.map((picture, index) => <UploadTile key={picture.key} item={picture} index={index} cover={index === 0 && !saved.length} disabled={processing} onRemove={() => uploads.remove(picture.key)} onRetry={() => uploads.retry(picture.key)} />)}</div>}
-        <p className={styles.help}>Pictures are uploaded when you submit, then optimized on our servers.</p>
         <FeedbackToast message={photoError} />
       </section>
       <section className={styles.section} aria-labelledby="post-privacy-heading">
         <h2 id="post-privacy-heading"><FiShield aria-hidden="true" /> Privacy & legal</h2>
         <label className={styles.check}><input type="checkbox" required /><span>I am 18 or older. I have permission to publish this content and agree to the <Link href="/terms">Terms of Service</Link> and <Link href="/privacy">Privacy Policy</Link>.</span></label>
-        <p className={styles.notice}>Your listing is sent for review. Pictures are optimized securely after upload and only approved ads appear publicly.</p>
+        <p className={styles.notice}>Your listing is sent for review. Only approved ads appear publicly.</p>
       </section>
       <FeedbackToast message={error} />
       <div className={styles.publish}><Link href={post?'/myaccount/posts/'+post.id:'/myaccount'}>Cancel</Link><button className={styles.primary} type="submit" disabled={processing}>{processing ? <><span className={styles.buttonSpinner} aria-hidden="true" /><span aria-live="polite">{submitState?.title ?? 'Saving…'}</span></> : post?'Save changes for review':'Submit ad for review'}</button></div>

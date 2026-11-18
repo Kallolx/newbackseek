@@ -24,6 +24,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState(false);
   const [captchaAttempt, setCaptchaAttempt] = useState(0);
   const [showResend,setShowResend]=useState(searchParams.get('verification')==='pending');
+  // Second step of logging in when the account has two-step verification on.
+  const [twoFactor, setTwoFactor] = useState(mode === 'login' && searchParams.get('step') === 'two-factor');
   const [message, setMessage] = useState(searchParams.get('error') ? 'Google sign-in could not be completed. Please try again or use email.' : '');
   useEffect(()=>{if(searchParams.get('email')==='verified')toast.success('Email verified. You can now log in.');if(searchParams.get('email')==='invalid')toast.error('This verification link has expired or was already used.');},[searchParams]);
 
@@ -49,6 +51,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       if (!response.ok) {if(result.code==='EMAIL_NOT_VERIFIED')setShowResend(true);throw new Error(result.error || 'Unable to continue right now.');}
       if (resend) {toast.success(result.alreadyVerified?'Your email is already verified. You can log in.':'Verification email sent. Check your inbox before logging in.');setCaptchaToken('');setCaptchaAttempt(value=>value+1);return;}
       if (reset) {toast.info('If this email belongs to an active member account, a reset link has been sent.');setCaptchaToken('');setCaptchaAttempt(value=>value+1);return;}
+      if (result.twoFactorRequired) { setTwoFactor(true); setCaptchaToken(''); return; }
       if (newPassword) {window.dispatchEvent(new Event('bpn-session-change'));toast.success('Password updated. Log in with your new password.');router.replace('/auth');return;}
       if (signup) toast[result.verificationEmailSent === false ? 'warning' : 'success'](result.verificationEmailSent === false ? 'Account created, but the email could not be sent. Use Resend verification email on the login screen.' : 'Account created. Check your inbox to verify your email, then log in.');
       window.dispatchEvent(new Event('bpn-session-change'));
@@ -59,6 +62,35 @@ export function AuthForm({ mode }: { mode: Mode }) {
       setCaptchaToken(''); setCaptchaAttempt(value => value + 1);
     } finally { setBusy(false); }
   }
+
+  async function verifyCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setMessage('');
+    const code = String(new FormData(event.currentTarget).get('code') || '').trim();
+    try {
+      setBusy(true);
+      const response = await fetch('/api/auth/login/two-factor', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) { if (response.status === 401) { setTwoFactor(false); setCaptchaAttempt(value => value + 1); } throw new Error(result.error || 'That code did not work.'); }
+      window.dispatchEvent(new Event('bpn-session-change'));
+      router.replace(destination); router.refresh();
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'That code did not work.'); }
+    finally { setBusy(false); }
+  }
+
+  if (twoFactor) return <main id="main" className={styles.page}>
+    <section className={styles.card} aria-labelledby="auth-heading">
+      <div className={styles.heading}><h1 id="auth-heading">Enter your code</h1></div>
+      <div className={styles.content}>
+        <form className={styles.form} onSubmit={verifyCode}>
+          <p className={styles.notice}>Open your authenticator app and enter the 6-digit code for BackpageNew, or use one of your backup codes.</p>
+          <label className={styles.field}>Code<input name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="123456" maxLength={20} required autoFocus /></label>
+          <button className={styles.submit} type="submit" disabled={busy}>{busy ? 'Checking…' : 'Log in'}</button>
+          <FeedbackToast message={message} />
+        </form>
+      </div>
+    </section>
+    <p className={styles.switch}><button type="button" className={styles.textButton} onClick={() => { setTwoFactor(false); setMessage(''); router.replace('/auth'); }}>Back to log in</button></p>
+  </main>;
 
   return <main id="main" className={styles.page}>
     <section className={styles.card} aria-labelledby="auth-heading">

@@ -120,3 +120,5 @@
 .resend:disabled { opacity:.6;cursor:not-allowed; }
 .form :global(.turnstile-widget) { min-height: 65px; display: flex; justify-content: center; }
 .form :global(.security-error) { color: #9a311d; font-size: 13px; }
+
+.textButton { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }

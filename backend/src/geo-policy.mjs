@@ -30,8 +30,10 @@ export function decide(settings, { ip, country, app, viaCloudflare }) {
   if (isAllowlisted(settings.allow, ip)) return '';
   // VPN-only admin panel: nobody outside the allowlist reaches it, from any country.
   if (app === 'admin' && settings.adminAllowlistOnly) return 'admin';
+  if (app === 'manager' && settings.managerAllowlistOnly) return 'manager';
   if (!settings.geoEnabled) return '';
   if (app === 'admin' && !settings.protectAdmin) return '';
+  if (app === 'manager' && !settings.protectManager) return '';
   if (settings.blockTor && country === 'T1') return 'T1';
   if (settings.blockUnknown && (!country || country === 'XX')) return 'XX';
   if (country && settings.blockedCountries.includes(country)) return country;
@@ -43,8 +45,8 @@ const hostName = (name) => Boolean(name) && /^[a-z0-9.-]+$/.test(name);
 /** Cloudflare WAF expression that keeps the admin (and manager) hosts for allowlisted addresses only. */
 export function adminLockExpression(settings, { admin, manager }) {
   const allow = settings.allowlist.filter(validCidr);
-  const hosts = [...new Set([admin, manager].filter(hostName))];
-  if (!settings.adminAllowlistOnly || !allow.length || !hostName(admin)) return '';
+  const hosts = [...new Set([settings.adminAllowlistOnly && admin, settings.managerAllowlistOnly && manager].filter(hostName))];
+  if (!allow.length || !hosts.length) return '';
   const match = hosts.length === 1 ? `http.host eq "${hosts[0]}"` : `http.host in {${hosts.map((item) => `"${item}"`).join(' ')}}`;
   return `(${match} and not ip.src in {${allow.join(' ')}})`;
 }
@@ -54,7 +56,7 @@ export function edgeExpression(settings, { site, admin, manager, media }) {
   const codes = [...new Set([...settings.blockedCountries, ...(settings.blockTor ? ['T1'] : []), ...(settings.blockUnknown ? ['XX'] : [])])]
     .filter((code) => /^[A-Z0-9]{2}$/.test(code));
   if (!settings.geoEnabled || !codes.length) return '';
-  const hosts = [...new Set([site, site && 'www.' + site, media, settings.protectAdmin ? admin : '', settings.protectAdmin ? manager : ''].filter(hostName))];
+  const hosts = [...new Set([site, site && 'www.' + site, media, settings.protectAdmin ? admin : '', settings.protectManager ? manager : ''].filter(hostName))];
   const quoted = (list) => list.map((item) => `"${item}"`).join(' ');
   let expression = `(http.host in {${quoted(hosts)}} and ip.src.country in {${quoted(codes)}})`;
   const allow = settings.allowlist.filter(validCidr);

@@ -15,12 +15,13 @@ import { sql, audit } from "./db.mjs";
 import { token, digest, hashPassword, verifyPassword } from "./security.mjs";
 import { redis, images } from "./queue.mjs";
 import { s3, storageReady } from "./storage.mjs";
-import { emailReady, sendVerificationEmail, sendPasswordResetEmail } from "./email.mjs";
+import { emailReady, sendVerificationEmail, sendPasswordResetEmail, sendContactMessage } from "./email.mjs";
 import { adminManagement } from "./admin-routes.mjs";
 import { securityCenter, startupEdgeSync } from "./security-center.mjs";
 import { vpnRoutes } from "./vpn.mjs";
 import { storageReport } from "./storage-report.mjs";
 import { teamRoutes, managerMay } from "./team.mjs";
+import { accountSecurity, startSecondStep } from "./account-security.mjs";
 import { pictureUpload, MAX_PICTURE_BYTES } from "./picture-upload.mjs";
 import { cached, publicDataChanged, changesPublicData } from "./public-cache.mjs";
 
@@ -147,7 +148,9 @@ export async function buildApp() {
     const [eligible] = await sql`select id from users where id=${userId} and status='active' and email_verified_at is not null`;
     if (!eligible) throw fail(403, 'Verify your email address before logging in.');
     const secret = token();
-    await sql`insert into sessions (token_hash,user_id,actor_id,expires_at) values (${digest(secret)},${userId},${actorId},now()+interval '7 days')`;
+    // Device details let members see where they are signed in (Account settings).
+    const request = reply.request;
+    await sql`insert into sessions (token_hash,user_id,actor_id,expires_at,user_agent,ip,country) values (${digest(secret)},${userId},${actorId},now()+interval '7 days',${String(request.headers["user-agent"] || "").slice(0, 300)},${clientIp(request)},${String(request.headers["cf-ipcountry"] || "").slice(0, 2)})`;
     const name =
       config.NODE_ENV === "production"
         ? context === "admin"
@@ -279,6 +282,7 @@ export async function buildApp() {
       if (!user || !valid || user.role !== "member")
         throw fail(401, "Incorrect email or password");
       if (!user.email_verified_at) throw Object.assign(fail(403, 'Verify your email address before logging in. You can resend the verification email below.'), { publicCode: 'EMAIL_NOT_VERIFIED' });
+      if (await startSecondStep(reply, user)) return { twoFactorRequired: true };
       await session(reply, user.id);
       return {
         user: {
@@ -346,14 +350,15 @@ export async function buildApp() {
       const ticket = await googleClient.verifyIdToken({ idToken: tokenPayload.id_token, audience: config.GOOGLE_CLIENT_ID });
       const profile = ticket.getPayload();
       if (!profile?.sub || !profile.email || !profile.email_verified) throw new Error("Google email is not verified");
-      let [user] = await sql`select id,email,username,role from users where google_subject=${profile.sub} and status='active' and role='member'`;
+      let [user] = await sql`select id,email,username,role,totp_enabled_at from users where google_subject=${profile.sub} and status='active' and role='member'`;
       if (!user) {
         const [existing] = await sql`select id from users where email=${profile.email} and status!='deleted'`;
         if (existing) return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?error=google_account_exists`);
         const username = await uniqueGoogleUsername(profile.email);
-        [user] = await sql`insert into users (email,username,password_hash,google_subject,email_verified_at) values (${profile.email},${username},${await hashPassword(token())},${profile.sub},now()) returning id,email,username,role`;
+        [user] = await sql`insert into users (email,username,password_hash,google_subject,email_verified_at,password_set) values (${profile.email},${username},${await hashPassword(token())},${profile.sub},now(),false) returning id,email,username,role,totp_enabled_at`;
       }
       await sql`update users set email_verified_at=coalesce(email_verified_at,now()) where id=${user.id}`;
+      if (await startSecondStep(reply, user)) return reply.code(303).redirect(`${config.SITE_ORIGIN}/auth?step=two-factor`);
       await session(reply, user.id);
       return reply.code(303).redirect(`${config.SITE_ORIGIN}/myaccount`);
     } catch (error) {
@@ -387,7 +392,7 @@ export async function buildApp() {
   app.post('/api/auth/reset-password',{config:{rateLimit:{max:10,timeWindow:'15 minutes'}}},async(req)=>{
     const input=z.object({token:z.string().min(30).max(100),password:z.string().min(12).max(128),captchaToken:z.string().min(1).max(4096)}).parse(req.body);
     await verifyCaptcha(input.captchaToken,req);const hash=await hashPassword(input.password);
-    await sql.begin(async tx=>{const [reset]=await tx`delete from password_resets where token_hash=${digest(input.token)} and expires_at>now() returning user_id`;if(!reset)throw fail(400,'This reset link has expired or was already used. Request a new link.');const changed=await tx`update users set password_hash=${hash},email_verified_at=coalesce(email_verified_at,now()) where id=${reset.user_id} and role='member' and status='active' returning id`;if(!changed.length)throw fail(400,'This account is unavailable');await tx`delete from sessions where user_id=${reset.user_id}`;await tx`delete from password_resets where user_id=${reset.user_id}`;});
+    await sql.begin(async tx=>{const [reset]=await tx`delete from password_resets where token_hash=${digest(input.token)} and expires_at>now() returning user_id`;if(!reset)throw fail(400,'This reset link has expired or was already used. Request a new link.');const changed=await tx`update users set password_hash=${hash},password_set=true,password_changed_at=now(),email_verified_at=coalesce(email_verified_at,now()) where id=${reset.user_id} and role='member' and status='active' returning id`;if(!changed.length)throw fail(400,'This account is unavailable');await tx`delete from sessions where user_id=${reset.user_id}`;await tx`delete from password_resets where user_id=${reset.user_id}`;});
     return {ok:true};
   });
   app.post(
@@ -658,6 +663,22 @@ export async function buildApp() {
   securityCenter(app, { admin, fail });
   vpnRoutes(app, { admin, fail });
   teamRoutes(app, { admin, fail });
+  accountSecurity(app, { member, fail, session, sessionCookie, cookieOptions });
+  // Contact page: kept in the database and emailed to support (reply goes to the sender).
+  app.post("/api/contact", { config: { rateLimit: { max: 5, timeWindow: "1 hour" } } }, async (req) => {
+    if (appContext(req) !== "public") throw fail(404, "Not found");
+    const input = z.object({
+      name: z.string().trim().min(2).max(80),
+      email: z.email().max(254).toLowerCase(),
+      topic: z.enum(["General question", "Account or login", "An ad", "Wallet and payments", "Report a problem", "Legal or privacy"]),
+      message: z.string().trim().min(20, "Please write at least 20 characters").max(4000),
+      captchaToken: z.string().min(1).max(4096),
+    }).parse(req.body);
+    await verifyCaptcha(input.captchaToken, req);
+    const [row] = await sql`insert into contact_messages (name,email,topic,message,ip) values (${input.name},${input.email},${input.topic},${input.message},${clientIp(req)}) returning id`;
+    if (emailReady()) await sendContactMessage({ ...input, id: row.id }).catch((error) => req.log.warn({ err: error }, "Contact email failed"));
+    return { ok: true };
+  });
   storageReport(app, { admin, fail });
   pictureUpload(app, { member, verifiedMember, fail });
   app.addHook("onReady", async () => { void startupEdgeSync(); });

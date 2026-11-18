@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState, type FormEvent } from 'react';
-import { ActionIcon, Alert, Anchor, Avatar, Badge, Button, Checkbox, CopyButton, Drawer, Group, Menu, Modal, Paper, SimpleGrid, Skeleton, Stack, Table, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Alert, Anchor, Avatar, Badge, Button, Checkbox, CopyButton, Drawer, Group, Menu, Modal, Paper, SimpleGrid, Skeleton, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
 import { FiActivity, FiCheck, FiCopy, FiEdit2, FiKey, FiMoreHorizontal, FiPause, FiPlay, FiPlus, FiRefreshCw, FiTrash2, FiUserPlus } from 'react-icons/fi';
 import { adminApi, useAdminResource } from './live-api';
 import { toast } from '../../components/toast';
@@ -41,7 +41,7 @@ function when(value: string | null, empty = 'Never') {
 const portalUrl = () => typeof window === 'undefined' ? 'https://manager.backpagenew.com' : window.location.origin.replace('://admin.', '://manager.');
 
 function PasswordBox({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return <TextInput label="Password" description="At least 10 characters. Share it privately with the manager." value={value} onChange={(event) => onChange(event.currentTarget.value)} required minLength={10} maxLength={128} autoComplete="new-password" styles={{ input: { fontFamily: 'ui-monospace, monospace' } }}
+  return <TextInput label="Password" value={value} onChange={(event) => onChange(event.currentTarget.value)} required minLength={10} maxLength={128} autoComplete="new-password" styles={{ input: { fontFamily: 'ui-monospace, monospace' } }}
     rightSectionWidth={72} rightSection={<Group gap={2} wrap="nowrap"><Tooltip label="Generate a new password"><ActionIcon variant="subtle" aria-label="Generate password" onClick={() => onChange(generatePassword())}><FiRefreshCw /></ActionIcon></Tooltip><CopyButton value={value}>{({ copied, copy }) => <Tooltip label={copied ? 'Copied' : 'Copy'}><ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} aria-label="Copy password" onClick={copy} disabled={!value}>{copied ? <FiCheck /> : <FiCopy />}</ActionIcon></Tooltip>}</CopyButton></Group>} />;
 }
 
@@ -54,10 +54,9 @@ function AccessPicker({ permissions, value, onChange }: { permissions: Permissio
     </Group></Group>
     <Checkbox.Group value={value} onChange={onChange} aria-label="Sections this manager can open">
       <SimpleGrid cols={{ base: 1, xs: 2 }} spacing={8} verticalSpacing={8}>
-        {permissions.map((item) => <Checkbox key={item.key} value={item.key} label={item.label} description={item.key === 'users' ? 'Suspend, verify and delete members' : item.key === 'security' ? 'Change country blocking and protection' : undefined} />)}
+        {permissions.map((item) => <Checkbox key={item.key} value={item.key} label={item.label} />)}
       </SimpleGrid>
     </Checkbox.Group>
-    <Text size="xs" c="dimmed">Team management and “Sign in as user” always stay with administrators.</Text>
   </Stack>;
 }
 
@@ -65,7 +64,7 @@ function CredentialsCard({ credentials, onClose }: { credentials: Credentials | 
   const text = credentials ? `Manager portal: ${portalUrl()}\nEmail: ${credentials.email}\nPassword: ${credentials.password}` : '';
   return <Modal opened={Boolean(credentials)} onClose={onClose} title={credentials?.title} centered>
     {credentials && <Stack>
-      <Text size="sm">Send these sign-in details to <b>{credentials.name}</b> privately. The password is not shown again.</Text>
+      <Text size="sm">Sign-in details for <b>{credentials.name}</b> (shown once):</Text>
       <Paper withBorder p="sm" radius="md" bg="gray.0"><Text component="pre" size="sm" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0, fontFamily: 'ui-monospace, monospace' }}>{text}</Text></Paper>
       <Group justify="flex-end"><CopyButton value={text}>{({ copied, copy }) => <Button leftSection={copied ? <FiCheck /> : <FiCopy />} color={copied ? 'teal' : 'indigo'} onClick={copy}>{copied ? 'Copied' : 'Copy sign-in details'}</Button>}</CopyButton><Button variant="default" onClick={onClose}>Done</Button></Group>
     </Stack>}
@@ -118,28 +117,29 @@ export function TeamCenter() {
     }
   }
 
-  if (team.loading && !team.data) return <Stack><SimpleGrid cols={{ base: 2, lg: 4 }}>{[0, 1, 2, 3].map((i) => <Skeleton key={i} height={88} radius="md" />)}</SimpleGrid><Skeleton height={260} radius="md" /></Stack>;
+  if (team.loading && !team.data) return <Stack><SimpleGrid cols={{ base: 2, lg: 4 }}>{[0, 1, 2, 3].map((i) => <Skeleton key={i} height={88} radius="md" />)}</SimpleGrid><SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }}>{[0, 1, 2].map((i) => <Skeleton key={i} height={210} radius="md" />)}</SimpleGrid></Stack>;
   if (team.error || !team.data) return <EmptyState title="Team could not load" description="Retry to load the manager accounts." action="Retry" onAction={team.reload} />;
   const managers = team.data.managers;
   const label = (key: string) => permissions.find((item) => item.key === key)?.label || key;
   const totals = managers.reduce((sum, item) => ({ active: sum.active + (item.status === 'active' ? 1 : 0), week: sum.week + item.week, published: sum.published + item.published }), { active: 0, week: 0, published: 0 });
 
   return <Stack>
-    <Paper withBorder p="md" radius="md"><Group justify="space-between" wrap="wrap" gap="sm"><div style={{ minWidth: 0, flex: '1 1 260px' }}><Title order={3} size="h4">Manager portal</Title><Text size="sm" c="dimmed">Managers sign in at <Anchor href={portalUrl()} target="_blank" rel="noreferrer">{portalUrl().replace('https://', '')}</Anchor> with email and password, and see only the sections you allow.</Text></div><Button leftSection={<FiUserPlus />} onClick={openCreate}>Add manager</Button></Group></Paper>
+    <Group justify="space-between" wrap="wrap" gap="sm">
+      <Anchor href={portalUrl()} target="_blank" rel="noreferrer" size="sm">{portalUrl().replace(/^https?:\/\//, '')}</Anchor>
+      <Button leftSection={<FiUserPlus />} onClick={openCreate}>Add manager</Button>
+    </Group>
     <SimpleGrid cols={{ base: 2, lg: 4 }}>
       {[['Managers', managers.length], ['Active', totals.active], ['Actions · 7 days', totals.week], ['Ads published', totals.published]].map(([name, value]) => <Paper key={String(name)} withBorder p="md" radius="md"><Text size="sm" c="dimmed">{name}</Text><Title order={2}>{value}</Title></Paper>)}
     </SimpleGrid>
-    <Paper withBorder p={{ base: 'sm', md: 'md' }} radius="md">
-      {!managers.length ? <EmptyState title="No managers yet" description="Add a manager to give someone limited access to the admin tools." action="Add manager" onAction={openCreate} /> :
-        <Table.ScrollContainer minWidth={0}><Table className={styles.responsiveTable} striped highlightOnHover verticalSpacing="md">
-          <Table.Thead><Table.Tr><Table.Th>Manager</Table.Th><Table.Th>Status</Table.Th><Table.Th>Access</Table.Th><Table.Th>Work done</Table.Th><Table.Th>Last active</Table.Th><Table.Th>Actions</Table.Th></Table.Tr></Table.Thead>
-          <Table.Tbody>{managers.map((manager) => <Table.Tr key={manager.id}>
-            <Table.Td data-label="Manager"><Group wrap="nowrap"><Avatar radius="xl" color="grape">{(manager.name || manager.username).slice(0, 2).toUpperCase()}</Avatar><div style={{ minWidth: 0 }}><Text fw={600} size="sm">{manager.name || manager.username}</Text><Text size="xs" c="dimmed">@{manager.username} · {manager.email}</Text><Text size="xs" c="dimmed">Added {new Date(manager.created_at).toLocaleDateString()}{manager.created_by ? ` by @${manager.created_by}` : ''}</Text></div></Group></Table.Td>
-            <Table.Td data-label="Status" style={{ whiteSpace: 'nowrap' }}><Badge variant="light" styles={{ label: { overflow: 'visible' } }} color={manager.status === 'active' ? 'teal' : 'orange'} radius="sm" style={{ textTransform: 'capitalize' }}>{manager.status}</Badge></Table.Td>
-            <Table.Td data-label="Access" style={{ whiteSpace: 'nowrap' }}><Tooltip multiline w={240} label={manager.permissions.length ? manager.permissions.map(label).join(', ') : 'No sections'}><Badge variant="outline" color="indigo" radius="sm" tt="none" styles={{ label: { overflow: 'visible' } }}>{manager.permissions.length} of {permissions.length} sections</Badge></Tooltip></Table.Td>
-            <Table.Td data-label="Work done"><Text size="xs">{manager.published} published · {manager.bumped} bumped · {manager.distributed} distributed</Text><Text size="xs" c="dimmed">{manager.edited} edits · {manager.moderated} moderated · {manager.reviewed} reviews · {manager.week} actions this week</Text></Table.Td>
-            <Table.Td data-label="Last active"><Text size="xs">{when(manager.last_action_at, 'No actions yet')}</Text><Text size="xs" c="dimmed">Sign-in: {when(manager.last_login_at)}</Text></Table.Td>
-            <Table.Td data-label="Actions"><Menu withinPortal position="bottom-end" width={220}><Menu.Target><ActionIcon aria-label={`Actions for ${manager.username}`} variant="subtle" color="gray" size="lg"><FiMoreHorizontal size={20} /></ActionIcon></Menu.Target><Menu.Dropdown>
+    {!managers.length ? <Paper withBorder radius="md"><EmptyState title="No managers yet" description="" action="Add manager" onAction={openCreate} /></Paper> :
+      <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing="md">{managers.map((manager) => <Paper key={manager.id} withBorder radius="md" p="md" className={styles.managerCard}>
+        <Group wrap="nowrap" align="flex-start" gap="sm">
+          <Avatar radius="xl" color="grape" size={44}>{(manager.name || manager.username).slice(0, 2).toUpperCase()}</Avatar>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <Group gap={6} wrap="nowrap"><Text fw={700} truncate>{manager.name || manager.username}</Text><Badge size="sm" variant="light" color={manager.status === 'active' ? 'teal' : 'orange'} radius="sm" styles={{ label: { overflow: 'visible' } }} style={{ textTransform: 'capitalize', flexShrink: 0 }}>{manager.status}</Badge></Group>
+            <Text size="xs" c="dimmed" truncate>@{manager.username} · {manager.email}</Text>
+          </div>
+          <Menu withinPortal position="bottom-end" width={220}><Menu.Target><ActionIcon aria-label={`Actions for ${manager.username}`} variant="subtle" color="gray" size="lg"><FiMoreHorizontal size={20} /></ActionIcon></Menu.Target><Menu.Dropdown>
               <Menu.Item leftSection={<FiActivity />} onClick={() => setViewing(manager)}>Posts and activity</Menu.Item>
               <Menu.Item leftSection={<FiEdit2 />} onClick={() => { setEditing(manager); setEditAccess(manager.permissions); setEditName(manager.name || manager.username); setError(''); }}>Edit name and access</Menu.Item>
               <Menu.Item leftSection={<FiKey />} onClick={() => { setResetting(manager); setNewPassword(generatePassword()); setError(''); }}>Set a new password</Menu.Item>
@@ -148,17 +148,24 @@ export function TeamCenter() {
                 : { title: `Restore ${manager.name || manager.username}?`, description: 'They can sign in again with their current password.', run: () => adminApi(`/admin/team/${manager.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'active' }) }), done: 'Manager restored.' })}>{manager.status === 'active' ? 'Suspend' : 'Restore'}</Menu.Item>
               <Menu.Divider />
               <Menu.Item color="red" leftSection={<FiTrash2 />} onClick={() => setConfirm({ title: `Remove ${manager.name || manager.username}?`, description: 'Their login is removed and they are signed out. Ads they published stay live, and their history stays in the records.', run: () => adminApi(`/admin/team/${manager.id}`, { method: 'DELETE' }), done: 'Manager removed.' })}>Remove manager</Menu.Item>
-            </Menu.Dropdown></Menu></Table.Td>
-          </Table.Tr>)}</Table.Tbody>
-        </Table></Table.ScrollContainer>}
-    </Paper>
+            </Menu.Dropdown></Menu>
+        </Group>
+        <SimpleGrid cols={4} spacing={6} mt="md">
+          {[['Published', manager.published], ['Bumped', manager.bumped], ['Cities', manager.distributed], ['Reviews', manager.reviewed + manager.moderated]].map(([name, value]) => <div key={String(name)} className={styles.miniStat}><strong>{value}</strong><span>{name}</span></div>)}
+        </SimpleGrid>
+        <Group justify="space-between" mt="md" gap="xs" wrap="wrap">
+          <Tooltip multiline w={240} label={manager.permissions.length ? manager.permissions.map(label).join(', ') : 'No sections'}><Badge variant="outline" color="indigo" radius="sm" tt="none" styles={{ label: { overflow: 'visible' } }}>{manager.permissions.length}/{permissions.length} sections</Badge></Tooltip>
+          <Text size="xs" c="dimmed">{manager.last_action_at ? 'Active ' + when(manager.last_action_at) : manager.last_login_at ? 'Signed in ' + when(manager.last_login_at) : 'Never signed in'}</Text>
+        </Group>
+        <Button variant="light" size="compact-sm" mt="sm" fullWidth leftSection={<FiActivity />} onClick={() => setViewing(manager)}>Posts and activity</Button>
+      </Paper>)}</SimpleGrid>}
 
     <Modal opened={creating} onClose={() => { if (!busy) setCreating(false); }} title="Add manager" centered size="lg">
       <form onSubmit={create}><Stack>
         <SimpleGrid cols={{ base: 1, xs: 2 }}>
           <TextInput label="Full name" value={form.name} required minLength={2} maxLength={80} autoComplete="off" onChange={(event) => { const name = event.currentTarget.value; setForm((value) => ({ ...value, name, username: usernameTouched ? value.username : usernameFrom(name) })); }} />
           <TextInput label="Email" type="email" value={form.email} required maxLength={254} autoComplete="off" onChange={(event) => { const email = event.currentTarget.value; setForm((value) => ({ ...value, email })); }} />
-          <TextInput label="Username" description="Shown as the owner of ads they publish" value={form.username} required pattern="[a-z0-9_]{3,30}" maxLength={30} autoComplete="off" onChange={(event) => { const username = event.currentTarget.value.toLowerCase(); setUsernameTouched(true); setForm((value) => ({ ...value, username })); }} />
+          <TextInput label="Username" value={form.username} required pattern="[a-z0-9_]{3,30}" maxLength={30} autoComplete="off" onChange={(event) => { const username = event.currentTarget.value.toLowerCase(); setUsernameTouched(true); setForm((value) => ({ ...value, username })); }} />
           <PasswordBox value={form.password} onChange={(password) => setForm((value) => ({ ...value, password }))} />
         </SimpleGrid>
         <AccessPicker permissions={permissions} value={form.permissions} onChange={(list) => setForm((value) => ({ ...value, permissions: list }))} />
@@ -179,7 +186,6 @@ export function TeamCenter() {
     <Modal opened={Boolean(resetting)} onClose={() => { if (!busy) setResetting(null); }} title={`New password for ${resetting?.name || resetting?.username || ''}`} centered>
       <form onSubmit={savePassword}><Stack>
         <PasswordBox value={newPassword} onChange={setNewPassword} />
-        <Text size="xs" c="dimmed">Saving signs them out everywhere.</Text>
         {error && <Alert color="red" variant="light">{error}</Alert>}
         <Group justify="flex-end"><Button variant="default" disabled={busy} onClick={() => setResetting(null)}>Cancel</Button><Button type="submit" loading={busy}>Set password</Button></Group>
       </Stack></form>

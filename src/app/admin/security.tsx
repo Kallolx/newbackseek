@@ -7,14 +7,14 @@ import { toast } from '../../components/toast';
 import { EmptyState } from '../../components/page-state';
 import styles from './security.module.css';
 
-type Settings = { geoEnabled: boolean; blockedCountries: string[]; blockTor: boolean; blockUnknown: boolean; protectAdmin: boolean; cloudflareOnly: boolean; adminAllowlistOnly: boolean; allowlist: string[]; edge: { configured: boolean; status: string; message: string; syncedAt: string | null }; updatedAt: string };
-type Security = { settings: Settings; you: { ip: string; country: string; allowlisted: boolean }; hosts: { site: string; admin: string; media: string }; stats: { day: string; reason: string; count: number }[] };
+type Settings = { geoEnabled: boolean; blockedCountries: string[]; blockTor: boolean; blockUnknown: boolean; protectAdmin: boolean; cloudflareOnly: boolean; adminAllowlistOnly: boolean; protectManager: boolean; managerAllowlistOnly: boolean; allowlist: string[]; edge: { configured: boolean; status: string; message: string; syncedAt: string | null }; updatedAt: string };
+type Security = { settings: Settings; you: { ip: string; country: string; portal: 'admin' | 'manager'; allowlisted: boolean }; hosts: { site: string; admin: string; manager: string; media: string }; stats: { day: string; reason: string; count: number }[] };
 type Editable = Omit<Settings, 'edge' | 'updatedAt'>;
 
 const CODES = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS XK YE YT ZA ZM ZW'.split(' ');
 const regionNames = typeof Intl !== 'undefined' && 'DisplayNames' in Intl ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
-const countryName = (code: string) => code === 'T1' ? 'Tor network' : code === 'XX' ? 'Unknown location' : code === 'direct' ? 'Bypassed Cloudflare' : code === 'admin' ? 'Admin panel (not allowlisted)' : (() => { try { return regionNames?.of(code) || code; } catch { return code; } })();
-const editable = (settings: Settings): Editable => ({ geoEnabled: settings.geoEnabled, blockedCountries: settings.blockedCountries, blockTor: settings.blockTor, blockUnknown: settings.blockUnknown, protectAdmin: settings.protectAdmin, cloudflareOnly: settings.cloudflareOnly, adminAllowlistOnly: settings.adminAllowlistOnly, allowlist: settings.allowlist });
+const countryName = (code: string) => code === 'T1' ? 'Tor network' : code === 'XX' ? 'Unknown location' : code === 'direct' ? 'Bypassed Cloudflare' : code === 'admin' ? 'Admin panel (not allowlisted)' : code === 'manager' ? 'Manager portal (not allowlisted)' : (() => { try { return regionNames?.of(code) || code; } catch { return code; } })();
+const editable = (settings: Settings): Editable => ({ geoEnabled: settings.geoEnabled, blockedCountries: settings.blockedCountries, blockTor: settings.blockTor, blockUnknown: settings.blockUnknown, protectAdmin: settings.protectAdmin, cloudflareOnly: settings.cloudflareOnly, adminAllowlistOnly: settings.adminAllowlistOnly, protectManager: settings.protectManager, managerAllowlistOnly: settings.managerAllowlistOnly, allowlist: settings.allowlist });
 
 function StatusRow({ icon, label, badge, detail }: { icon: ReactNode; label: string; badge: ReactNode; detail?: string }) {
   return <div className={styles.statusRow}><span className={styles.statusIcon}>{icon}</span><div className={styles.statusText}><Text size="sm" fw={600}>{label}</Text>{detail && <Text size="xs" c="dimmed" lineClamp={2}>{detail}</Text>}</div>{badge}</div>;
@@ -45,7 +45,9 @@ export function SecurityCenter() {
   const dirty = JSON.stringify(form) !== JSON.stringify(editable(data.settings));
   const youAllowed = data.you.allowlisted || form.allowlist.includes(data.you.ip);
   const youBlockedOnSite = form.geoEnabled && !youAllowed && (form.blockedCountries.includes(data.you.country) || (form.blockTor && data.you.country === 'T1'));
-  const adminRisk = !youAllowed && ((form.protectAdmin && youBlockedOnSite) || form.adminAllowlistOnly);
+  // Risk of locking out whoever is saving, on the panel they are using right now.
+  const onManager = data.you.portal === 'manager';
+  const adminRisk = !youAllowed && (onManager ? (form.protectManager && youBlockedOnSite) || form.managerAllowlistOnly : (form.protectAdmin && youBlockedOnSite) || form.adminAllowlistOnly);
   const edge = data.settings.edge;
   const edgeBadge = !edge.configured ? <Badge color="gray" variant="light">Not connected</Badge> : edge.status === 'active' ? <Badge color="teal" variant="light">Active</Badge> : edge.status === 'off' ? <Badge color="gray" variant="light">Idle</Badge> : edge.status === 'error' ? <Badge color="red" variant="light">Error</Badge> : <Badge color="yellow" variant="light">Pending</Badge>;
 
@@ -83,7 +85,8 @@ export function SecurityCenter() {
         <MultiSelect label="Blocked countries" placeholder={form.blockedCountries.length ? '' : 'Search countries'} data={options} value={form.blockedCountries} onChange={value => set('blockedCountries', value)} searchable clearable hidePickedOptions maxValues={60} nothingFoundMessage="No country matches" comboboxProps={{ withinPortal: true }} />
         <Switch checked={form.blockTor} onChange={event => set('blockTor', event.currentTarget.checked)} label="Block the Tor network" description="Tor hides a visitor’s real country." />
         <Switch checked={form.blockUnknown} onChange={event => set('blockUnknown', event.currentTarget.checked)} label="Block unknown locations" description="Visitors Cloudflare cannot place in a country." />
-        <Switch color="red" checked={form.protectAdmin} onChange={event => set('protectAdmin', event.currentTarget.checked)} label="Also block them on the admin panel" description={`Applies to ${data.hosts.admin}. Allowlisted addresses still get in.`} />
+        <Switch color="red" checked={form.protectAdmin} onChange={event => set('protectAdmin', event.currentTarget.checked)} label="Also block them on the admin panel" description={data.hosts.admin} />
+        <Switch color="red" checked={form.protectManager} onChange={event => set('protectManager', event.currentTarget.checked)} label="Also block them on the manager portal" description={data.hosts.manager} />
         {youBlockedOnSite && !adminRisk && <Alert color="blue" icon={<FiShield />} className={styles.alert}>From this connection ({countryName(data.you.country)}) you will not see the public site. Add your IP to the allowlist to view it.</Alert>}
       </Stack>
     </Section>
@@ -92,7 +95,8 @@ export function SecurityCenter() {
       <TagsInput label="Never blocked" description="IP addresses or ranges, e.g. 203.0.113.7 or 203.0.113.0/24." placeholder="Add an IP, then Enter" value={form.allowlist} onChange={value => set('allowlist', value.map(item => item.trim()).filter(Boolean))} maxTags={50} clearable splitChars={[',', ' ']} />
       {data.you.ip && !form.allowlist.includes(data.you.ip) && <Button mt="sm" size="compact-sm" variant="subtle" onClick={() => set('allowlist', [...form.allowlist, data.you.ip])}>Add my current IP ({data.you.ip})</Button>}
       <Text size="xs" c="dimmed" mt={6}>Mobile networks change IPs often. A fixed address never changes.</Text>
-      <Switch mt="md" checked={form.adminAllowlistOnly} onChange={event => set('adminAllowlistOnly', event.currentTarget.checked)} label="Admin panel only for allowlisted addresses" description="Strongest setting: the admin panel answers nobody outside this list, from any country." />
+      <Switch mt="md" checked={form.adminAllowlistOnly} onChange={event => set('adminAllowlistOnly', event.currentTarget.checked)} label="Admin panel only for allowlisted addresses" description={data.hosts.admin} />
+      <Switch mt="md" checked={form.managerAllowlistOnly} onChange={event => set('managerAllowlistOnly', event.currentTarget.checked)} label="Manager portal only for allowlisted addresses" description={data.hosts.manager} />
     </Section>
 
     <Section icon={<FiServer />} title="Server protection">
@@ -115,10 +119,11 @@ export function SecurityCenter() {
 
     <Modal opened={confirming} onClose={() => setConfirming(false)} title="Apply protection settings?" centered>
       <Stack gap="xs">
-        <Text size="sm">{form.geoEnabled ? <>Visitors from <b>{form.blockedCountries.map(countryName).join(', ') || 'no countries'}</b>{form.blockTor ? ', the Tor network' : ''}{form.blockUnknown ? ', unknown locations' : ''} will be blocked on the public site{form.protectAdmin ? ' and the admin panel' : ''}.</> : 'Country blocking will be off.'}</Text>
+        <Text size="sm">{form.geoEnabled ? <>Visitors from <b>{form.blockedCountries.map(countryName).join(', ') || 'no countries'}</b>{form.blockTor ? ', the Tor network' : ''}{form.blockUnknown ? ', unknown locations' : ''} will be blocked on the public site{form.protectAdmin ? ', the admin panel' : ''}{form.protectManager ? ', the manager portal' : ''}.</> : 'Country blocking will be off.'}</Text>
         {form.adminAllowlistOnly && <Text size="sm">The admin panel will only answer allowlisted addresses.</Text>}
+        {form.managerAllowlistOnly && <Text size="sm">The manager portal will only answer allowlisted addresses.</Text>}
         <Text size="sm">{form.allowlist.length ? `${form.allowlist.length} allowlisted address(es) are never blocked.` : 'No addresses are allowlisted.'}</Text>
-        <Group justify="flex-end" mt="sm" grow><Button variant="default" onClick={() => setConfirming(false)}>Cancel</Button><Button color={form.geoEnabled || form.adminAllowlistOnly ? 'red' : undefined} loading={saving} onClick={save}>Apply</Button></Group>
+        <Group justify="flex-end" mt="sm" grow><Button variant="default" onClick={() => setConfirming(false)}>Cancel</Button><Button color={form.geoEnabled || form.adminAllowlistOnly || form.managerAllowlistOnly ? 'red' : undefined} loading={saving} onClick={save}>Apply</Button></Group>
       </Stack>
     </Modal>
   </Stack>;

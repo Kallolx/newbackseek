@@ -34,12 +34,15 @@ export const settingsInput = z.object({
   protectAdmin: z.boolean(),
   cloudflareOnly: z.boolean(),
   adminAllowlistOnly: z.boolean().default(false),
+  protectManager: z.boolean().default(false),
+  managerAllowlistOnly: z.boolean().default(false),
   allowlist: z.array(cidr).max(50),
 });
 
 const shape = (row) => ({
   geoEnabled: row.geo_enabled, blockedCountries: row.blocked_countries, blockTor: row.block_tor,
   blockUnknown: row.block_unknown, protectAdmin: row.protect_admin, cloudflareOnly: row.cloudflare_only, adminAllowlistOnly: row.admin_allowlist_only,
+  protectManager: row.protect_manager, managerAllowlistOnly: row.manager_allowlist_only,
   allowlist: row.allowlist, edge: { configured: edgeConfigured(), status: edgeConfigured() ? row.edge_status : 'not_configured', message: row.edge_message, syncedAt: row.edge_synced_at },
   updatedAt: row.updated_at,
 });
@@ -55,6 +58,7 @@ export async function loadSettings(force = false) {
   return cache;
 }
 
+const portal = (req) => req.headers['x-backpagenew-app'] === 'manager' ? 'manager' : 'admin';
 export function viewer(req) { return { ip: String(req.headers['cf-connecting-ip'] || ''), country: String(req.headers['cf-ipcountry'] || '').toUpperCase() }; }
 
 const BLOCK_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Not available</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;background:#f5f7fb;color:#1b2840}main{max-width:420px;padding:32px 24px;text-align:center}h1{font-size:20px;margin:0 0 8px}p{margin:0;color:#5d6a80}</style></head><body><main><h1>This site is not available in your region</h1><p>Access from your location is restricted.</p></main></body></html>`;
@@ -144,7 +148,7 @@ export function securityCenter(app, { admin, fail }) {
   app.get('/api/internal/geo-gate', { logLevel: 'warn', config: { rateLimit: false } }, async (req, reply) => {
     const settings = await loadSettings();
     const visitor = viewer(req);
-    const reason = decide(settings, { ...visitor, app: ['admin', 'manager'].includes(req.headers['x-gate-app']) ? 'admin' : 'public', viaCloudflare: Boolean(req.headers['cf-ray'] && visitor.ip) });
+    const reason = decide(settings, { ...visitor, app: ['admin', 'manager'].includes(req.headers['x-gate-app']) ? req.headers['x-gate-app'] : 'public', viaCloudflare: Boolean(req.headers['cf-ray'] && visitor.ip) });
     if (!reason) return reply.code(204).send();
     void count(reason);
     return reply.code(403).header('cache-control', 'no-store').type('text/html; charset=utf-8').send(BLOCK_PAGE);
@@ -154,7 +158,7 @@ export function securityCenter(app, { admin, fail }) {
     const settings = await loadSettings(true);
     const { allow, ...publicSettings } = settings;
     const you = viewer(req);
-    return { settings: publicSettings, you: { ...you, allowlisted: isAllowlisted(settings.allow, you.ip) }, hosts: { site: siteHost, admin: adminHost, manager: managerHost, media: mediaHost }, stats: await stats() };
+    return { settings: publicSettings, you: { ...you, portal: portal(req), allowlisted: isAllowlisted(settings.allow, you.ip) }, hosts: { site: siteHost, admin: adminHost, manager: managerHost, media: mediaHost }, stats: await stats() };
   });
 
   app.put('/api/admin/security', { preHandler: admin }, async (req) => {
@@ -163,10 +167,11 @@ export function securityCenter(app, { admin, fail }) {
     input.allowlist = [...new Set(input.allowlist)];
     const you = viewer(req);
     const preview = { ...input, allow: buildAllowList(input.allowlist) };
-    if (input.adminAllowlistOnly && !input.allowlist.length) throw fail(400, 'Add at least one allowlisted address before limiting the admin panel to the allowlist.');
-    if (decide(preview, { ...you, app: 'admin', viaCloudflare: true })) throw fail(409, 'These settings would lock you out of the admin panel. Add your current IP to the allowlist first.');
+    if ((input.adminAllowlistOnly || input.managerAllowlistOnly) && !input.allowlist.length) throw fail(400, 'Add at least one allowlisted address before limiting a panel to the allowlist.');
+    // Whoever saves must still be able to reach the panel they are using.
+    if (decide(preview, { ...you, app: portal(req), viaCloudflare: true })) throw fail(409, 'These settings would lock you out of this panel. Add your current IP to the allowlist first.');
     await sql.begin(async (tx) => {
-      await tx`update security_settings set geo_enabled=${input.geoEnabled},blocked_countries=${input.blockedCountries},block_tor=${input.blockTor},block_unknown=${input.blockUnknown},protect_admin=${input.protectAdmin},cloudflare_only=${input.cloudflareOnly},admin_allowlist_only=${input.adminAllowlistOnly},allowlist=${input.allowlist},updated_by=${req.user.id},updated_at=now() where id=1`;
+      await tx`update security_settings set geo_enabled=${input.geoEnabled},blocked_countries=${input.blockedCountries},block_tor=${input.blockTor},block_unknown=${input.blockUnknown},protect_admin=${input.protectAdmin},cloudflare_only=${input.cloudflareOnly},admin_allowlist_only=${input.adminAllowlistOnly},protect_manager=${input.protectManager},manager_allowlist_only=${input.managerAllowlistOnly},allowlist=${input.allowlist},updated_by=${req.user.id},updated_at=now() where id=1`;
       await audit(tx, req.user.id, 'security.settings', 'security', { ...input, ip: you.ip, country: you.country });
     });
     const settings = await loadSettings(true);

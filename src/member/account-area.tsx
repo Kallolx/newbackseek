@@ -1,15 +1,16 @@
 'use client';
 
-import { FeedbackToast } from '../components/toast';
 import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { FiGrid, FiList } from 'react-icons/fi';
 import { EmptyState, PageLoader } from '../components/page-state';
 import { DetailSkeleton, FormSkeleton } from '../components/skeletons';
 import { Verification } from './verification';
+import { AccountSettings } from './account-settings';
+import { Wallet } from './wallet';
 import { PostCard } from '../components/post-card';
 import { PostPagination } from '../components/post-pagination';
 import { refreshMember, useMember, type MemberSession } from './session';
@@ -52,7 +53,7 @@ export function AccountArea() {
   return (
     <main id="main" onClickCapture={accountLinkClick} className={'shell ' + styles.page}>
       <nav className={styles.menu} aria-label="Account menu">
-        {[['post', 'Post an Ad'], ['verification', 'Verification'], ['settings', 'Account Settings']].map(([path, label]) => (
+        {[['post', 'Post an Ad'], ['wallet', 'Wallet'], ['verification', 'Verification'], ['settings', 'Account Settings']].map(([path, label]) => (
           <span key={path}>[ <Link href={'/myaccount/' + path} aria-current={current === path ? 'page' : undefined}>{label}</Link> ]</span>
         ))}
       </nav>
@@ -60,7 +61,8 @@ export function AccountArea() {
       {!member.emailVerified && <p className={styles.notice}>Your email is not verified. Check your inbox or <Link href="/myaccount/settings">resend the verification email</Link> before posting.</p>}
       {current === '' && (postsLoading ? <PageLoader label="Loading your ads"/> : <MemberPosts member={member} />)}
       {current === 'post' && <MemberPostForm member={member} />}
-      {current === 'settings' && <Settings member={member} />}
+      {current === 'settings' && <AccountSettings member={member} />}
+      {current === 'wallet' && <Wallet />}
       {current === 'verification' && <Verification member={member} />}
       {current === 'posts' && <MemberDetails member={member} id={section[1]} editing={section[2]==='edit'} />}
     </main>
@@ -103,21 +105,3 @@ function MemberDetails({ member, id,editing }: { member: MemberSession; id: stri
   const initial={post:{id:post.id,title:post.title,description:post.description,age:post.age,location:post.location,phone:post.phone,contact_email:post.contactEmail,status:post.status.toLowerCase(),created_at:post.createdAt,category_slug:post.service},images:post.images.map((url,index)=>({id:post.id+'-'+index,variants:{full:{url},...(post.thumbnails?.[index]?{thumb:{url:post.thumbnails[index]}}:{}),...(index===0&&post.coverImage?{card:{url:post.coverImage}}:{})}})),recent:[]};
   return <PostDetail key={id} account postId={id} city={{name:post.cityName,href:post.cityHref}} service={service} initial={initial} refreshInitial />;
 }
-
-function Settings({ member }: { member: MemberSession }) {
-  const [message, setMessage] = useState('');
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const response = await fetch('/api/auth/resend-verification', { method: 'POST', credentials: 'same-origin' });
-    setMessage(response.ok ? 'A new verification email has been sent.' : 'We could not send the verification email. Please try again.');
-  }
-  return <section className={styles.formWidth}><h1>Account settings</h1><p className={styles.intro}>Your account is protected with a secure server session.</p>
-    <form className={styles.form} onSubmit={submit}>
-      <label>Username<input value={member.username} readOnly /></label>
-      <label>Email<input type="email" value={member.email} readOnly /></label>
-      <p className={styles.notice}>{member.emailVerified ? 'Your email address is verified.' : 'Verify your email before publishing ads or uploading pictures.'}</p>
-      {!member.emailVerified && <button className={styles.primary} type="submit">Resend verification email</button>}<FeedbackToast message={message} type="info" />
-    </form>
-  </section>;
-}
-

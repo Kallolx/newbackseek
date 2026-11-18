@@ -23,6 +23,7 @@ export const config = z.object({
   SMTP_USER: z.string().email().optional(),
   SMTP_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+  CONTACT_EMAIL: z.email().default('support@backpagenew.com'),
   CAPTCHA_PROVIDER: z.enum(['turnstile']).optional(),
   TURNSTILE_SITE_KEY: z.string().optional(),
   TURNSTILE_SECRET_KEY: z.string().optional(),
