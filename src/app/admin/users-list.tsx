@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { ActionIcon, Avatar, Badge, Group, Menu, Text, Tooltip } from '@mantine/core';
 import { FiCalendar, FiFileText, FiInfo, FiLogIn, FiMail, FiMoreVertical, FiPause, FiPlay, FiShield, FiTrash2, FiUserCheck } from 'react-icons/fi';
 import { MdVerified } from 'react-icons/md';
@@ -26,6 +27,26 @@ function ago(value?: string | null) {
   return days < 1 ? 'active today' : days < 30 ? `active ${days}d ago` : `active ${short(value)}`;
 }
 
+/** Info icon: details appear on hover and also on tap (touch screens), tap again to close. */
+function UserInfo({ user }: { user: UserRow }) {
+  // Open while hovering, or after a tap/click (pinned) until tapped again or focus moves away.
+  const [hover, setHover] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const open = hover || pinned;
+  const name = user.username || 'user';
+  return <Tooltip opened={open} multiline w={230} withArrow position="top-end" zIndex={500} label={<div className={styles.userDetails}>
+              
+              <span><FiMail /> {user.email_verified_at ? 'Email verified' : 'Email not verified'}</span>
+              <span><FiCalendar /> Joined {short(user.created_at)}</span>
+              <span><FiLogIn /> Last sign-in {short(user.last_login)}</span>
+              <span><FiShield /> {user.verified ? (user.verified_by_admin ? 'Verified by admin' : 'Verified with photo') : user.verification_status === 'pending' ? 'Verification waiting for review' : 'Not verified'}</span>
+            </div>}>
+    <ActionIcon variant="subtle" color="gray" size="md" radius="xl" aria-label={'Details for ' + name} aria-expanded={open}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} onBlur={() => { setHover(false); setPinned(false); }}
+      onClick={(event) => { event.stopPropagation(); setPinned((value) => !value); }}><FiInfo size={16} /></ActionIcon>
+  </Tooltip>;
+}
+
 /** Compact member list: who they are at a glance; details and actions live in the menu. */
 export function UsersList({ rows, actions }: { rows: UserRow[]; actions: Actions }) {
   return <ul className={styles.userList}>
@@ -47,18 +68,14 @@ export function UsersList({ rows, actions }: { rows: UserRow[]; actions: Actions
           <Text size="xs" c="dimmed" className={styles.userMeta}>{user.ad_count ?? 0} ad{user.ad_count === 1 ? '' : 's'} · {ago(user.last_login)}</Text>
         </div>
         {!active && <Badge size="sm" variant="light" color={user.status === 'suspended' ? 'orange' : 'gray'} radius="sm" className={styles.userState}>{user.status}</Badge>}
-        <Tooltip multiline w={230} withArrow position="left" events={{ hover: true, focus: true, touch: true }} label={<div className={styles.userDetails}>
-              <Text fw={700} size="sm">@{name}</Text>
-              <span><FiMail /> {user.email_verified_at ? 'Email verified' : 'Email not verified'}</span>
-              <span><FiCalendar /> Joined {short(user.created_at)}</span>
-              <span><FiLogIn /> Last sign-in {short(user.last_login)}</span>
-              <span><FiShield /> {user.verified ? (user.verified_by_admin ? 'Verified by admin' : 'Verified with photo') : user.verification_status === 'pending' ? 'Verification waiting for review' : 'Not verified'}</span>
-            </div>}>
-          <ActionIcon variant="subtle" color="gray" size="md" radius="xl" aria-label={'Details for ' + name}><FiInfo size={16} /></ActionIcon>
-        </Tooltip>
         <Menu withinPortal position="bottom-end" width={220} shadow="md">
           <Menu.Target><ActionIcon variant="subtle" color="gray" size="lg" radius="xl" aria-label={'Details and actions for ' + name}><FiMoreVertical size={18} /></ActionIcon></Menu.Target>
           <Menu.Dropdown>
+            <Group justify="space-between" wrap="nowrap" px="sm" py={6} gap="xs">
+              <Text fw={700} size="sm" truncate style={{ minWidth: 0 }}>@{name}</Text>
+              <UserInfo user={user} />
+            </Group>
+            <Menu.Divider />
             <Menu.Item leftSection={<FiFileText />} onClick={() => actions.viewAds(user)}>View ads ({user.ad_count ?? 0})</Menu.Item>
             <Menu.Item color={user.verified_by_admin ? 'gray' : 'green'} disabled={actions.busy || (Boolean(user.verified) && !user.verified_by_admin)} leftSection={<MdVerified />} onClick={() => actions.toggleVerified(user)}>{user.verified_by_admin ? 'Remove Verified badge' : user.verified ? 'Verified (approved photo)' : 'Mark as Verified'}</Menu.Item>
             <Menu.Item disabled={user.role === 'admin' || actions.busy} color={active ? 'orange' : 'teal'} leftSection={active ? <FiPause /> : <FiPlay />} onClick={() => actions.toggleStatus(user)}>{active ? 'Suspend account' : 'Restore account'}</Menu.Item>

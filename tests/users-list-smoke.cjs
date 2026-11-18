@@ -31,15 +31,20 @@ const users = Array.from({ length: 45 }, (_, i) => ({ id: 'u' + i, username: i =
       assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, 'no sideways scroll');
       await page.screenshot({ path: `${shots}/users-${name}.png` });
       // Menu holds the details and actions.
-      // Details are in a tooltip on the info icon, not in the menu.
-      await page.locator('[aria-label="Details for member1"]').hover();
-      await page.getByText('Joined Feb 2, 2026').waitFor();
-      await page.screenshot({ path: `${shots}/users-${name}-tip.png` });
-      await page.mouse.move(5, 5);
+      // The menu has the name on the left and an info icon on the right; details show on hover AND on tap.
       await page.locator('[aria-label="Details and actions for member1"]').click();
-      assert.equal(await page.getByRole('menu').getByText('Joined').count(), 0, 'menu has no details');
+      const info = page.locator('[aria-label="Details for member1"]');
+      await info.waitFor();
+      const header = await page.getByRole('menu').getByText('@member1').boundingBox(); const icon = await info.boundingBox();
+      assert.ok(icon.x > header.x + header.width - 2 && Math.abs(icon.y - header.y) < 20, 'info icon sits right of the name');
+      assert.equal(await page.locator('[aria-label="Details for member2"]').count(), 0, 'no info icon on the rows');
+      await info.hover(); await page.getByText('Joined Feb 2, 2026').waitFor();
+      await page.mouse.move(5, 5); await page.getByText('Joined Feb 2, 2026').waitFor({ state: 'hidden' });
+      await info.click(); await page.getByText('Joined Feb 2, 2026').waitFor(); await page.waitForTimeout(400); // tap
+      await page.screenshot({ path: `${shots}/users-${name}-tip.png` });
+      await info.click(); await page.mouse.move(5, 5); await page.getByText('Joined Feb 2, 2026').waitFor({ state: 'hidden' }); // tap again closes
+      assert.ok(await page.getByRole('menuitem', { name: /Suspend account/ }).isVisible(), 'menu still open after tapping info');
       for (const text of ['View ads', 'Mark as Verified', 'Suspend account', 'Sign in as user', 'Delete account']) assert.ok(await page.getByRole('menuitem', { name: new RegExp(text) }).isVisible(), text);
-      await page.screenshot({ path: `${shots}/users-${name}-menu.png` });
       await page.keyboard.press('Escape');
       // Pagination: 45 users → 3 pages.
       await page.getByRole('button', { name: '3', exact: true }).first().click().catch(async () => { await page.getByText('3', { exact: true }).last().click(); });
