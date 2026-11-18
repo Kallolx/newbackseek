@@ -63,3 +63,11 @@ test('admin lock edge expression', () => {
   assert.equal(adminLockExpression({ ...base, adminAllowlistOnly: true, allowlist: [] }, hosts), '', 'never block everyone');
   assert.equal(adminLockExpression({ ...base, adminAllowlistOnly: false, allowlist: ['192.0.2.10'] }, hosts), '');
 });
+
+test('manager portal gets the same edge protection as the admin panel', () => {
+  const hosts = { site: 'backpagenew.com', admin: 'admin.backpagenew.com', manager: 'manager.backpagenew.com', media: 'media.backpagenew.com' };
+  assert.equal(adminLockExpression({ ...base, adminAllowlistOnly: true, allowlist: ['192.0.2.10'] }, hosts), '(http.host in {"admin.backpagenew.com" "manager.backpagenew.com"} and not ip.src in {192.0.2.10})');
+  assert.match(edgeExpression({ ...base, protectAdmin: true }, hosts), /"manager[.]backpagenew[.]com"/);
+  assert.doesNotMatch(edgeExpression(base, hosts), /manager/, 'unprotected when admin protection is off');
+  assert.equal(adminLockExpression({ ...base, adminAllowlistOnly: true, allowlist: ['192.0.2.10'] }, { ...hosts, manager: 'bad host' }), '(http.host eq "admin.backpagenew.com" and not ip.src in {192.0.2.10})');
+});

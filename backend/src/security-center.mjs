@@ -20,6 +20,7 @@ const LOCK_DESCRIPTION = 'BackpageNew admin panel: allowlisted addresses only (m
 const host = (url) => { try { return url ? new URL(url).hostname : ''; } catch { return ''; } };
 const siteHost = host(config.SITE_ORIGIN);
 const adminHost = host(config.ADMIN_ORIGIN);
+const managerHost = host(config.MANAGER_ORIGIN);
 const mediaHost = host(config.MEDIA_PUBLIC_URL);
 export const edgeConfigured = () => Boolean(config.CLOUDFLARE_API_TOKEN && config.CLOUDFLARE_ZONE_ID);
 
@@ -73,7 +74,7 @@ async function cloudflare(path, init = {}) {
 export async function syncEdge(settings) {
   if (!edgeConfigured()) return { status: 'not_configured', message: 'Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID to enable edge blocking.' };
   const zone = encodeURIComponent(config.CLOUDFLARE_ZONE_ID);
-  const hosts = { site: siteHost, admin: adminHost, media: mediaHost };
+  const hosts = { site: siteHost, admin: adminHost, manager: managerHost, media: mediaHost };
   // Rules this panel owns. Other custom rules in the zone are never touched.
   const wanted = [
     { ref: LOCK_REF, description: LOCK_DESCRIPTION, expression: adminLockExpression(settings, hosts) },
@@ -143,7 +144,7 @@ export function securityCenter(app, { admin, fail }) {
   app.get('/api/internal/geo-gate', { logLevel: 'warn', config: { rateLimit: false } }, async (req, reply) => {
     const settings = await loadSettings();
     const visitor = viewer(req);
-    const reason = decide(settings, { ...visitor, app: req.headers['x-gate-app'] === 'admin' ? 'admin' : 'public', viaCloudflare: Boolean(req.headers['cf-ray'] && visitor.ip) });
+    const reason = decide(settings, { ...visitor, app: ['admin', 'manager'].includes(req.headers['x-gate-app']) ? 'admin' : 'public', viaCloudflare: Boolean(req.headers['cf-ray'] && visitor.ip) });
     if (!reason) return reply.code(204).send();
     void count(reason);
     return reply.code(403).header('cache-control', 'no-store').type('text/html; charset=utf-8').send(BLOCK_PAGE);
@@ -153,7 +154,7 @@ export function securityCenter(app, { admin, fail }) {
     const settings = await loadSettings(true);
     const { allow, ...publicSettings } = settings;
     const you = viewer(req);
-    return { settings: publicSettings, you: { ...you, allowlisted: isAllowlisted(settings.allow, you.ip) }, hosts: { site: siteHost, admin: adminHost, media: mediaHost }, stats: await stats() };
+    return { settings: publicSettings, you: { ...you, allowlisted: isAllowlisted(settings.allow, you.ip) }, hosts: { site: siteHost, admin: adminHost, manager: managerHost, media: mediaHost }, stats: await stats() };
   });
 
   app.put('/api/admin/security', { preHandler: admin }, async (req) => {

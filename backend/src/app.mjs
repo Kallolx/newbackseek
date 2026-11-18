@@ -20,6 +20,7 @@ import { adminManagement } from "./admin-routes.mjs";
 import { securityCenter, startupEdgeSync } from "./security-center.mjs";
 import { vpnRoutes } from "./vpn.mjs";
 import { storageReport } from "./storage-report.mjs";
+import { teamRoutes, managerMay } from "./team.mjs";
 import { pictureUpload, MAX_PICTURE_BYTES } from "./picture-upload.mjs";
 import { cached, publicDataChanged, changesPublicData } from "./public-cache.mjs";
 
@@ -55,22 +56,23 @@ const cookieOptions = {
 };
 const googleStateCookie =
   config.NODE_ENV === "production" ? "__Host-bpn-google-state" : "bpn-google-state";
-const adminGoogleStateCookie =
-  config.NODE_ENV === "production" ? "__Host-bpn-admin-google-state" : "bpn-admin-google-state";
-const adminGoogleRedirectUri = new URL("/api/admin/auth/google/callback", config.ADMIN_ORIGIN).toString();
 const googleClient = config.GOOGLE_CLIENT_ID
   ? new OAuth2Client(config.GOOGLE_CLIENT_ID)
   : null;
 // The origin only accepts traffic from Cloudflare, which sets CF-Connecting-IP.
 const clientIp = (req) => String(req.headers["cf-connecting-ip"] || req.ip);
-const appContext = (req) =>
-  req.headers["x-backpagenew-app"] === "admin" ? "admin" : "public";
+// Caddy names the host a request came through: the public site, the admin panel or the manager portal.
+const appContext = (req) => {
+  const app = req.headers["x-backpagenew-app"];
+  return app === "admin" || app === "manager" ? app : "public";
+};
+// Admin and manager portals use the same (host-only) cookie name, so each host keeps its own sign-in.
 const sessionCookie = (req) =>
   config.NODE_ENV === "production"
-    ? appContext(req) === "admin"
+    ? appContext(req) !== "public"
       ? "__Host-bpn-admin-session"
       : "__Host-bpn-session"
-    : appContext(req) === "admin"
+    : appContext(req) !== "public"
       ? "bpn-admin-session"
       : "bpn-session";
 
@@ -98,7 +100,7 @@ export async function buildApp() {
     reply.header("Cache-Control", "no-store");
     if (
       !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
-      ![config.SITE_ORIGIN, config.ADMIN_ORIGIN].includes(
+      ![config.SITE_ORIGIN, config.ADMIN_ORIGIN, config.MANAGER_ORIGIN].includes(
         req.headers.origin || "",
       )
     )
@@ -116,7 +118,7 @@ export async function buildApp() {
     const session = req.cookies[sessionCookie(req)];
     if (!session) throw fail(401, "Please log in");
     const [user] =
-      await sql`select u.id,u.email,u.username,u.role,u.email_verified_at,s.actor_id,
+      await sql`select u.id,u.email,u.username,u.role,u.email_verified_at,s.actor_id,u.display_name,u.permissions,
       (select v.status from verifications v where v.user_id=u.id order by v.created_at desc limit 1) as verification_status,
       (u.verified_at is not null or exists(select 1 from verifications v where v.user_id=u.id and v.status='approved')) as verified from sessions s join users u on u.id=s.user_id
      where s.token_hash=${digest(session)} and s.expires_at>now() and u.status='active' and u.email_verified_at is not null`;
@@ -127,11 +129,19 @@ export async function buildApp() {
     if (!req.user?.email_verified_at)
       throw fail(403, "Verify your email address before posting or uploading images");
   }
+  // Admin panel: administrators only. Manager portal: managers, and only routes their permissions open (fail closed).
   async function admin(req) {
-    if (appContext(req) !== "admin") throw fail(404, "Not found");
+    const context = appContext(req);
+    if (context === "public") throw fail(404, "Not found");
     await member(req);
-    if (req.user.role !== "admin" || req.user.actor_id)
-      throw fail(403, "Administrator access required");
+    if (req.user.actor_id) throw fail(403, "Administrator access required");
+    if (context === "admin") {
+      if (req.user.role !== "admin") throw fail(403, "Administrator access required");
+      return;
+    }
+    if (req.user.role !== "manager") throw fail(403, "Manager access required");
+    if (!managerMay(req.user.permissions, req.method, req.routeOptions.url, req.params || {}))
+      throw fail(403, "You do not have access to this section");
   }
   async function session(reply, userId, actorId = null, context = "public") {
     const [eligible] = await sql`select id from users where id=${userId} and status='active' and email_verified_at is not null`;
@@ -384,7 +394,8 @@ export async function buildApp() {
     "/api/admin/auth/login",
     { config: { rateLimit: { max: 5, timeWindow: "15 minutes" } } },
     async (req, reply) => {
-      if (appContext(req) !== "admin") throw fail(404, "Not found");
+      const context = appContext(req);
+      if (context === "public") throw fail(404, "Not found");
       const input = z
         .object({
           email: z.email().toLowerCase(),
@@ -394,14 +405,15 @@ export async function buildApp() {
         .parse(req.body);
       await verifyCaptcha(input.captchaToken, req);
       const [user] =
-        await sql`select * from users where email=${input.email} and status='active' and role='admin'`;
+        await sql`select * from users where email=${input.email} and status='active' and role=${context === "manager" ? "manager" : "admin"}`;
       const valid = await verifyPassword(
         input.password,
         user?.password_hash || (await hashPassword("dummy-password")),
       );
       if (!user || !valid)
-        throw fail(401, "Incorrect administrator email or password");
+        throw fail(401, "Incorrect email or password");
       await session(reply, user.id, null, "admin");
+      await sql`update users set last_login_at=now() where id=${user.id}`;
       return {
         user: {
           id: user.id,
@@ -412,38 +424,6 @@ export async function buildApp() {
       };
     },
   );
-  app.get("/api/admin/auth/google/start", async (req, reply) => {
-    if (appContext(req) !== "admin" || !googleClient || !config.GOOGLE_CLIENT_SECRET)
-      throw fail(503, "Google sign-in is not configured");
-    const state = token();
-    reply.setCookie(adminGoogleStateCookie, state, { path: "/", httpOnly: true, secure: config.NODE_ENV === "production", sameSite: "lax", maxAge: 600 });
-    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    url.search = new URLSearchParams({ client_id: config.GOOGLE_CLIENT_ID, redirect_uri: adminGoogleRedirectUri, response_type: "code", scope: "openid email profile", state, prompt: "select_account" }).toString();
-    return reply.redirect(url.toString());
-  });
-  app.get("/api/admin/auth/google/callback", async (req, reply) => {
-    if (appContext(req) !== "admin") throw fail(404, "Not found");
-    const query = z.object({ code: z.string().min(1), state: z.string().min(1) }).parse(req.query);
-    const expectedState = req.cookies[adminGoogleStateCookie];
-    reply.clearCookie(adminGoogleStateCookie, { path: "/", secure: cookieOptions.secure });
-    if (!expectedState || digest(expectedState) !== digest(query.state)) return reply.code(303).redirect(`${config.ADMIN_ORIGIN}/login?error=google_state`);
-    try {
-      const tokenResponse = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ code: query.code, client_id: config.GOOGLE_CLIENT_ID, client_secret: config.GOOGLE_CLIENT_SECRET, redirect_uri: adminGoogleRedirectUri, grant_type: "authorization_code" }) });
-      const tokenPayload = await tokenResponse.json();
-      if (!tokenResponse.ok || !tokenPayload.id_token) throw new Error("Google token exchange failed");
-      const ticket = await googleClient.verifyIdToken({ idToken: tokenPayload.id_token, audience: config.GOOGLE_CLIENT_ID });
-      const profile = ticket.getPayload();
-      if (!profile?.sub || !profile.email || !profile.email_verified) throw new Error("Google email is not verified");
-      const [user] = await sql`select id,email,username,role,google_subject from users where email=${profile.email} and status='active' and role='admin'`;
-      if (!user || (user.google_subject && user.google_subject !== profile.sub)) return reply.code(303).redirect(`${config.ADMIN_ORIGIN}/login?error=not_authorized`);
-      if (!user.google_subject) await sql`update users set google_subject=${profile.sub},email_verified_at=coalesce(email_verified_at,now()) where id=${user.id}`;
-      await session(reply, user.id, null, "admin");
-      return reply.code(303).redirect(`${config.ADMIN_ORIGIN}/admin`);
-    } catch (error) {
-      req.log.warn({ err: error }, "Administrator Google sign-in failed");
-      return reply.code(303).redirect(`${config.ADMIN_ORIGIN}/login?error=google_failed`);
-    }
-  });
   app.get("/api/auth/me", { preHandler: member }, async (req) => ({
     user: req.user,
   }));
@@ -677,6 +657,7 @@ export async function buildApp() {
   adminManagement(app, { admin, fail });
   securityCenter(app, { admin, fail });
   vpnRoutes(app, { admin, fail });
+  teamRoutes(app, { admin, fail });
   storageReport(app, { admin, fail });
   pictureUpload(app, { member, verifiedMember, fail });
   app.addHook("onReady", async () => { void startupEdgeSync(); });

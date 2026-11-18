@@ -410,6 +410,17 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - The picture on screen loads with high priority; the next picture's medium preview is fetched as soon as the current preview shows, and after the large one is in the others are downloaded quietly in order (next, previous, then the rest). The thumbnail strip is low priority.
 - Worker now writes WebP quality 74 (was 78) to make new pictures lighter; existing pictures are unchanged.
 
+## 12f. Manager portal (manager.backpagenew.com) and Team page
+
+- Managers are users with role 'manager' (migration 015: users.display_name, users.permissions text[], created_by, last_login_at). Administrators create, edit, suspend, reset and remove them in Admin → Team (/api/admin/team*). Team routes are admin-host and admin-role only.
+- manager.backpagenew.com is served by the same admin container. Caddy sends X-Backpagenew-App manager (API) and X-Gate-App manager (geo gate). The API's appContext() returns 'admin' | 'manager' | 'public'. Both portals use the host-only cookie __Host-bpn-admin-session, so the sign-ins stay separate.
+- Login: /api/admin/auth/login accepts role 'admin' on the admin host only and role 'manager' on the manager host only. Public login, Google and password reset are member-only. Admin Google sign-in was removed (email + password only).
+- Server enforcement: the `admin` preHandler checks backend/src/team.mjs `managerMay()` on the manager host. Every route a manager may use is listed there with the permissions that open it. A route not on the list is admin-only (fail closed). When adding a new admin route, add it to that list or managers cannot use it. Sign in as user (impersonation) and Team always stay admin-only.
+- Permission keys: overview, ads, publish, bump, distribute, users, media, reports, verification, health, security, vpn. The default for new managers is everything except users.
+- MANAGER_ORIGIN defaults to ADMIN_ORIGIN with admin. → manager.; it is allowed by the origin check. Security settings apply to the manager host exactly as to the admin host: protectAdmin adds it to the country rule, and adminAllowlistOnly adds it to the bpn_admin_lock edge rule and the gate.
+- DNS: Cloudflare A record `manager` → 192.255.228.253, Proxied. Caddy gets the certificate over HTTP-01 through Cloudflare.
+- Test: backend/test/team.test.mjs (unit + integration); tests/manager-portal-smoke.cjs (browser, mocked API).
+
 ## 13. Important pitfalls
 
 1. Keep public HTML revalidation and account/API no-store behavior.

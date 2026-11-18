@@ -44,7 +44,7 @@ export function adminManagement(app, { admin, fail }) {
    rows=await sql`select ${projection} from ads a join users u on u.id=a.owner_id where ${filter} order by a.created_at desc limit 50 offset ${offset}`;
    [total]=await sql`select count(*)::int as count from ads a join users u on u.id=a.owner_id where ${filter}`;
   } else if(collection==='users') {
-   const filter=sql`status!='deleted' and (email ilike ${term} or username ilike ${term}) and (${q.status}='' or status=${q.status})`;
+   const filter=sql`status!='deleted' and role!='manager' and (email ilike ${term} or username ilike ${term}) and (${q.status}='' or status=${q.status})`;
    rows=await sql`select id,email,username,role,status,email_verified_at,created_at,(verified_at is not null) as verified_by_admin,(verified_at is not null or exists(select 1 from verifications v where v.user_id=u.id and v.status='approved')) as verified,(select count(*)::int from ads where owner_id=u.id and status!='deleted') as ad_count from users u where ${filter} order by created_at desc limit 50 offset ${offset}`;
    [total]=await sql`select count(*)::int as count from users where ${filter}`;
   } else if(collection==='media') {
@@ -112,7 +112,7 @@ export function adminManagement(app, { admin, fail }) {
   await sql.begin(async tx=>{
    const [user]=await tx`select id,role from users where id=${userId} and status!='deleted' for update`;
    if(!user)throw fail(404,'User not found');
-   if(user.role==='admin')throw fail(400,'Administrator accounts cannot be deleted from this menu');
+   if(user.role!=='member')throw fail(400,'Administrator and team accounts cannot be deleted from this menu');
    await tx`update users set status='deleted' where id=${userId}`;
    await tx`update ads set status='deleted',updated_at=now() where owner_id=${userId}`;
    await tx`delete from sessions where user_id=${userId}`;

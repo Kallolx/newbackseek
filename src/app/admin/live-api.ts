@@ -7,11 +7,12 @@ export async function adminApi<T = {ok:boolean}>(path:string, options:RequestIni
  if(!response.ok) { if(response.status===401) window.location.replace('/login'); throw new Error(result.error || 'The request could not be completed. Please try again.'); }
  return result as T;
 }
-export function useAdminResource<T>(path:string) {
+// path null: nothing to load (for example a section this account cannot open).
+export function useAdminResource<T>(path:string|null) {
  const [data,setData]=useState<T>(); const [loading,setLoading]=useState(true);const [error,setError]=useState(''); const [revision,setRevision]=useState(0);const [resolvedPath,setResolvedPath]=useState('');
  const reload=useCallback(()=>setRevision(value=>value+1),[]);
- useEffect(()=>{const controller=new AbortController();setLoading(true);setError('');
+ useEffect(()=>{if(path===null)return;const controller=new AbortController();setLoading(true);setError('');
  adminApi<T>(path,{signal:controller.signal}).then(result=>{if(!controller.signal.aborted)setData(result);}).catch(cause=>{if(cause.name!=='AbortError'){setError(cause.message);toast.error(cause.message);}}).finally(()=>{if(!controller.signal.aborted){setLoading(false);setResolvedPath(path);}});
  return()=>controller.abort();},[path,revision]);
- return {data:resolvedPath===path?data:undefined,loading:loading||resolvedPath!==path,error,reload};
+ return {data:path!==null&&resolvedPath===path?data:undefined,loading:path!==null&&(loading||resolvedPath!==path),error,reload};
 }

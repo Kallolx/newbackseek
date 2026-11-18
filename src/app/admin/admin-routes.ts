@@ -11,4 +11,5 @@ export const adminRoutes = {
   'System health': '/admin/system-health',
   Security: '/admin/security',
   VPN: '/admin/vpn',
+  Team: '/admin/team',
 } as const;

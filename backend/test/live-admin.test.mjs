@@ -112,6 +112,7 @@ test('live administration and public authentication lifecycle',{skip:process.env
   const seeds=Array.from({length:51},(_,index)=>({email:`page${index}@example.com`,username:`pageuser${index}`,password_hash:hash}));await sql`insert into users ${sql(seeds)}`;
   const page2=await adminCall('GET','/api/admin/users?search=pageuser&page=2');assert.equal(page2.statusCode,200,page2.body);assert.equal(page2.json().total,51);assert.equal(page2.json().items.length,1);
   assert.equal((await call('GET','/api/auth/google/callback?code=fake&state=fake')).statusCode,303);
-  assert.equal((await adminCall('GET','/api/admin/auth/google/callback?code=fake&state=fake')).statusCode,303);
+  assert.equal((await adminCall('GET','/api/admin/auth/google/start')).statusCode,404,'admin Google sign-in is removed');
+  assert.equal((await adminCall('GET','/api/admin/auth/google/callback?code=fake&state=fake')).statusCode,404,'admin Google sign-in is removed');
  }finally{await app.close();}
 });

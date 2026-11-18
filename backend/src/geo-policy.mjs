@@ -38,19 +38,23 @@ export function decide(settings, { ip, country, app, viaCloudflare }) {
   return '';
 }
 
-/** Cloudflare WAF expression that keeps the admin host for allowlisted addresses only. */
-export function adminLockExpression(settings, { admin }) {
+const hostName = (name) => Boolean(name) && /^[a-z0-9.-]+$/.test(name);
+
+/** Cloudflare WAF expression that keeps the admin (and manager) hosts for allowlisted addresses only. */
+export function adminLockExpression(settings, { admin, manager }) {
   const allow = settings.allowlist.filter(validCidr);
-  if (!settings.adminAllowlistOnly || !allow.length || !admin || !/^[a-z0-9.-]+$/.test(admin)) return '';
-  return `(http.host eq "${admin}" and not ip.src in {${allow.join(' ')}})`;
+  const hosts = [...new Set([admin, manager].filter(hostName))];
+  if (!settings.adminAllowlistOnly || !allow.length || !hostName(admin)) return '';
+  const match = hosts.length === 1 ? `http.host eq "${hosts[0]}"` : `http.host in {${hosts.map((item) => `"${item}"`).join(' ')}}`;
+  return `(${match} and not ip.src in {${allow.join(' ')}})`;
 }
 
 /** Cloudflare WAF expression for the same policy ('' when no edge rule is needed). */
-export function edgeExpression(settings, { site, admin, media }) {
+export function edgeExpression(settings, { site, admin, manager, media }) {
   const codes = [...new Set([...settings.blockedCountries, ...(settings.blockTor ? ['T1'] : []), ...(settings.blockUnknown ? ['XX'] : [])])]
     .filter((code) => /^[A-Z0-9]{2}$/.test(code));
   if (!settings.geoEnabled || !codes.length) return '';
-  const hosts = [...new Set([site, site && 'www.' + site, media, settings.protectAdmin ? admin : ''].filter((name) => name && /^[a-z0-9.-]+$/.test(name)))];
+  const hosts = [...new Set([site, site && 'www.' + site, media, settings.protectAdmin ? admin : '', settings.protectAdmin ? manager : ''].filter(hostName))];
   const quoted = (list) => list.map((item) => `"${item}"`).join(' ');
   let expression = `(http.host in {${quoted(hosts)}} and ip.src.country in {${quoted(codes)}})`;
   const allow = settings.allowlist.filter(validCidr);
