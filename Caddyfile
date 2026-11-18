@@ -54,8 +54,14 @@ backpagenew.com, www.backpagenew.com {
     }
   }
   handle {
-    @page path / /browse/*
-    header @page Cache-Control "public, max-age=0, must-revalidate" {
+    # Cloudflare may keep the home page and the country / state / city pickers for
+    # 10 minutes (browsers always revalidate). Ad lists and ad pages are never stored.
+    @shared path_regexp ^(/|/browse(/[^/]+){0,3}/?)$
+    @live path_regexp ^/browse(/[^/]+){4,}
+    header @shared Cache-Control "public, max-age=0, s-maxage=600, must-revalidate" {
+      defer
+    }
+    header @live Cache-Control "no-store" {
       defer
     }
     @account path /auth /myaccount /myaccount/*
