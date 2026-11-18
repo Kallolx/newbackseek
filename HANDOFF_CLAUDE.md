@@ -397,6 +397,13 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - The API caches public reads briefly (backend/src/public-cache.mjs), clears them on every write, and serves the last good answer if the database errors.
 - Adult listings are in the HTML but hidden by CSS until 18+ is confirmed (html[data-adult=yes], set by an inline head script from sessionStorage).
 
+## 12d. Admin Media and Cloudflare connection
+
+- Admin → Media: plain summary (status banner, pictures, space used of R2 free tier, saved by optimizing, added this week); R2/worker/size details folded under "Technical details".
+- APIs: GET /api/admin/storage (DB stats + R2 bucket scan cached 10 min in Redis key bpn:storage:scan; ?scan=1 forces), GET /api/admin/pictures (20/page; status ready|processing|failed; placement in_ad|not_in_ad; sort newest|oldest|largest|smallest; counts for chips), POST /api/admin/pictures/delete and /retry ({ids:[≤100]}). Pictures still queued/processing are skipped on delete; retry only re-queues failed ones.
+- media.original_bytes (camera size sent by the post form) and media.processed_at (migration 013) drive the savings and processing-time figures; older rows have no original size.
+- Cloudflare edge connection: run `sudo bash ops/security/set-cloudflare.sh` on the VPS (asks for the token hidden + Zone ID, verifies, saves, restarts api). Works with account tokens (cfat_…). Token permissions: Zone → Zone → Read and App Security → Zone WAF Rules → Edit, scoped to Specified Domains → backpagenew.com. The panel owns the WAF custom rules with refs bpn_geo_block and bpn_admin_lock; do not edit them in Cloudflare.
+
 ## 13. Important pitfalls
 
 1. Keep public HTML revalidation and account/API no-store behavior.
