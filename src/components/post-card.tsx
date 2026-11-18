@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { MdVerified } from 'react-icons/md';
 
-export function PostCard({ title, label, description, details, href, thumbnail, actions }: {
+export function PostCard({ title, label, description, details, href, thumbnail, actions, verified = false }: {
   title: string;
   label: string;
   description: string;
@@ -9,6 +10,8 @@ export function PostCard({ title, label, description, details, href, thumbnail, 
   href?: string;
   thumbnail?: ReactNode;
   actions?: ReactNode;
+  /** The poster passed verification: shows a green badge under the picture. */
+  verified?: boolean;
 }) {
   const image = thumbnail ?? (
     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -20,9 +23,12 @@ export function PostCard({ title, label, description, details, href, thumbnail, 
 
   return (
     <li>
-      {href
-        ? <Link className="post-thumbnail" href={href} prefetch={false} aria-label={'View ' + title}>{image}</Link>
-        : <div className="post-thumbnail">{image}</div>}
+      <div className="post-media">
+        {href
+          ? <Link className="post-thumbnail" href={href} prefetch={false} aria-label={'View ' + title}>{image}</Link>
+          : <div className="post-thumbnail">{image}</div>}
+        {verified && <span className="verified-badge" title="This poster has been verified"><MdVerified aria-hidden="true" /> Verified</span>}
+      </div>
       <div className="post-copy">
         <div className="post-card-heading">
           <div>

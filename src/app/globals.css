@@ -173,6 +173,12 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
   overflow: hidden;
 }
 .post-thumbnail svg { width: 28px; }
+.post-media { display: grid; align-content: start; gap: 6px; min-width: 0; }
+.verified-badge { display: inline-flex; align-items: center; gap: 4px; justify-self: start; max-width: 100%; padding: 2px 9px 2px 6px; border: 1px solid #b7e2c6; border-radius: 999px; background: #e8f7ee; color: #13803f; font-size: 12px; font-weight: 700; line-height: 1.45; white-space: nowrap; }
+.verified-badge svg { width: 15px; height: 15px; flex-shrink: 0; color: #16a34a; }
+/* Gallery layout: the badge sits inside the picture, top left, on a white pill that reads on any photo. */
+.post-gallery .post-media { position: relative; }
+.post-gallery .verified-badge { position: absolute; top: 8px; left: 8px; z-index: 1; padding: 3px 10px 3px 7px; border-color: #ffffff; background: #ffffff; box-shadow: 0 2px 10px #0000004d; font-size: 12.5px; }
 .post-thumbnail img { position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover; }
 .header-member-nav { display: flex; justify-content: center; align-items: center; gap: 13px; }
 .header-member-nav[data-signed-in="true"] { font-size: 14px; }

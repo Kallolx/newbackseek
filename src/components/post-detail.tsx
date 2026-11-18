@@ -13,7 +13,7 @@ type Place = { name: string; href: string };
 type Variants = { full?: { url: string }; card?: { url: string }; thumb?: { url: string } };
 type Post = { id: string; title: string; description: string; age: number; location: string; phone: string; contact_email?: string; status?: string; created_at: string; category_slug: string; image?: Variants | null };
 type Photo = { id: string; variants: Variants };
-type RecentPost = { id: string; title: string; age: number; image?: Variants | null };
+type RecentPost = { id: string; title: string; age: number; location?: string; image?: Variants | null };
 
 const FAVORITES_KEY = 'bpn-favorites';
 function readFavorites(): string[] { try { const value = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'); return Array.isArray(value) ? value.map(String) : []; } catch { return []; } }
@@ -22,7 +22,7 @@ function subscribeFavorites(listener: () => void) { window.addEventListener(favo
 
 type Initial = { post: Post; images: Photo[]; recent: RecentPost[] } | { missing: true };
 
-export function PostDetail({ city, region, service, postId, account = false, initial }: { city: Place; region?: Place; service: { name: string; slug: string }; postId: string; account?: boolean; initial?: Initial }) {
+export function PostDetail({ city, region, service, postId, account = false, initial, refreshInitial = false }: { city: Place; region?: Place; service: { name: string; slug: string }; postId: string; account?: boolean; initial?: Initial; /** The initial data is partial (from a list): show it at once, then load the full details quietly. */ refreshInitial?: boolean }) {
   const ready = initial && 'post' in initial ? initial : null;
   const [post, setPost] = useState<Post | null>(ready?.post ?? null);
   const [photos, setPhotos] = useState<Photo[]>(ready?.images ?? []);
@@ -30,7 +30,9 @@ export function PostDetail({ city, region, service, postId, account = false, ini
   const [loading, setLoading] = useState(!initial);
   const [error, setError] = useState(initial && 'missing' in initial ? 'This ad is no longer available.' : '');
   // Rendered by the server with its data: skip the first browser fetch.
-  const usedInitial = useRef(Boolean(initial));
+  const usedInitial = useRef(Boolean(initial) && !refreshInitial);
+  // The ad whose details are on screen: refreshing the SAME ad (after pause, edit...) keeps showing it.
+  const shownAd = useRef(initial && 'post' in initial ? `${account}:${postId}` : '');
   const favorite = useSyncExternalStore(subscribeFavorites, () => readFavorites().includes(postId), () => false);
   const [message, setMessage] = useState('');
   const [shared, setShared] = useState(false);
@@ -39,12 +41,13 @@ export function PostDetail({ city, region, service, postId, account = false, ini
   useEffect(() => {
     if (usedInitial.current) { usedInitial.current = false; return; }
     const controller = new AbortController();
-    setLoading(true);
+    const adKey = `${account}:${postId}`;
+    if (shownAd.current !== adKey) setLoading(true);
     fetch(`/api/${account ? 'account/ads' : 'ads'}/${postId}`, { signal: controller.signal, cache: 'no-store' }).then(async response => {
       if (!response.ok) throw new Error(response.status === 404 ? 'This ad is no longer available.' : 'Unable to load this ad.');
       const data = await response.json();
       if (!account && (data.post.category_slug !== service.slug || !data.cities.some((place: Place) => place.href === city.href))) throw new Error('This ad is not available in this category or city.');
-      setPost(data.post); setPhotos(data.images);
+      setPost(data.post); setPhotos(data.images); shownAd.current = adKey; setError('');
       const feed = await fetch(`/api/ads?cityHref=${encodeURIComponent(city.href)}&category=${encodeURIComponent(service.slug)}`, { signal: controller.signal, cache: 'no-store' });
       if (feed.ok) setRecent((await feed.json()).posts.filter((item: RecentPost) => String(item.id) !== postId).slice(0, 8));
     }).catch(cause => { if (cause.name !== 'AbortError') setError(cause.message); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -87,7 +90,7 @@ export function PostDetail({ city, region, service, postId, account = false, ini
         const href = `${city.href}/${service.slug}/${item.id}`;
         return <article key={item.id}>
           <Link className="recent-post-thumbnail" href={href} prefetch={false} tabIndex={-1} aria-hidden="true">{thumb && <img src={thumb} alt="" width={44} height={44} loading="lazy" decoding="async" />}</Link>
-          <div><Link className="recent-post-title" href={href} prefetch={false}>{item.title}</Link><small>{item.age}yo · {city.name}</small></div>
+          <div><Link className="recent-post-title" href={href} prefetch={false}>{item.title}</Link><small>{item.age}yo · {item.location || city.name}</small></div>
         </article>;
       })}
       <Link href={city.href + '/' + service.slug}>More ads around {city.name} ›</Link>

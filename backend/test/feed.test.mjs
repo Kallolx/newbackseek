@@ -32,6 +32,20 @@ test('public feed: 40 per page, category index kept in sync, cache cleared on wr
     assert.equal((await feed('category=feed-a')).json().posts[0].title, 'Feed ad 1');
     assert.equal((await app.inject({ method: 'GET', url: `/api/ads/${ids[0]}` })).statusCode, 404);
 
+    // Verified badge: only owners with an APPROVED verification; approving refreshes the list at once.
+    const [photo] = await sql`insert into media(owner_id,object_key,expected_bytes,content_type,purpose,status) values(${owner.id},'test/verified-photo',100,'image/jpeg','verification','ready') returning id`;
+    const [pending] = await sql`insert into verifications(user_id,media_id,status) values(${owner.id},${photo.id},'pending') returning id`;
+    assert.equal((await feed('category=feed-a')).json().posts[0].verified, false, 'pending verification is not a badge');
+    const [admin] = await sql`insert into users(email,username,password_hash,role,email_verified_at) values('feed-admin@example.com','feedadmin','x','admin',now()) returning id`;
+    const adminSecret = token(); await sql`insert into sessions(token_hash,user_id,expires_at) values(${digest(adminSecret)},${admin.id},now()+interval '1 hour')`;
+    const approve = await app.inject({ method: 'PATCH', url: `/api/admin/verifications/${pending.id}`, payload: { status: 'approved' }, headers: { origin: process.env.ADMIN_ORIGIN, 'x-backpagenew-app': 'admin', cookie: `bpn-admin-session=${adminSecret}` } });
+    assert.equal(approve.statusCode, 200, approve.body);
+    const after = (await feed('category=feed-a')).json().posts;
+    assert.ok(after.length && after.every((post) => post.verified === true), 'approved owner shows the badge on the very next request');
+    assert.equal((await app.inject({ method: 'GET', url: `/api/ads/${ids[1]}` })).json().post.verified, true, 'ad page data carries it too');
+    await sql`delete from sessions where user_id=${admin.id}`; await sql`delete from audit_events where actor_id=${admin.id}`; await sql`delete from users where id=${admin.id}`;
+    await sql`delete from verifications where user_id=${owner.id}`; await sql`delete from media where owner_id=${owner.id}`;
+
     // Category change keeps the copy exact.
     await sql`update ads set category_slug='feed-b' where id=${ids[1]}`;
     assert.equal((await sql`select category_slug from placements where ad_id=${ids[1]}`)[0].category_slug, 'feed-b');

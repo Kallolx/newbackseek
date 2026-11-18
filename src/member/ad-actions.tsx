@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { FiEdit2, FiMoreVertical, FiPause, FiSend, FiTrash2 } from 'react-icons/fi';
 import { toast } from '../components/toast';
+import { goTo } from './navigation';
 import styles from './member.module.css';
 
 export function AdActions({ id, status, onChange }: { id: string; status: string; onChange: () => void }) {
@@ -11,7 +11,6 @@ export function AdActions({ id, status, onChange }: { id: string; status: string
   const menuRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
-  const router = useRouter();
   useEffect(() => {
     if (!open) return;
     const onPointer = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) setOpen(false); };
@@ -29,7 +28,7 @@ export function AdActions({ id, status, onChange }: { id: string; status: string
       window.dispatchEvent(new Event('bpn-session-change'));
       dialog.current?.close();
       toast.success(kind === 'delete' ? 'Ad deleted.' : kind === 'paused' ? 'Ad paused.' : 'Ad submitted for review.');
-      if (kind === 'delete') router.replace('/myaccount'); else onChange();
+      if (kind === 'delete') goTo('/myaccount', true); else onChange();
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Please try again.'); } finally { setBusy(false); }
   }
   return <>

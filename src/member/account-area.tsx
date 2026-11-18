@@ -4,7 +4,7 @@ import { FeedbackToast } from '../components/toast';
 import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { FiGrid, FiList } from 'react-icons/fi';
 import { EmptyState, PageLoader } from '../components/page-state';
@@ -13,6 +13,7 @@ import { Verification } from './verification';
 import { PostCard } from '../components/post-card';
 import { PostPagination } from '../components/post-pagination';
 import { refreshMember, useMember, type MemberSession } from './session';
+import { accountLinkClick, accountSection } from './navigation';
 import styles from './member.module.css';
 import { PostDetail } from '../components/post-detail';
 import { serviceGroups } from '../directory/service-groups';
@@ -35,18 +36,24 @@ function SectionSkeleton({ section }: { section: string[] }) {
   return <PageLoader label="Loading your account" />;
 }
 
-export function AccountArea({ section }: { section: string[] }) {
+export function AccountArea() {
   const { member, ready, error, postsLoading, refresh } = useMember();
   const router = useRouter();
+  // The address bar decides which account page shows; links inside move without a server round trip.
+  const parsed = accountSection(usePathname());
+  const section = parsed ?? [];
   useEffect(() => { if (ready && !member && !error) router.replace('/auth'); }, [ready, member, error, router]);
-  if (error) return <main id="main" className={'shell ' + styles.page}><EmptyState title="Account could not load" description={error} action="Retry" onAction={()=>void refresh()}/></main>;
-  if (!ready || !member) return <main id="main" className={'shell ' + styles.page}><SectionSkeleton section={section} /></main>;
+  // Download the posting form quietly once signed in, so "Post an Ad" opens at once.
+  useEffect(() => { if (ready && member) { void loadPostForm(); void import('./description-editor'); } }, [ready, member]);
+  if (!parsed) return <main id="main" className={'shell ' + styles.page}><EmptyState title="Page not found" description="This account page does not exist." href="/myaccount" action="My ads" /></main>;
+  if (error) return <main id="main" onClickCapture={accountLinkClick} className={'shell ' + styles.page}><EmptyState title="Account could not load" description={error} action="Retry" onAction={()=>void refresh()}/></main>;
+  if (!ready || !member) return <main id="main" onClickCapture={accountLinkClick} className={'shell ' + styles.page}><SectionSkeleton section={section} /></main>;
   const current = section[0] ?? '';
   return (
-    <main id="main" className={'shell ' + styles.page}>
+    <main id="main" onClickCapture={accountLinkClick} className={'shell ' + styles.page}>
       <nav className={styles.menu} aria-label="Account menu">
         {[['post', 'Post an Ad'], ['verification', 'Verification'], ['settings', 'Account Settings']].map(([path, label]) => (
-          <span key={path}>[ <Link href={'/myaccount/' + path} prefetch={false} aria-current={current === path ? 'page' : undefined}>{label}</Link> ]</span>
+          <span key={path}>[ <Link href={'/myaccount/' + path} aria-current={current === path ? 'page' : undefined}>{label}</Link> ]</span>
         ))}
       </nav>
       {member.actorId && <p className={styles.notice}>Support session for @{member.username}. <button type="button" onClick={async()=>{await fetch('/api/account/impersonation/stop',{method:'POST'});window.location.replace('/auth');}}>End support session</button></p>}
@@ -79,7 +86,7 @@ function MemberPosts({ member }: { member: MemberSession }) {
     {matches.length ? <ul className={gallery ? 'post-list post-gallery' : 'post-list'}>
       {matches.slice((currentPage - 1) * 10, currentPage * 10).map((post) => <PostCard key={post.id}
         title={post.title} label={post.location} description={post.description}
-        href={'/myaccount/posts/' + post.id}
+        href={'/myaccount/posts/' + post.id} verified={member.verificationStatus === 'approved'}
         thumbnail={post.images[0] ? <Image src={post.coverImage||post.images[0]} alt="" width={320} height={220} unoptimized /> : undefined}
         details={<><span>Age: {post.age} · {post.cityName}</span><span className={styles.postStatus} data-paused={post.status === 'Paused'}>{post.status}</span></>} />)}
     </ul> : query ? <EmptyState kind="search" title="No matching ads" description="Try a shorter search or clear your search to see all your ads." action="Clear search" onAction={() => { setQuery(''); setPage(1); }} /> : <EmptyState title="Your first ad starts here" description="Once you publish an ad, you can find it here, view its pictures and manage its status." href="/myaccount/post" action="Create your first ad" />}
@@ -92,7 +99,9 @@ function MemberDetails({ member, id,editing }: { member: MemberSession; id: stri
   if (!post) return <EmptyState title="We couldn’t find this ad" description="It may have been removed or is no longer available in your account. Your other ads are still waiting for you." href="/myaccount" action="Back to my ads" />;
   if(editing)return <MemberPostForm key={post.id} member={member} post={post} />;
   const service=serviceGroups.flatMap(group=>group.services).find(service=>service.slug===post.service)||{name:post.service,slug:post.service};
-  return <PostDetail account postId={id} city={{name:post.cityName,href:post.cityHref}} service={service} />;
+  // Show the ad at once from what the account already holds; its full details load quietly.
+  const initial={post:{id:post.id,title:post.title,description:post.description,age:post.age,location:post.location,phone:post.phone,contact_email:post.contactEmail,status:post.status.toLowerCase(),created_at:post.createdAt,category_slug:post.service},images:post.images.map((url,index)=>({id:post.id+'-'+index,variants:{full:{url},...(post.thumbnails?.[index]?{thumb:{url:post.thumbnails[index]}}:{}),...(index===0&&post.coverImage?{card:{url:post.coverImage}}:{})}})),recent:[]};
+  return <PostDetail key={id} account postId={id} city={{name:post.cityName,href:post.cityHref}} service={service} initial={initial} refreshInitial />;
 }
 
 function Settings({ member }: { member: MemberSession }) {

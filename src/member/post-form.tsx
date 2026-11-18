@@ -3,7 +3,6 @@
 import { FeedbackToast } from '../components/toast';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useRef, useState, type FormEvent } from 'react';
 import { FiMapPin, FiInfo, FiImage, FiShield, FiUploadCloud, FiX, FiCheck, FiRotateCw, FiAlertCircle } from 'react-icons/fi';
 import { SiteSelect } from '../components/site-select';
@@ -18,6 +17,7 @@ import { EditorSkeleton } from '../components/skeletons';
 // rest of the form appears first.
 const DescriptionEditor = dynamic(() => import('./description-editor').then((module) => module.DescriptionEditor), { loading: () => <EditorSkeleton /> });
 import { usePictureUploads, validatePicture, type PictureUpload } from './picture-uploads';
+import { goTo } from './navigation';
 
 type SubmitStep = { title: string; detail: string; step: number };
 
@@ -40,7 +40,6 @@ function UploadTile({ item, index, cover, onRemove, onRetry, disabled }: { item:
 
 
 export function MemberPostForm({ member,post }: { member: MemberSession;post?:MemberPost }) {
-  const router = useRouter();
   const original=countries.flatMap(country=>country.regions.flatMap(region=>region.cities.map(city=>({country,region,city})))).find(item=>item.city.href===post?.cityHref);
   const [countryCode, setCountry] = useState(original?.country.code||'');
   const [regionHref, setRegion] = useState(original?.region.href||'');
@@ -98,7 +97,7 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
       setSubmitState({ step: 2, title: 'Submitted', detail: '' });
       window.dispatchEvent(new Event('bpn-session-change'));
       toast.success(post?'Changes submitted for review.':'Ad submitted for review.');
-      router.replace(post?'/myaccount/posts/'+post.id:'/myaccount'); router.refresh();
+      goTo(post?'/myaccount/posts/'+post.id:'/myaccount', true);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not submit your ad.'); setSubmitState(null); setProcessing(false); }
   }
 

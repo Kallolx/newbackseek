@@ -10,7 +10,7 @@ import { PostCard } from './post-card';
 import { PostPagination } from './post-pagination';
 
 type Service = { name: string; slug: string };
-type Post = { id: string; title: string; description: string; age: number; image?: { card?: { url: string } } | null };
+type Post = { id: string; title: string; description: string; age: number; location?: string; verified?: boolean; image?: { card?: { url: string } } | null };
 type Props = {
   city: { name: string; href: string };
   service: Service;
@@ -145,9 +145,9 @@ export function ServiceListings({ city, service, groups, dating, initial }: Prop
           {loading ? <ListingSkeleton gallery={gallery} /> : error ? <><FeedbackToast message={error} /><EmptyState title="Listings could not load" description="Please refresh to try again." /></> : posts.length ? (
             <ul className={gallery ? 'post-list post-gallery' : 'post-list'}>
               {posts.map((post, index) => (
-                <PostCard key={post.id} title={post.title} label={city.name} description={post.description}
+                <PostCard key={post.id} title={post.title} label={post.location || city.name} description={post.description}
                   thumbnail={post.image?.card?.url ? <img src={post.image.card.url} alt="" width={480} height={320} loading={index < 4 ? 'eager' : 'lazy'} fetchPriority={index < 2 ? 'high' : 'auto'} decoding="async" /> : undefined}
-                  details={'Age: ' + post.age} href={city.href + '/' + service.slug + '/' + post.id} />
+                  details={'Age: ' + post.age} verified={post.verified} href={city.href + '/' + service.slug + '/' + post.id} />
               ))}
             </ul>
           ) : <EmptyState title={search ? 'No matching ads' : 'No ads here yet'} description={search ? 'Try another keyword.' : 'Published ads in this city and category will appear here.'} />}

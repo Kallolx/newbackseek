@@ -9,7 +9,7 @@ export function MemberNavigation() {
   return (
     <nav className="header-member-nav" data-signed-in={Boolean(member)} aria-label="Main navigation">
       {member ? <>
-        <Link href="/myaccount" prefetch={false}>My account</Link>
+        <Link href="/myaccount">My account</Link>
         <button type="button" onClick={async () => { try { await logOut(); window.location.replace('/auth'); } catch(error) {toast.error((error as Error).message);} }}>Logout</button>
       </> : <Link href="/post" prefetch={false}>Post an Ad</Link>}
     </nav>

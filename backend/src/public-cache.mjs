@@ -56,4 +56,4 @@ export async function publicDataChanged() {
 
 // Writes that can change public listings or ad pages.
 export const changesPublicData = (req) => !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
-  && /^\/api\/(account\/ads|admin\/(ads|publish|posts|bump|distribute|users|media|pictures))/.test(req.url);
+  && /^\/api\/(account\/ads|admin\/(ads|publish|posts|bump|distribute|users|media|pictures|verifications))/.test(req.url);

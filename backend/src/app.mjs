@@ -486,7 +486,8 @@ export async function buildApp() {
       // placements_public_feed_idx answers city + category + published, newest first.
       const rows =
         await sql`select a.id,a.title,left(a.description,240) as description,a.age,a.location,p.ranked_at,
-       (select variants from media where ad_id=a.id and status='ready' and purpose='ad' order by created_at,id limit 1) as image
+       (select variants from media where ad_id=a.id and status='ready' and purpose='ad' order by created_at,id limit 1) as image,
+       exists(select 1 from verifications v where v.user_id=a.owner_id and v.status='approved') as verified
        from placements p join ads a on a.id=p.ad_id
        where p.city_id=coalesce(${q.cityId ?? null}::bigint,(select id from cities where href=${q.cityHref || ''}))
          and p.category_slug=${q.category} and p.published and a.status='published'
@@ -499,7 +500,7 @@ export async function buildApp() {
     const adId = id.parse(req.params.id);
     const result = await cached(`ad:${adId}`, 30000, async () => {
       const [[ad], images, cities] = await Promise.all([
-        sql`select id,title,description,age,location,phone,contact_email,category_slug,created_at from ads where id=${adId} and status='published'`,
+        sql`select id,title,description,age,location,phone,contact_email,category_slug,created_at,exists(select 1 from verifications v where v.user_id=ads.owner_id and v.status='approved') as verified from ads where id=${adId} and status='published'`,
         sql`select id,variants,width,height from media where ad_id=${adId} and status='ready' and purpose='ad' order by created_at,id`,
         sql`select c.* from placements p join cities c on c.id=p.city_id where p.ad_id=${adId}`,
       ]);
