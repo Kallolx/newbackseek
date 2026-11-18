@@ -38,6 +38,9 @@ export function pictureUpload(app, { member, verifiedMember, fail }) {
     bodyLimit: MAX_PICTURE_BYTES,
     config: { rateLimit: { max: 120, timeWindow: '1 hour' } },
   }, async (req, reply) => {
+    // Only picture bodies are accepted (Fastify would otherwise also read text/JSON bodies).
+    const type = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+    if (!ACCEPTED_TYPES.includes(type)) throw fail(415, 'This file is not a picture we can use. Choose a JPG, PNG, WebP or AVIF photo.');
     if (!storageReady()) throw fail(503, 'Picture storage is not available right now. Please try again shortly.');
     const buffer = req.body;
     if (!Buffer.isBuffer(buffer) || !buffer.length) throw fail(400, 'No picture was received. Please try again.');
