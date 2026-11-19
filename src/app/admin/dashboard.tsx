@@ -5,7 +5,7 @@ import { useEffect,useState } from 'react';
 import { useDebouncedValue } from '@mantine/hooks';
 import { AreaChart } from '@mantine/charts';
 import { ActionIcon,AppShell,Avatar,Badge,Box,Breadcrumbs,Burger,Button,Group,Menu,Modal,NavLink,Paper,ScrollArea,SegmentedControl,Select,SimpleGrid,Skeleton,Stack,Text,TextInput,Title } from '@mantine/core';
-import { FiCalendar,FiUserPlus,FiWifi,FiLock,FiActivity,FiArrowUp,FiBell,FiCheck,FiChevronRight,FiEdit2,FiExternalLink,FiFileText,FiFlag,FiGrid,FiImage,FiLogOut,FiMapPin,FiMoreHorizontal,FiPause,FiPlay,FiPlus,FiRefreshCw,FiSearch,FiShield,FiTrash2,FiUsers,FiX } from 'react-icons/fi';
+import { FiTrendingUp,FiCalendar,FiUserPlus,FiWifi,FiLock,FiActivity,FiArrowUp,FiBell,FiCheck,FiChevronRight,FiEdit2,FiExternalLink,FiFileText,FiFlag,FiGrid,FiImage,FiLogOut,FiMapPin,FiMoreHorizontal,FiPause,FiPlay,FiPlus,FiRefreshCw,FiSearch,FiShield,FiTrash2,FiUsers,FiX } from 'react-icons/fi';
 import { adminRoutes } from './admin-routes';
 import { adStatuses,statusColor,type Ad,type AdStatus,type CategoryGroup,type LocationCountry } from './admin-data';
 import { adminApi,useAdminResource } from './live-api';
@@ -18,6 +18,7 @@ import { MediaCenter } from './media-center';
 import { UsersList,type UserRow } from './users-list';
 import { TeamCenter } from './team';
 import { PostPlanner } from './planner';
+import { SeoCenter } from './seo';
 import { canOpen,type Account } from './access';
 import { AdminMobileNavigation } from './mobile-navigation';
 import { PostCard } from '../../components/post-card';
@@ -30,7 +31,7 @@ type LiveRow={verified?:boolean;verified_by_admin?:boolean;id:string;title?:stri
 type Variants={card?:{url:string};full?:{url:string}};
 type Listing={items:LiveRow[];total:number;page:number;pageSize:number};
 type Summary={counts:{users:number;ads:number;published:number;pending:number;media:number;reports:number;verifications:number};daily:{day:string;ads:number;users:number}[]};
-const nav=[['Overview',FiGrid],['Ads',FiFileText],['Publish',FiPlus],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['Post planner',FiCalendar],['Users',FiUsers],['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['System health',FiActivity],['Security',FiLock],['VPN',FiWifi],['Team',FiUserPlus]] as const;
+const nav=[['Overview',FiGrid],['Ads',FiFileText],['Publish',FiPlus],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['Post planner',FiCalendar],['SEO',FiTrendingUp],['Users',FiUsers],['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['System health',FiActivity],['Security',FiLock],['VPN',FiWifi],['Team',FiUserPlus]] as const;
 type Screen=typeof nav[number][0];
 const label=(screen:string)=>screen==='Ads'?'All Ads':screen==='Publish'?'Ad Publish':screen;
 function mapAd(row:LiveRow):Ad{return{id:Number(row.id),title:row.title||'',description:row.description||'',category:row.category_slug||'',owner:row.owner||'',targets:row.targets||[],images:(row.images||[]).flatMap(image=>image.variants.card?.url?[image.variants.card.url]:[]),status:(row.status[0].toUpperCase()+row.status.slice(1)) as AdStatus,updated:row.updated_at||row.created_at,age:row.age,location:row.location,phone:row.phone,email:row.contact_email||''};}
@@ -100,6 +101,7 @@ export function AdminDashboard({locations,categories}:{locations:LocationCountry
   {screen==='Publish'&&<Publisher key={source?.id||me.data?.user.username||'new'} locations={locations} categories={categories} source={source} mode={source?'edit':'create'} onSubmit={publication} defaultOwner={me.data?.user.username}/>}
   {(screen==='Bump post'||screen==='Distribute post')&&<Stack><Paper withBorder p="md" radius="md"><form onSubmit={lookup}><Group align="end"><TextInput label="Find a post by ID" placeholder="Enter Post ID" value={postId} onChange={event=>setPostId(event.currentTarget.value)} style={{flex:1}} required/><Button type="submit" loading={finding} leftSection={<FiSearch/>}>Find post</Button></Group></form></Paper>{finding?<LoadingRows/>:found?<><FoundPost ad={found} images={found.images||[]} destinations={found.targets.map(target=>countriesByCity.get(target)||target)} onPreview={src=>setPhoto(src)} onBump={screen==='Bump post'?()=>void bump(found):undefined}/>{screen==='Distribute post'&&<Publisher key={found.id+found.targets.join(',')} source={found} locations={locations} categories={categories} mode="copy" onSubmit={publication}/>}</>:<EmptyState kind="search" title="Find an existing post" description="Enter its numeric Post ID to see its details and destinations."/>}</Stack>}
   {screen==='Team'&&<TeamCenter/>}
+  {screen==='SEO'&&<SeoCenter locations={locations} categories={categories}/>}
   {screen==='Post planner'&&<PostPlanner locations={locations} categories={categories} defaultOwner={me.data?.user.username}/>}
   </>}
   <Modal opened={Boolean(photo)} onClose={()=>setPhoto('')} title="Image preview" centered size="lg">{photo&&<img src={photo} alt="Selected image" style={{width:'100%',height:'auto',maxHeight:'75vh',objectFit:'contain'}}/>}</Modal>

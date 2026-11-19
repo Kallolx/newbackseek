@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '../../lib/seo';
 import Link from 'next/link';
 import { LegalPage } from '../../components/legal-page';
 
-export const metadata: Metadata = { title: 'Refund Policy', description: 'How wallet credits, crypto top-ups and refunds work on BackpageNew.' };
+export async function generateMetadata(): Promise<Metadata> { return pageMetadata({ path: '/refund-policy', kind: 'page', title: 'Refund Policy – Wallet Credits & Crypto Top-ups | BackpageNew', description: 'How BackpageNew wallet credits, cryptocurrency top-ups and refunds work.' }); }
 
 export default function RefundPolicyPage() {
   return <LegalPage title="Refund Policy" date="November 19, 2026" summary="How wallet credits, cryptocurrency top-ups and refunds work on BackpageNew.">

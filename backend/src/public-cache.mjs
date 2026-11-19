@@ -41,7 +41,7 @@ function revalidateSite() {
   if (!config.FRONTEND_INTERNAL_URL || !config.REVALIDATE_SECRET) return;
   clearTimeout(revalidateTimer);
   revalidateTimer = setTimeout(() => {
-    fetch(new URL('/_bpn/revalidate', config.FRONTEND_INTERNAL_URL), { method: 'POST', headers: { 'x-revalidate-secret': config.REVALIDATE_SECRET }, signal: AbortSignal.timeout(5000) })
+    fetch(new URL('/bpn-internal/revalidate', config.FRONTEND_INTERNAL_URL), { method: 'POST', headers: { 'x-revalidate-secret': config.REVALIDATE_SECRET }, signal: AbortSignal.timeout(5000) })
       .catch(() => {}); // pages still refresh on their own timer
   }, 250);
   revalidateTimer.unref?.();

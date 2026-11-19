@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '../../lib/seo';
 import Link from 'next/link';
 import { FiAlertTriangle, FiBookOpen, FiMail } from 'react-icons/fi';
 import { ContactForm } from './contact-form';
 
-export const metadata: Metadata = { title: 'Contact', description: 'Contact the BackpageNew team.' };
+export async function generateMetadata(): Promise<Metadata> { return pageMetadata({ path: '/contact', kind: 'page', title: 'Contact BackpageNew – Support & Questions', description: 'Contact the BackpageNew team about your account, an ad, payments or a problem. We reply by email.' }); }
 
 export default function ContactPage() {
   return <main id="main" className="contact-page shell">

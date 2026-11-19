@@ -26,3 +26,9 @@
   .saveNote { flex: 1; line-height: 1.3; }
 }
 .qr { display: block; width: min(260px, 100%); aspect-ratio: 1; margin: 0 auto; border-radius: 8px; background: white; image-rendering: pixelated; }
+
+/* SEO page */
+.seoTabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.seoTabs > button { flex-shrink: 0; }
+.snippet { padding: 14px 16px; border: 1px solid #dfe4ec; border-radius: 10px; background: white; max-width: 640px; }
+.snippetTitle { color: #1a0dab; font-size: 19px; line-height: 1.3; margin: 2px 0 4px; }

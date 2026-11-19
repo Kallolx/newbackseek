@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '../../lib/seo';
 import Link from 'next/link';
 import { blogDate, blogPosts } from '../../content/blog';
 
-export const metadata: Metadata = { title: 'Blog', description: 'Tips for posting, staying safe and using BackpageNew.' };
+export async function generateMetadata(): Promise<Metadata> { return pageMetadata({ path: '/blog', kind: 'page', title: 'Blog – Tips for Posting & Staying Safe | BackpageNew', description: 'Tips for writing a good ad, spotting scams, staying safe when you meet someone and using your BackpageNew wallet.' }); }
 
 export default function BlogPage() {
   const [featured, ...rest] = [...blogPosts].sort((a, b) => b.date.localeCompare(a.date));

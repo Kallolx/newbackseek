@@ -1,5 +1,8 @@
 backpagenew.com, www.backpagenew.com {
   encode zstd gzip
+  # One address per page for search engines: www goes to the main address.
+  @www host www.backpagenew.com
+  redir @www https://backpagenew.com{uri} permanent
   @adminPages path /admin /admin/*
   redir @adminPages https://admin.backpagenew.com{uri} 302
 
@@ -45,6 +48,21 @@ backpagenew.com, www.backpagenew.com {
     handle {
       header Cache-Control "no-store"
       respond "Asset not found" 404
+    }
+  }
+  # robots.txt, sitemaps, llms.txt and the IndexNow key come from the API (settings in Admin -> SEO).
+  @seo {
+    path /robots.txt /sitemap.xml /sitemap-locations.xml /sitemap-listings-*.xml /sitemap-ads-*.xml /llms.txt
+  }
+  @indexnow path_regexp indexnow ^/[a-f0-9]{32}\.txt$
+  handle @seo {
+    reverse_proxy api:4000 {
+        header_up X-Backpagenew-App "public"
+    }
+  }
+  handle @indexnow {
+    reverse_proxy api:4000 {
+        header_up X-Backpagenew-App "public"
     }
   }
   @api path /api/*

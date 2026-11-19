@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
+import { JsonLd } from "../components/json-ld";
+import { AdminIntro, FaqList, PlaceLinks } from "../components/seo-blocks";
+import { faqLd, getSeo, organizationLd, pageMetadata, pageOverride, websiteLd } from "../lib/seo";
 import { LocationSearch } from "../components/location-search";
 import { RegionArrow } from "../components/region-arrow";
 import { countries } from "../directory/areas";
@@ -21,13 +26,27 @@ const countryFlags: Record<string, { src: string; alt: string }> = {
   au: { src: "/flags/au.svg", alt: "Australia flag" },
 };
 
-export default function Home() {
+export async function generateMetadata(): Promise<Metadata> { return pageMetadata({ path: "/", kind: "home" }); }
+
+const homeFaq = [
+  { q: "What is BackpageNew?", a: "BackpageNew is a free local classifieds and personal ads website, and a new Backpage alternative. Ads are organised by country, state or region, city and category in the United States, Canada, the United Kingdom and Australia." },
+  { q: "Is BackpageNew free?", a: "Browsing is free and posting is currently free. If paid options are added, they will be shown clearly before you pay." },
+  { q: "Is BackpageNew the same as Backpage.com?", a: "No. BackpageNew is an independent site and is not connected to the former Backpage.com. It follows a similar simple, local, city-by-city idea with clear rules and moderation." },
+  { q: "How do I post an ad?", a: "Create a free account, verify your email, choose Post an Ad, pick your cities and a category, and add a title, description and pictures. New ads are reviewed before they appear." },
+];
+const topCities = ["Phoenix", "Las Vegas", "Denver", "Charlotte", "New Orleans", "San Antonio", "Minneapolis", "Pittsburgh", "Tucson", "Cleveland", "Omaha", "Indianapolis"]
+  .flatMap((name) => places.filter((place) => place.name === name && place.context.includes(", ")).slice(0, 1));
+
+export default async function Home() {
+  const { settings } = await getSeo();
+  const override = await pageOverride("/");
   return (
     <main id="main">
+      <JsonLd data={[settings.schema.organization && organizationLd(settings), settings.schema.website && websiteLd(settings), settings.schema.faq && faqLd(homeFaq)]} />
       <section className="hero">
         <div className="shell hero-inner">
           <h1>
-            Local Classifieds &amp; Personal Ads for a Free Backpage Alternative
+            {override.h1 || "Local Classifieds & Personal Ads for a Free Backpage Alternative"}
           </h1>
           <p>
             Browse local classifieds, personal ads, and city listings across the
@@ -75,6 +94,14 @@ export default function Home() {
             </section>
           ))}
         </div>
+        <AdminIntro text={override.intro} />
+        <section className="seo-text home-about" aria-labelledby="home-about">
+          <h2 id="home-about">The new Backpage alternative for local classifieds</h2>
+          <p>BackpageNew helps you find and post local classifieds and personal ads in your own city. Choose your country, then your state or region, then your city, and browse categories such as dating, services, jobs, rentals, buy and sell, pets and automotive.</p>
+          <p>Read more about <Link href="/backpage-alternative">the new Backpage alternative</Link>, browse <Link href="/classifieds">free classifieds</Link>, <Link href="/personals">personal ads</Link> or <Link href="/dating">dating ads</Link>, or see <Link href="/about">how BackpageNew works</Link>.</p>
+        </section>
+        <PlaceLinks title="Popular cities" places={topCities.map((place) => ({ name: place.name, href: place.href }))} more={{ href: "/browse", label: "All cities" }} />
+        {settings.schema.faq && <FaqList items={homeFaq} />}
       </div>
     </main>
   );

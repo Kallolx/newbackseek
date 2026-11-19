@@ -2,20 +2,25 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { blogDate, blogPost, blogPosts } from '../../../content/blog';
+import { JsonLd } from '../../../components/json-ld';
+import { articleLd, breadcrumbLd, getSeo, pageMetadata } from '../../../lib/seo';
 
 export const dynamicParams = false;
 export function generateStaticParams() { return blogPosts.map((post) => ({ slug: post.slug })); }
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const post = blogPost((await params).slug);
-  return post ? { title: post.title, description: post.excerpt, openGraph: { title: post.title, description: post.excerpt, images: [post.image + '&w=1200&h=630'] } } : {};
+  if (!post) return {};
+  return pageMetadata({ path: '/blog/' + post.slug, kind: 'blog', vars: { title: post.title, excerpt: post.excerpt }, image: post.image + '&w=1200&h=630', type: 'article', published: post.date + 'T12:00:00Z', modified: post.date + 'T12:00:00Z' });
 }
 
 export default async function BlogArticle({ params }: { params: Promise<{ slug: string }> }) {
   const post = blogPost((await params).slug);
   if (!post) notFound();
+  const { settings } = await getSeo();
   const more = blogPosts.filter((item) => item.slug !== post.slug).slice(0, 3);
   return <main id="main" className="blog-article">
     <article className="legal-content">
+      <JsonLd data={[settings.schema.blog && articleLd({ title: post.title, description: post.excerpt, path: '/blog/' + post.slug, image: post.image + '&w=1200&h=630', published: post.date, settings }), settings.schema.breadcrumbs && breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Blog', path: '/blog' }, { name: post.title, path: '/blog/' + post.slug }])]} />
       <Link href="/blog" className="blog-back">← Blog</Link>
       <span className="blog-tag">{post.tag}</span>
       <h1>{post.title}</h1>

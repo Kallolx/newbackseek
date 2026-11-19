@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { AuthForm } from './auth-form';
+import { privateMetadata } from '../../lib/seo';
 
-export const metadata: Metadata = { title: 'Account' };
+export const metadata: Metadata = privateMetadata('Account – BackpageNew');
 
 export default async function AuthPage({
   searchParams,

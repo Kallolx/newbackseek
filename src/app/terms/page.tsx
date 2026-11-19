@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '../../lib/seo';
 import { LegalPage } from '../../components/legal-page';
 
-export const metadata: Metadata = { title: 'Terms of Service', description: 'BackpageNew terms of service.' };
+export async function generateMetadata(): Promise<Metadata> { return pageMetadata({ path: '/terms', kind: 'page', title: 'Terms of Service – BackpageNew', description: 'The terms that govern your use of BackpageNew and its local classifieds services.' }); }
 
 export default function TermsPage() {
   return <LegalPage title="Terms of Service" summary="These terms govern your use of BackpageNew and its local-classified services.">

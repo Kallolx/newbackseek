@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { AccountArea } from '../../../member/account-area';
+import { privateMetadata } from '../../../lib/seo';
 
-export const metadata: Metadata = { title: 'My account', robots: { index: false, follow: false } };
+export const metadata: Metadata = privateMetadata('My account – BackpageNew');
 
 // The account pages are rendered by the browser (it loads everything itself), so they are
 // built once. Ad numbers (/myaccount/posts/123) are built on first use.

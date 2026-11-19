@@ -6,11 +6,12 @@ import { hashPassword } from './security.mjs';
 
 export const PERMISSIONS = [
   ['overview', 'Overview'], ['ads', 'All Ads'], ['publish', 'Ad Publish'], ['bump', 'Bump post'], ['distribute', 'Distribute post'],
-  ['planner', 'Post planner'], ['users', 'Users'], ['media', 'Media'], ['reports', 'Reports'], ['verification', 'Verification'], ['health', 'System health'],
+  ['planner', 'Post planner'], ['seo', 'SEO'], ['users', 'Users'], ['media', 'Media'], ['reports', 'Reports'], ['verification', 'Verification'], ['health', 'System health'],
   ['security', 'Security'], ['vpn', 'VPN'],
 ];
 const KEYS = PERMISSIONS.map(([key]) => key);
-export const DEFAULT_PERMISSIONS = KEYS.filter((key) => key !== 'users');
+// Members and SEO (it can hide the whole site from Google) are off until an administrator turns them on.
+export const DEFAULT_PERMISSIONS = KEYS.filter((key) => !['users', 'seo'].includes(key));
 
 const ANY = ['*'];
 const routes = {
@@ -22,6 +23,15 @@ const routes = {
   'POST /api/admin/ads/:id/destinations': ['distribute'],
   'DELETE /api/admin/ads/:id': ['ads'],
   'POST /api/admin/media/upload': ['publish', 'distribute', 'planner'],
+  'GET /api/admin/seo': ['seo'],
+  'PUT /api/admin/seo': ['seo'],
+  'PUT /api/admin/seo/page': ['seo'],
+  'DELETE /api/admin/seo/page': ['seo'],
+  'PUT /api/admin/seo/redirect': ['seo'],
+  'DELETE /api/admin/seo/redirect': ['seo'],
+  'POST /api/admin/seo/inspect': ['seo'],
+  'POST /api/admin/seo/indexnow': ['seo'],
+  'GET /api/admin/seo/health': ['seo'],
   'GET /api/admin/planner': ['planner'],
   'POST /api/admin/planner': ['planner'],
   'PATCH /api/admin/planner/:id': ['planner'],

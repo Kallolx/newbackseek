@@ -438,6 +438,19 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - The abandoned-upload sweep skips pictures that are on an open card.
 - UI: src/app/admin/planner.tsx (reuses Publisher with heading/submitLabel/removableSaved). Tests: backend/test/planner.test.mjs, tests/planner-smoke.cjs.
 
+## 12i. SEO (Admin → SEO, permission key `seo`, off by default for managers)
+
+- Owner steps (Search Console, Bing, Cloudflare) are in SEO_OWNER_GUIDE.md.
+- Settings live in seo_settings (one jsonb row, defaults in backend/src/seo.mjs SEO_DEFAULTS and a fallback copy in src/lib/seo-core.ts: keep them in step), per-page overrides in seo_pages (key = path), redirects in seo_redirects, IndexNow log in seo_submissions (migration 019).
+- API (backend/src/seo.mjs): GET /api/seo/config (settings + overrides; the site reads it with a 2-minute cache, tag `seo`, refreshed when the admin saves via /bpn-internal/revalidate), GET /api/seo/stats?href= (live counts for city/region/country text), robots.txt, sitemap.xml index, sitemap-locations.xml, sitemap-listings-{cc}.xml, sitemap-ads-{n}.xml (5000 per file, with pictures), llms.txt, /{indexnow-key}.txt. Caddy sends exactly those paths to the API; /sitemap-pages.xml is a Next route (static pages + blog).
+- An ad in many cities has ONE canonical address: the city with the lowest id (API field canonicalHref; sitemap uses the same rule). Requests for the ad under another city/category are redirected (308) when the ad is not placed there, otherwise they carry a canonical tag to the main address. Missing ads return a real 404.
+- City + category pages with fewer published ads than indexing.minAdsForListing are `noindex` and left out of the sitemap.
+- Redirects are applied inside /api/internal/geo-gate (the same forward_auth call Caddy already makes for each page request), so there is no extra request. 301/302/307/308 send Location; 410 shows a "removed" page.
+- The worker runs flushIndexNow every 2 minutes: ads changed since the cursor (Redis key bpn:indexnow:cursor) are sent to api.indexnow.org. The first run only sets the cursor. "Send everything" is in Admin → SEO → Tools.
+- Page code: src/lib/seo.ts (metadata + JSON-LD builders), src/lib/seo-core.ts (templates; also used by the admin preview), src/content/pages.ts (landing page text and the static page list), src/components/info-page.tsx, seo-blocks.tsx, json-ld.tsx. Titles never use a global template suffix: every page sets its own absolute title.
+- The public-cache revalidate hook previously called a path that did not exist (/_bpn/revalidate); it now calls /bpn-internal/revalidate.
+- Tests: backend/test/seo.test.mjs, tests/seo-admin-smoke.cjs.
+
 ## 13. Important pitfalls
 
 1. Keep public HTML revalidation and account/API no-store behavior.

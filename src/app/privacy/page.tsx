@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '../../lib/seo';
 import { LegalPage } from '../../components/legal-page';
 
-export const metadata: Metadata = { title: 'Privacy Policy', description: 'BackpageNew privacy policy.' };
+export async function generateMetadata(): Promise<Metadata> { return pageMetadata({ path: '/privacy', kind: 'page', title: 'Privacy Policy – BackpageNew', description: 'How BackpageNew handles information when you browse, create an account or post ads.' }); }
 
 export default function PrivacyPage() {
   return <LegalPage title="Privacy Policy" summary="How BackpageNew handles information when you browse, create an account, or use our services.">

@@ -6,6 +6,7 @@
 //     covered too.
 //  2. The origin gate (Caddy forward_auth -> GET /api/internal/geo-gate). Works
 //     without a token and also refuses traffic that did not come through Cloudflare.
+import { redirectFor } from './seo.mjs';
 import { decide, edgeExpression, adminLockExpression, buildAllowList, isAllowlisted, validCidr } from './geo-policy.mjs';
 import { z } from 'zod';
 import { sql, audit } from './db.mjs';
@@ -62,6 +63,8 @@ const portal = (req) => req.headers['x-backpagenew-app'] === 'manager' ? 'manage
 export function viewer(req) { return { ip: String(req.headers['cf-connecting-ip'] || ''), country: String(req.headers['cf-ipcountry'] || '').toUpperCase() }; }
 
 const BLOCK_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Not available</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;background:#f5f7fb;color:#1b2840}main{max-width:420px;padding:32px 24px;text-align:center}h1{font-size:20px;margin:0 0 8px}p{margin:0;color:#5d6a80}</style></head><body><main><h1>This site is not available in your region</h1><p>Access from your location is restricted.</p></main></body></html>`;
+
+const GONE_PAGE = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page removed</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;background:#f5f7fb;color:#1b2840}main{max-width:420px;padding:32px 24px;text-align:center}h1{font-size:20px;margin:0 0 8px}a{color:#123168}</style></head><body><main><h1>This page has been removed</h1><p><a href="/">Go to the home page</a></p></main></body></html>';
 
 async function count(reason) {
   const key = `bpn:blocked:${new Date().toISOString().slice(0, 10)}:${reason}`;
@@ -149,7 +152,15 @@ export function securityCenter(app, { admin, fail }) {
     const settings = await loadSettings();
     const visitor = viewer(req);
     const reason = decide(settings, { ...visitor, app: ['admin', 'manager'].includes(req.headers['x-gate-app']) ? req.headers['x-gate-app'] : 'public', viaCloudflare: Boolean(req.headers['cf-ray'] && visitor.ip) });
-    if (!reason) return reply.code(204).send();
+    if (!reason) {
+      // Redirects set in Admin → SEO are applied here, on the same request that already checks the gate.
+      if (req.headers['x-gate-app'] === 'public') {
+        const hit = await redirectFor(req.headers['x-forwarded-uri']);
+        if (hit?.status === 410) return reply.code(410).header('cache-control', 'public, max-age=3600').type('text/html; charset=utf-8').send(GONE_PAGE);
+        if (hit?.location) return reply.code(hit.status).header('location', hit.location).header('cache-control', hit.status === 301 || hit.status === 308 ? 'public, max-age=3600' : 'no-store').send();
+      }
+      return reply.code(204).send();
+    }
     void count(reason);
     return reply.code(403).header('cache-control', 'no-store').type('text/html; charset=utf-8').send(BLOCK_PAGE);
   });

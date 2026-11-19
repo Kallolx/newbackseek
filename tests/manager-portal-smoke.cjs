@@ -4,7 +4,7 @@ const { chromium } = require(process.env.BPN_PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const base = process.env.BPN_ADMIN_BASE || 'http://localhost:3101';
 
-const permissions = [['overview', 'Overview', true], ['ads', 'All Ads', true], ['publish', 'Ad Publish', true], ['bump', 'Bump post', true], ['distribute', 'Distribute post', true], ['users', 'Users', false], ['media', 'Media', true], ['reports', 'Reports', true], ['verification', 'Verification', true], ['health', 'System health', true], ['security', 'Security', true], ['vpn', 'VPN', true], ['planner', 'Post planner', true]].map(([key, label, d]) => ({ key, label, default: d }));
+const permissions = [['overview', 'Overview', true], ['ads', 'All Ads', true], ['publish', 'Ad Publish', true], ['bump', 'Bump post', true], ['distribute', 'Distribute post', true], ['users', 'Users', false], ['media', 'Media', true], ['reports', 'Reports', true], ['verification', 'Verification', true], ['health', 'System health', true], ['security', 'Security', true], ['vpn', 'VPN', true], ['planner', 'Post planner', true], ['seo', 'SEO', false]].map(([key, label, d]) => ({ key, label, default: d }));
 const summary = { counts: { users: 3, ads: 4, published: 2, pending: 1, media: 0, reports: 0, verifications: 0 }, daily: [] };
 const health = { databaseMs: 1, queue: { waiting: 0, active: 0, failed: 0 }, uptime: 100, memory: { rss: 1e8, heapUsed: 5e7 }, telemetry: { requests: 1, errors: 0, startedAt: new Date().toISOString(), p95: 5 } };
 
@@ -63,7 +63,7 @@ async function open(browser, user, extra = {}) {
     const generated = await admin.page.getByRole('textbox', { name: 'Password' }).inputValue();
     assert.ok(generated.length >= 16, 'a password is generated');
     const checked = await admin.page.locator('[aria-label="Sections this manager can open"] input:checked').count();
-    assert.equal(checked, 12, 'defaults: everything except Users');
+    assert.equal(checked, 12, 'defaults: everything except Users and SEO');
     await admin.page.getByRole('checkbox', { name: 'Media' }).uncheck();
     await admin.page.getByRole('button', { name: 'Create manager' }).click();
     await admin.page.getByText('Manager account created').waitFor();
@@ -73,7 +73,7 @@ async function open(browser, user, extra = {}) {
     assert.ok(await admin.page.getByText('Password: ' + generated).isVisible(), 'credentials shown once to copy');
     await admin.page.getByRole('button', { name: 'Done' }).click(); await admin.page.waitForTimeout(600);
     await admin.page.getByText('Rita Jones', { exact: true }).waitFor();
-    assert.ok(await admin.page.getByText('11/13 sections').isVisible());
+    assert.ok(await admin.page.getByText('11/14 sections').isVisible());
     const adminLinks = await admin.page.locator('.mantine-AppShell-navbar a').allInnerTexts();
     assert.ok(adminLinks.some((t) => t.trim() === 'Team') && adminLinks.some((t) => t.trim() === 'Users'), 'admin sees everything');
     await admin.page.screenshot({ path: process.env.BPN_SHOT || 'manager-team.png', fullPage: true });

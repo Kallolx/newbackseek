@@ -18,9 +18,11 @@ type Props = {
   dating: boolean;
   /** First page, rendered on the server so the list appears with the page. */
   initial?: { posts: Post[]; hasMore: boolean };
+  /** Replaces the default page heading (set in Admin → SEO). */
+  heading?: string;
 };
 
-export function ServiceListings({ city, service, groups, dating, initial }: Props) {
+export function ServiceListings({ city, service, groups, dating, initial, heading }: Props) {
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
   const dropdown = useRef<HTMLDivElement>(null);
@@ -79,7 +81,7 @@ export function ServiceListings({ city, service, groups, dating, initial }: Prop
 
   return (
     <>
-      <h1 className="sr-only">{service.name} in {city.name}</h1>
+      <h1 className="sr-only">{heading ?? `${service.name} in ${city.name}`}</h1>
       {ageReady && locked && (
         <dialog ref={dialog} className="dating-warning" aria-labelledby="dating-warning-title"
           onCancel={(event) => { event.preventDefault(); router.push(city.href); }}>
@@ -146,7 +148,7 @@ export function ServiceListings({ city, service, groups, dating, initial }: Prop
             <ul className={gallery ? 'post-list post-gallery' : 'post-list'}>
               {posts.map((post, index) => (
                 <PostCard key={post.id} title={post.title} label={post.location || city.name} description={post.description}
-                  thumbnail={post.image?.card?.url ? <img src={post.image.card.url} alt="" width={480} height={320} loading={index < 4 ? 'eager' : 'lazy'} fetchPriority={index < 2 ? 'high' : 'auto'} decoding="async" /> : undefined}
+                  thumbnail={post.image?.card?.url ? <img src={post.image.card.url} alt={post.title} width={480} height={320} loading={index < 4 ? 'eager' : 'lazy'} fetchPriority={index < 2 ? 'high' : 'auto'} decoding="async" /> : undefined}
                   details={'Age: ' + post.age} verified={post.verified} href={city.href + '/' + service.slug + '/' + post.id} />
               ))}
             </ul>

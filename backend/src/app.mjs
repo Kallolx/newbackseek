@@ -22,6 +22,7 @@ import { vpnRoutes } from "./vpn.mjs";
 import { storageReport } from "./storage-report.mjs";
 import { teamRoutes, managerMay } from "./team.mjs";
 import { plannerRoutes } from "./planner.mjs";
+import { seoRoutes } from "./seo.mjs";
 import { accountSecurity, startSecondStep } from "./account-security.mjs";
 import { pictureUpload, MAX_PICTURE_BYTES } from "./picture-upload.mjs";
 import { cached, publicDataChanged, changesPublicData } from "./public-cache.mjs";
@@ -491,7 +492,9 @@ export async function buildApp() {
         sql`select id,variants,width,height from media where ad_id=${adId} and status='ready' and purpose='ad' order by created_at,id`,
         sql`select c.* from placements p join cities c on c.id=p.city_id where p.ad_id=${adId}`,
       ]);
-      return ad ? { post: ad, images, cities } : null;
+      // The ad can sit in many cities; search engines get ONE address for it (the lowest city id), the others point to it.
+      const canonical = cities.reduce((best, city) => (!best || Number(city.id) < Number(best.id) ? city : best), null);
+      return ad ? { post: ad, images, cities, canonicalHref: canonical?.href || null } : null;
     });
     if (!result) throw fail(404, "Post not found");
     return result;
@@ -665,6 +668,7 @@ export async function buildApp() {
   vpnRoutes(app, { admin, fail });
   teamRoutes(app, { admin, fail });
   plannerRoutes(app, { admin, fail });
+  seoRoutes(app, { admin, fail });
   accountSecurity(app, { member, fail, session, sessionCookie, cookieOptions });
   // Contact page: kept in the database and emailed to support (reply goes to the sender).
   app.post("/api/contact", { config: { rateLimit: { max: 5, timeWindow: "1 hour" } } }, async (req) => {

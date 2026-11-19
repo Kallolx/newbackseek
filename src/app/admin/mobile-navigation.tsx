@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Drawer,SimpleGrid,UnstyledButton,Text } from '@mantine/core';
-import { FiCalendar,FiUserPlus,FiWifi,FiLock,FiActivity,FiArrowUp,FiFileText,FiFlag,FiGrid,FiImage,FiMapPin,FiMoreHorizontal,FiPlus,FiShield,FiUsers } from 'react-icons/fi';
+import { FiTrendingUp,FiCalendar,FiUserPlus,FiWifi,FiLock,FiActivity,FiArrowUp,FiFileText,FiFlag,FiGrid,FiImage,FiMapPin,FiMoreHorizontal,FiPlus,FiShield,FiUsers } from 'react-icons/fi';
 import { adminRoutes } from './admin-routes';
 import styles from './mobile-navigation.module.css';
 const tabs=[['Overview','Home',FiGrid],['Ads','Ads',FiFileText],['Publish','Create',FiPlus],['Users','Users',FiUsers]] as const;
-const more=[['Post planner',FiCalendar],['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['System health',FiActivity],['Security',FiLock],['VPN',FiWifi],['Team',FiUserPlus]] as const;
+const more=[['Post planner',FiCalendar],['SEO',FiTrendingUp],['Media',FiImage],['Reports',FiFlag],['Verification',FiShield],['Bump post',FiArrowUp],['Distribute post',FiMapPin],['System health',FiActivity],['Security',FiLock],['VPN',FiWifi],['Team',FiUserPlus]] as const;
 export function AdminMobileNavigation({onCreate,may}:{onCreate:()=>void;may:(name:string)=>boolean}){
  const path=usePathname();const [opened,setOpened]=useState(false);
  const shownTabs=tabs.filter(([name])=>may(name)),shownMore=more.filter(([name])=>may(name));

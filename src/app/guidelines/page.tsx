@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '../../lib/seo';
 import Link from 'next/link';
 import { LegalPage } from '../../components/legal-page';
 
-export const metadata: Metadata = { title: 'Guidelines', description: 'Rules for posting and using BackpageNew.' };
+export async function generateMetadata(): Promise<Metadata> { return pageMetadata({ path: '/guidelines', kind: 'page', title: 'Community Guidelines – Rules for Posting | BackpageNew', description: 'The rules every ad and member on BackpageNew must follow: adults only, no exploitation, no fraud, honest listings and safe use.' }); }
 
 export default function GuidelinesPage() {
   return <LegalPage title="Community Guidelines" date="November 19, 2026" summary="The rules every listing and account on BackpageNew must follow. They apply together with our Terms of Service and Privacy Policy.">

@@ -7,6 +7,7 @@ import { config } from './config.mjs';
 import { s3 } from './storage.mjs';
 import { publishDueDrafts } from './planner.mjs';
 import { publicDataChanged } from './public-cache.mjs';
+import { flushIndexNow } from './seo.mjs';
 
 // Several small jobs run in parallel; each job uses one libvips thread so
 // concurrent uploads from different members never wait on each other.
@@ -86,6 +87,9 @@ async function runPlanner() {
   finally { planning = false; }
 }
 const planner = setInterval(runPlanner, 10 * 1000);
+
+// SEO: tell Bing and other IndexNow search engines about ads that changed (every 2 minutes).
+const indexNow = setInterval(() => { flushIndexNow().catch(error => console.error('IndexNow run failed', error.message)); }, 2 * 60 * 1000);
 setTimeout(sweepAbandonedUploads, 60 * 1000);
 
-for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, async () => { clearInterval(sweep); clearInterval(planner); await worker.close(); await connection.quit(); await sql.end(); process.exit(0); });
+for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, async () => { clearInterval(sweep); clearInterval(planner); clearInterval(indexNow); await worker.close(); await connection.quit(); await sql.end(); process.exit(0); });
