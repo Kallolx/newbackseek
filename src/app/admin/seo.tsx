@@ -35,6 +35,8 @@ function Counter({ value, limit }: { value: string; limit: number }) {
 function Snippet({ title, description, url }: { title: string; description: string; url: string }) {
   return <div className={styles.snippet}><Text size="xs" c="dimmed" truncate>{url}</Text><Text className={styles.snippetTitle} lineClamp={2}>{title || 'Title'}</Text><Text size="sm" c="dimmed" lineClamp={3}>{description || 'Description'}</Text></div>;
 }
+/** A short plain-words explanation at the top of a tab. */
+function Tip({ children }: { children: ReactNode }) { return <Alert variant="light" color="gray" radius="md" py="xs"><Text size="sm">{children}</Text></Alert>; }
 function Section({ icon, title, children, hint }: { icon: ReactNode; title: string; children: ReactNode; hint?: string }) {
   return <Paper withBorder radius="md" p="md"><Group gap={8} mb={hint ? 2 : 'sm'} wrap="nowrap"><span className={styles.sectionIcon}>{icon}</span><Title order={3} size="h5">{title}</Title></Group>{hint && <Text size="xs" c="dimmed" mb="sm">{hint}</Text>}{children}</Paper>;
 }
@@ -73,13 +75,13 @@ export function SeoCenter({ locations, categories }: { locations: LocationCountr
         <Tabs.Tab value="connect" leftSection={<FiExternalLink />}>Connect</Tabs.Tab>
       </Tabs.List>
       <Tabs.Panel value="overview" pt="md"><Overview data={data} form={form} go={setTab} /></Tabs.Panel>
-      <Tabs.Panel value="brand" pt="md"><Brand form={form} update={update} /></Tabs.Panel>
-      <Tabs.Panel value="titles" pt="md"><Titles form={form} update={update} defaults={data.defaults} /></Tabs.Panel>
-      <Tabs.Panel value="pages" pt="md"><Pages data={data} locations={locations} categories={categories} reload={reload} /></Tabs.Panel>
-      <Tabs.Panel value="indexing" pt="md"><Indexing form={form} update={update} origin={data.origin} /></Tabs.Panel>
-      <Tabs.Panel value="redirects" pt="md"><Redirects data={data} reload={reload} /></Tabs.Panel>
-      <Tabs.Panel value="tools" pt="md"><Tools data={data} reload={reload} /></Tabs.Panel>
-      <Tabs.Panel value="connect" pt="md"><Connect form={form} update={update} data={data} /></Tabs.Panel>
+      <Tabs.Panel value="brand" pt="md"><Stack><Tip>Your name, picture and logo as Google and social networks show them. The picture and logo are already set. Add your official social pages when you have them: Google uses them to recognise the brand.</Tip><Brand form={form} update={update} /></Stack></Tabs.Panel>
+      <Tabs.Panel value="titles" pt="md"><Stack><Tip>The big blue line on a Google result is the <b>title</b>, and the grey text under it is the <b>description</b>. These templates write them automatically for every page, filling in the city, state or category. The recommended text is already set, so only change it if you want different wording. “Reset to recommended” undoes any change.</Tip><Titles form={form} update={update} defaults={data.defaults} /></Stack></Tabs.Panel>
+      <Tabs.Panel value="pages" pt="md"><Stack><Tip>Write your own title, description and text for one page, for example a city you want to rank in. Choose the country, state, city and category, then fill in what you want. Text you write here shows on the page and is the best way to help a city rank. The 20 busiest cities already have text; you can edit it.</Tip><Pages data={data} locations={locations} categories={categories} reload={reload} /></Stack></Tabs.Panel>
+      <Tabs.Panel value="indexing" pt="md"><Stack><Tip>“Indexing” means Google adding a page to its search results. These switches decide which pages Google may add. The recommended settings are on. Leave them unless you have a reason, and be careful with the red switch at the bottom.</Tip><Indexing form={form} update={update} origin={data.origin} /></Stack></Tabs.Panel>
+      <Tabs.Panel value="redirects" pt="md"><Stack><Tip>Use this when a page moves or is deleted. Visitors and Google are sent to the new address, so you do not lose ranking. You will not need it until you change or remove a page.</Tip><Redirects data={data} reload={reload} /></Stack></Tabs.Panel>
+      <Tabs.Panel value="tools" pt="md"><Stack><Tip>Two helpers. <b>Check a page</b> shows what Google sees on any page of your site. <b>Tell Bing</b> asks search engines to look at pages right away. New ads are sent automatically, so you rarely need it.</Tip><Tools data={data} reload={reload} /></Stack></Tabs.Panel>
+      <Tabs.Panel value="connect" pt="md"><Stack><Tip>This is the part that needs <b>you</b>. Open the step-by-step boxes below, create your free Google and Bing accounts, and paste the codes they give you into the fields. Nothing here can be filled in for you because the codes belong to your accounts.</Tip><Connect form={form} update={update} data={data} /></Stack></Tabs.Panel>
     </Tabs>
     {dirty && <div className={styles.saveBar} role="region" aria-label="Unsaved changes">
       <Text size="xs" c="dimmed" className={styles.saveNote}>Unsaved changes</Text>
@@ -111,13 +113,23 @@ function Overview({ data, form, go }: { data: Data; form: SeoSettings; go: (tab:
     { w: 10, ok: form.indexing.minAdsForListing >= 1, label: 'Empty listing pages are kept out of Google', hint: 'Set the minimum ads to at least 1.', tab: 'indexing' },
   ];
   const score = items.reduce((sum, item) => sum + (item.ok ? item.w : 0), 0);
+  const needsYou = items.filter((item) => !item.ok && ['connect', 'brand'].includes(item.tab));
   return <Stack>
+    <Tip>This page controls how Google and Bing find and show BackpageNew. <b>You do not have to change anything here.</b> The recommended settings are already on. Only the items under “Only you can do this” need you, because they need your own Google, Bing or social accounts.</Tip>
     <SimpleGrid cols={{ base: 2, md: 4 }}>
       {[['SEO score', `${score}/100`], ['Ads in sitemap', health.counts.ads], ['Listing pages', health.counts.listingPages], ['Cities', health.counts.cities]].map(([name, value]) => <Paper key={String(name)} withBorder p="md" radius="md"><Text size="sm" c="dimmed">{name}</Text><Title order={2}>{value}</Title></Paper>)}
     </SimpleGrid>
     <Progress value={score} color={score >= 85 ? 'teal' : score >= 60 ? 'orange' : 'red'} size="lg" radius="xl" />
     <Paper withBorder radius="md" p="md">
-      <Group justify="space-between" mb={4}><Title order={3} size="h5">Checklist</Title><Button variant="subtle" size="compact-sm" onClick={reload} loading={loading}>Check again</Button></Group>
+      <Title order={3} size="h5" mb={4}>Already done for you</Title>
+      {['A sitemap and robots.txt that search engines read automatically', 'A good title and description for every country, state, city, category, ad and blog article', 'One main address for each ad, so Google does not see copies', 'Pages with no ads are kept out of Google', 'Extra information for Google (structured data) on every page type', 'Preview image and logo for shared links', 'IndexNow: new and changed ads are sent to Bing within minutes', 'Short texts for the 20 busiest cities', 'Redirect from www to the main address', 'Age labels so filters and SafeSearch treat the site correctly'].map((text) => <Check key={text} ok label={text} />)}
+    </Paper>
+    {needsYou.length > 0 && <Paper withBorder radius="md" p="md" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
+      <Title order={3} size="h5" mb={4}>Only you can do this</Title>
+      {needsYou.map((item) => <div key={item.label}><Check ok={false} warn label={item.label} hint={item.hint} /><Button variant="light" size="compact-sm" ml={28} onClick={() => go(item.tab)}>{item.tab === 'connect' ? 'Show me how' : 'Open'}</Button></div>)}
+    </Paper>}
+    <Paper withBorder radius="md" p="md">
+      <Group justify="space-between" mb={4}><Title order={3} size="h5">Full checklist</Title><Button variant="subtle" size="compact-sm" onClick={reload} loading={loading}>Check again</Button></Group>
       {items.map((item) => <div key={item.label}><Check ok={item.ok} warn={item.warn} label={item.label} hint={item.hint} />{!item.ok && <Button variant="subtle" size="compact-xs" ml={28} onClick={() => go(item.tab)}>Fix this</Button>}</div>)}
     </Paper>
     <Alert color="blue" variant="light" title="Good to know">Google decides rankings. This page gives it clean pages, correct signals and fast discovery. New sites take weeks to months to rank, and links from other websites matter a lot.</Alert>
@@ -140,10 +152,10 @@ function Brand({ form, update }: { form: SeoSettings; update: Update }) {
       <Stack gap="sm">
         <SimpleGrid cols={{ base: 1, sm: 2 }}><TextInput label="Organization name" value={form.organization.name} onChange={(event) => update((v) => { v.organization.name = event.currentTarget.value; })} /><TextInput label="Support email" value={form.organization.email} onChange={(event) => update((v) => { v.organization.email = event.currentTarget.value; })} /></SimpleGrid>
         <TextInput label="Logo address" placeholder="https://backpagenew.com/brand/backpage-new-logo.png" value={form.organization.logo} onChange={(event) => update((v) => { v.organization.logo = event.currentTarget.value; })} />
-        <TagsInput label="Official profiles" description="Full https:// addresses: X, Facebook, Instagram, Reddit, YouTube…" value={form.organization.sameAs} onChange={(value) => update((v) => { v.organization.sameAs = value; })} splitChars={[' ', ',']} clearable />
+        <TagsInput label="Your official social pages" description="Paste the full web address of each page you own (X, Facebook, Instagram, Reddit, YouTube) and press Enter. Leave empty until you have them." value={form.organization.sameAs} onChange={(value) => update((v) => { v.organization.sameAs = value; })} splitChars={[' ', ',']} clearable />
       </Stack>
     </Section>
-    <Section icon={<FiSettings />} title="Structured data" hint="Extra information for Google. Leave all on unless a type causes warnings.">
+    <Section icon={<FiSettings />} title="Extra information for Google (structured data)" hint="Hidden facts that help Google understand each page, such as the breadcrumb trail. Leave everything on.">
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
         {([['organization', 'Organization (home page)'], ['website', 'Website'], ['breadcrumbs', 'Breadcrumbs'], ['itemList', 'Listing pages'], ['ad', 'Ad pages'], ['blog', 'Blog articles'], ['faq', 'FAQ blocks']] as const).map(([key, label]) => <Switch key={key} label={label} checked={form.schema[key]} onChange={(event) => update((v) => { v.schema[key] = event.currentTarget.checked; })} />)}
       </SimpleGrid>
@@ -205,10 +217,10 @@ function Pages({ data, locations, categories, reload }: { data: Data; locations:
         <Snippet title={form.title || '(automatic title)'} description={form.description || '(automatic description)'} url={'backpagenew.com' + path} />
         <div><TextInput label="Title" value={form.title} onChange={(event) => set('title', event.currentTarget.value)} placeholder="Empty = automatic" /><Counter value={form.title} limit={TITLE_LIMIT} /></div>
         <div><Textarea label="Description" autosize minRows={2} value={form.description} onChange={(event) => set('description', event.currentTarget.value)} placeholder="Empty = automatic" /><Counter value={form.description} limit={DESCRIPTION_LIMIT} /></div>
-        <TextInput label="Main heading (H1)" value={form.h1} onChange={(event) => set('h1', event.currentTarget.value)} placeholder="Empty = automatic" />
+        <TextInput label="Main heading (the big title on the page)" value={form.h1} onChange={(event) => set('h1', event.currentTarget.value)} placeholder="Empty = automatic" />
         <Textarea label="Text shown on the page" description="Real, useful text about this place or topic helps it rank. A blank line starts a new paragraph." autosize minRows={4} maxRows={14} value={form.intro} onChange={(event) => set('intro', event.currentTarget.value)} />
-        <SimpleGrid cols={{ base: 1, sm: 2 }}><TextInput label="Canonical address (advanced)" value={form.canonical} onChange={(event) => set('canonical', event.currentTarget.value)} placeholder="Empty = this page" /><TextInput label="Share image address" value={form.ogImage} onChange={(event) => set('ogImage', event.currentTarget.value)} placeholder="Empty = default" /></SimpleGrid>
-        <Switch label="Keep this page out of Google (noindex)" checked={form.noindex} onChange={(event) => set('noindex', event.currentTarget.checked)} />
+        <SimpleGrid cols={{ base: 1, sm: 2 }}><TextInput label="Main address of this page (advanced)" description="Leave empty unless this page is a copy of another page." value={form.canonical} onChange={(event) => set('canonical', event.currentTarget.value)} placeholder="Empty = this page" /><TextInput label="Share image address" value={form.ogImage} onChange={(event) => set('ogImage', event.currentTarget.value)} placeholder="Empty = default" /></SimpleGrid>
+        <Switch label="Keep this page out of Google" checked={form.noindex} onChange={(event) => set('noindex', event.currentTarget.checked)} />
         <Group justify="space-between"><div>{exists && <Button color="red" variant="subtle" leftSection={<FiTrash2 />} onClick={() => void remove()} loading={busy}>Remove custom text</Button>}</div><Button onClick={() => void save()} loading={busy}>Save page</Button></Group>
       </Stack>
     </Section>}
