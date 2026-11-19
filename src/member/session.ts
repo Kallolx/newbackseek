@@ -9,7 +9,9 @@ const server:Snapshot={member:null,ready:false,error:'',postsLoading:false,posts
 const FRESH_MS=60000;
 let snapshot:Snapshot=server, generation=0, pending:Promise<void>|null=null, loadedAt=0;
 const listeners=new Set<()=>void>();
-function publish(value:Snapshot){snapshot=value;listeners.forEach(listener=>listener());}
+// Remember (per browser) whether a member is signed in, so the header is right at the very first paint of the next page.
+function remember(signedIn:boolean){try{if(signedIn)localStorage.setItem('bpn-member','1');else localStorage.removeItem('bpn-member');}catch{}document.documentElement.dataset.member=signedIn?'yes':'';}
+function publish(value:Snapshot){snapshot=value;if(value.ready&&!value.error&&typeof document!=='undefined')remember(Boolean(value.member));listeners.forEach(listener=>listener());}
 function subscribe(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener);};}
 function image(variants:unknown,size:'card'|'full'|'thumb'='card'):string[]{if(!variants||typeof variants!=='object')return[];const v=variants as Record<string,{url?:string}>;const url=v[size]?.url||v.card?.url||v.full?.url;return url?[url]:[];}
 export function refreshMember(force=false):Promise<void>{

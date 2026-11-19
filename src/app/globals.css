@@ -186,7 +186,11 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
 .post-gallery .verified-badge { position: absolute; top: 8px; left: 8px; z-index: 1; box-shadow: 0 2px 10px #00000059, inset 0 1px 0 #ffffff33; }
 .post-thumbnail img { position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover; }
 .header-member-nav { display: flex; justify-content: center; align-items: center; gap: 13px; }
-.header-member-nav[data-signed-in="true"] { font-size: 14px; }
+.header-member-nav .nav-in, .header-member-nav .nav-out { display: flex; align-items: center; gap: 13px; }
+/* Both versions are in the page; a tiny script in <head> marks returning members before the first paint, so the right one shows at once. */
+.header-member-nav .nav-in { display: none; font-size: 14px; }
+html[data-member="yes"] .header-member-nav .nav-in { display: flex; }
+html[data-member="yes"] .header-member-nav .nav-out { display: none; }
 [data-sonner-toaster] .site-toast { width:max-content !important;max-width:100% !important;left:50% !important;translate:-50% 0;font-size:13px !important;line-height:1.5 !important;padding:10px 16px !important;background:#26312d !important;color:#fff !important;border:1px solid #ffffff14 !important;border-radius:999px !important;box-shadow:0 5px 18px #14251d29 !important;gap:9px !important; }
 .site-toast [data-icon] { color:#fff !important;flex-shrink:0; }
 .site-toast [data-icon] svg { width:17px;height:17px; }
@@ -200,8 +204,8 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
   body:has(nav[aria-label="Mobile admin navigation"]) [data-sonner-toaster][data-y-position="bottom"] { bottom:calc(100px + env(safe-area-inset-bottom)) !important; }
 }
 .header-member-nav button { border: 0; background: none; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
-.header-member-nav > * + * { position: relative; margin-left: 1px; }
-.header-member-nav > * + *::before { content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 1px; height: 13px; background: #d3d7df; }
+.header-member-nav .nav-in > * + * { position: relative; margin-left: 1px; }
+.header-member-nav .nav-in > * + *::before { content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 1px; height: 13px; background: #d3d7df; }
 .post-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 .post-card-heading > div { min-width: 0; }
 .post-card-heading > button { flex-shrink: 0; }
