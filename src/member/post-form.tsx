@@ -8,6 +8,7 @@ import { FiMapPin, FiInfo, FiImage, FiShield, FiUploadCloud, FiX, FiCheck, FiRot
 import { SiteSelect } from '../components/site-select';
 import { countries } from '../directory/areas';
 import { serviceGroups } from '../directory/service-groups';
+import { isBoldGroup, isBoldService } from '../directory/emphasis';
 import { type MemberSession,type MemberPost } from './session';
 import { toast } from '../components/toast';
 import styles from './member.module.css';
@@ -110,8 +111,8 @@ export function MemberPostForm({ member,post }: { member: MemberSession;post?:Me
           <SiteSelect label="Country" disabled={Boolean(post)} required value={countryCode} options={countries.map((item) => ({ value: item.code, label: item.name }))} placeholder="Choose your country" onChange={(value) => { setCountry(value); setRegion(''); setCity(''); }} />
           <SiteSelect label="State or region" required value={regionHref} disabled={Boolean(post)||!country} placeholder={country ? 'Choose your state or region' : 'Select a country first'} options={country?.regions.map((item) => ({ value: item.href, label: item.name })) ?? []} onChange={(value) => { setRegion(value); setCity(''); }} />
           <SiteSelect label="City" required value={cityHref} disabled={Boolean(post)||!region} placeholder={region ? 'Pick your city' : 'Select a state or region first'} options={region?.cities.map((item) => ({ value: item.href, label: item.name })) ?? []} onChange={setCity} />
-          <SiteSelect label="Category" required value={groupName} placeholder="Choose your category" options={serviceGroups.map((item) => ({ value: item.name, label: item.name, strong: item.name === 'Dating' || item.name === 'Adult' }))} onChange={(value) => { setGroup(value); setService(''); }} />
-          <SiteSelect label="Subcategory" required value={serviceSlug} disabled={!group} placeholder={group ? 'Choose your subcategory' : 'Select a category first'} options={group?.services.map((item) => ({ value: item.slug, label: item.name, strong: item.slug === 'women-seeking-men' })) ?? []} onChange={setService} />
+          <SiteSelect label="Category" required value={groupName} placeholder="Choose your category" options={serviceGroups.map((item) => ({ value: item.name, label: item.name, strong: isBoldGroup(item.name) }))} onChange={(value) => { setGroup(value); setService(''); }} />
+          <SiteSelect label="Subcategory" required value={serviceSlug} disabled={!group} placeholder={group ? 'Choose your subcategory' : 'Select a category first'} options={group?.services.map((item) => ({ value: item.slug, label: item.name, strong: isBoldService(item.slug) })) ?? []} onChange={setService} />
         </div>
       </section>
       <aside className={styles.rules}>

@@ -8,6 +8,7 @@ import { ListingSkeleton } from './skeletons';
 import { FeedbackToast } from './toast';
 import { PostCard } from './post-card';
 import { PostPagination } from './post-pagination';
+import { isBoldGroup, isBoldService } from '../directory/emphasis';
 
 type Service = { name: string; slug: string };
 type Post = { id: string; title: string; description: string; age: number; location?: string; verified?: boolean; image?: { card?: { url: string } } | null };
@@ -114,7 +115,7 @@ export function ServiceListings({ city, service, groups, dating, initial, headin
                 <div className="service-dropdown-menu" role="listbox" aria-label="Service category">
                   {groups.map((group) => (
                     <section key={group.name}>
-                      <h2>{group.name}</h2>
+                      <h2 data-bold={isBoldGroup(group.name) || undefined}>{group.name}</h2>
                       {group.services.map((item) => (
                         <button
                           key={item.slug}
@@ -126,7 +127,7 @@ export function ServiceListings({ city, service, groups, dating, initial, headin
                             router.push(city.href + '/' + item.slug);
                           }}
                         >
-                          {item.slug === 'women-seeking-men' ? <strong>{item.name}</strong> : item.name}
+                          {isBoldService(item.slug) ? <strong>{item.name}</strong> : item.name}
                         </button>
                       ))}
                     </section>

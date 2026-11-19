@@ -8,6 +8,7 @@ import { JsonLd } from '../../../components/json-ld';
 import { AdminIntro, FaqList, PlaceLinks } from '../../../components/seo-blocks';
 import { countries } from '../../../directory/areas';
 import { serviceGroups } from '../../../directory/service-groups';
+import { isBoldGroup, isBoldService } from '../../../directory/emphasis';
 import { getAd, getFeed, getStats } from '../../../lib/public-data';
 import { adLd, breadcrumbLd, collectionLd, excerpt, faqLd, getSeo, pageMetadata, pageOverride, type Kind } from '../../../lib/seo';
 
@@ -175,10 +176,9 @@ export default async function BrowsePage({ params }: Params) {
 
   // Words that are true for this place right now (unique per page, not boilerplate).
   const categoryNames = new Map(allServices.map((item) => [item.slug, item.name]));
-  const top = (stats?.categories ?? []).slice(0, 3).map((item) => `${categoryNames.get(item.slug) ?? item.slug} (${item.n})`);
-  const counts = new Map((stats?.categories ?? []).map((item) => [item.slug, item.n]));
+  const top = (stats?.categories ?? []).slice(0, 3).map((item) => categoryNames.get(item.slug) ?? item.slug);
   const intro = city
-    ? `${city.name} is one of the cities on BackpageNew, the new Backpage alternative. Browse free classifieds and personal ads from people in ${city.name}, ${region?.name}, or post your own.${stats?.total ? ` There ${stats.total === 1 ? 'is' : 'are'} ${plural(stats.total, 'active ad')} in ${city.name} right now${top.length ? `, most of them in ${top.join(', ')}` : ''}.` : ''}`
+    ? `${city.name} is one of the cities on BackpageNew, the new Backpage alternative. Browse free classifieds and personal ads from people in ${city.name}, ${region?.name}, or post your own.${stats?.total ? ` There ${stats.total === 1 ? 'is' : 'are'} ${plural(stats.total, 'active ad')} in ${city.name} right now${top.length ? `, most of them in ${top.length > 1 ? top.slice(0, -1).join(', ') + ' and ' + top[top.length - 1] : top[0]}` : ''}.` : ''}`
     : region
       ? `Choose a city in ${region.name} to see its local classifieds and personal ads. BackpageNew covers ${plural(region.cities.length, 'city')} in ${region.name}.${stats?.total ? ` Together they have ${plural(stats.total, 'active ad')} right now.` : ''}`
       : `BackpageNew has free classifieds and personal ads across ${plural(country.regions.length, country.code === 'us' ? 'state' : 'region')} in ${country.name}. Choose a ${country.code === 'us' ? 'state' : 'region'} to find your city.`;
@@ -210,14 +210,13 @@ export default async function BrowsePage({ params }: Params) {
           <div>
             {serviceGroups.map((item) => (
               <section className="browse-group" key={item.name}>
-                <h2>{item.name}</h2>
+                <h2 data-bold={isBoldGroup(item.name) || undefined}>{item.name}</h2>
                 <ul className="service-links">
                   {item.services.map((service) => (
                     <li key={service.slug}>
                       <Link href={city.href + '/' + service.slug} prefetch={false}>
                         <RegionArrow />
-                        {service.slug === 'women-seeking-men' ? <strong>{service.name}</strong> : service.name}
-                        {counts.get(service.slug) ? <span className="service-count"> ({counts.get(service.slug)})</span> : null}
+                        {isBoldService(service.slug) ? <strong>{service.name}</strong> : service.name}
                       </Link>
                     </li>
                   ))}
