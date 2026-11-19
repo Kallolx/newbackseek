@@ -100,9 +100,10 @@ test('SEO: robots.txt, sitemaps, canonical address, settings, overrides, redirec
     assert.match((await open('/robots.txt')).body, /User-agent: \*\nDisallow: \/\n/);
     await call('PUT', '/api/admin/seo', { ...next, indexing: { ...next.indexing, minAdsForListing: 1, siteNoindex: false } });
   } finally {
-    await sql`delete from seo_redirects`; await sql`delete from seo_pages`; await sql`update seo_settings set data='{}' where id=1`;
-    await sql`delete from media where object_key='test/seo-pic'`; await sql`delete from placements where ad_id in (${one},${paused},${solo})`; await sql`delete from ads where id in (${one},${paused},${solo})`;
-    await sql`delete from cities where id in (${cityA.id},${cityB.id})`; await sql`delete from audit_events where actor_id=${admin.id}`; await sql`delete from sessions where user_id=${admin.id}`; await sql`delete from users where id=${admin.id}`;
+    const attempt = async (work) => { try { await work(); } catch (error) { console.error('cleanup:', error.message); } };
+    await attempt(() => sql`delete from seo_redirects`); await attempt(() => sql`delete from seo_pages`); await attempt(() => sql`update seo_settings set data='{}',updated_by=null where id=1`);
+    await attempt(() => sql`delete from media where object_key='test/seo-pic'`); await attempt(() => sql`delete from placements where ad_id in (${one},${paused},${solo})`); await attempt(() => sql`delete from ads where id in (${one},${paused},${solo})`);
+    await attempt(() => sql`delete from cities where id in (${cityA.id},${cityB.id})`); await attempt(() => sql`delete from audit_events where actor_id=${admin.id}`); await attempt(() => sql`delete from sessions where user_id=${admin.id}`); await attempt(() => sql`delete from users where id=${admin.id}`);
     await app.close();
   }
 });
