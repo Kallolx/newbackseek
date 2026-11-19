@@ -450,6 +450,7 @@ docker compose -p bpn-admin-regression -f backend/compose.test.yml down --remove
 - Page code: src/lib/seo.ts (metadata + JSON-LD builders), src/lib/seo-core.ts (templates; also used by the admin preview), src/content/pages.ts (landing page text and the static page list), src/components/info-page.tsx, seo-blocks.tsx, json-ld.tsx. Titles never use a global template suffix: every page sets its own absolute title.
 - The public-cache revalidate hook previously called a path that did not exist (/_bpn/revalidate); it now calls /bpn-internal/revalidate.
 - Tests: backend/test/seo.test.mjs, tests/seo-admin-smoke.cjs.
+- Migration 020 seeds 150–300 word local texts for 20 cities into seo_pages.intro (Phoenix, Las Vegas, Denver, Charlotte, New Orleans, San Antonio, Minneapolis, Pittsburgh, Tucson, Cleveland, Omaha, Indianapolis, Buffalo, Kansas City, Los Angeles, New York, Chicago, Houston, Atlanta, Miami). Insert-only: admin edits are never overwritten. More cities: write them in Admin → SEO → Pages.
 
 ## 13. Important pitfalls
 
