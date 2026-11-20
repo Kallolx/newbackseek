@@ -13,7 +13,7 @@ export default function ContactPage() {
       <section className="contact-card" aria-label="Contact form"><ContactForm /></section>
       <aside className="contact-side">
         <div><FiMail /><div><strong>Email</strong><a href="mailto:support@backpagenew.com">support@backpagenew.com</a></div></div>
-        <div><FiExternalLink /><div><strong>Follow us</strong><a href="https://x.com/BackpageNew" target="_blank" rel="me noopener noreferrer">@BackpageNew on X</a></div></div>
+        <div><FiExternalLink /><div><strong>Follow us</strong><a href="https://x.com/BackpageNew" target="_blank" rel="me noopener noreferrer">@BackpageNew on X</a><a href="https://bsky.app/profile/backpagenew.bsky.social" target="_blank" rel="me noopener noreferrer">Bluesky</a></div></div>
         <div><FiAlertTriangle /><div><strong>Report an ad</strong><span>Use “Report this ad” in the menu on the ad page.</span></div></div>
         <div><FiBookOpen /><div><strong>Before you write</strong><span><Link href="/guidelines">Guidelines</Link> · <Link href="/refund-policy">Refund Policy</Link> · <Link href="/blog">Blog</Link></span></div></div>
       </aside>
