@@ -21,7 +21,8 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: settings.site.name,
     title: { default: settings.templates.home.title, template: '%s' },
     description: settings.site.description,
-    icons: { icon: '/brand/backpagenew-favicon.svg' },
+    // Several formats, because Google and Bing show the first one they can use (sizes are multiples of 48 as Google asks).
+    icons: { icon: [{ url: '/favicon.ico', sizes: '48x48' }, { url: '/icon-48.png', sizes: '48x48', type: 'image/png' }, { url: '/icon-96.png', sizes: '96x96', type: 'image/png' }, { url: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { url: '/brand/backpagenew-favicon.svg', type: 'image/svg+xml' }], apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }] },
     ...(settings.indexing.siteNoindex ? { robots: { index: false, follow: false } } : {}),
     verification: { google: verification.google || undefined, yandex: verification.yandex || undefined, other: { ...(verification.bing ? { 'msvalidate.01': verification.bing } : {}), ...(verification.baidu ? { 'baidu-site-verification': verification.baidu } : {}), ...(verification.pinterest ? { 'p:domain_verify': verification.pinterest } : {}) } },
     // Honest age labelling keeps filters and SafeSearch classifying the site correctly.
