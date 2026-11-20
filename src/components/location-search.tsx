@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 type Place = { name: string; context: string; href: string };
@@ -17,9 +18,9 @@ export function LocationSearch({ places }: { places: Place[] }) {
     </div>
     <span className="sr-only" role="status">{term ? matches.length + ' results shown' : ''}</span>
     {term && <div className="results">
-      {matches.length ? <ul>{matches.map((place) => <li key={place.href}><a href={place.href}>
+      {matches.length ? <ul>{matches.map((place) => <li key={place.href}><Link href={place.href} prefetch={false}>
         <strong>{place.name}</strong><small>{place.context}</small>
-      </a></li>)}</ul> : <p>No matching locations.</p>}
+      </Link></li>)}</ul> : <p>No matching locations.</p>}
     </div>}
   </div>;
 }

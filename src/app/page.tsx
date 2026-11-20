@@ -63,7 +63,7 @@ export default async function Home() {
               className={"country country-" + country.code}
             >
               <header className="country-banner">
-                <a href={country.href}>
+                <Link href={country.href} prefetch={false}>
                   <span className="country-location" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
                       <path d="M20 10c0 5.3-8 11-8 11S4 15.3 4 10a8 8 0 1 1 16 0Z" />
@@ -79,15 +79,15 @@ export default async function Home() {
                       height={28}
                     />
                   </span>
-                </a>
+                </Link>
               </header>
               <ul>
                 {country.regions.map((region) => (
                   <li key={region.href}>
-                    <a href={region.href}>
+                    <Link href={region.href} prefetch={false}>
                       <RegionArrow />
                       {region.name}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
