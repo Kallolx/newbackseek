@@ -68,7 +68,7 @@ export const breadcrumbLd = (crumbs: Crumb[]) => ({
 
 export const organizationLd = (settings: SeoSettings) => ({
   '@context': 'https://schema.org', '@type': 'Organization', '@id': SITE_ORIGIN + '/#organization',
-  name: settings.organization.name, url: SITE_ORIGIN + '/',
+  name: settings.organization.name, alternateName: ['Backpage New', new URL(SITE_ORIGIN).hostname], url: SITE_ORIGIN + '/',
   ...(settings.organization.logo ? { logo: absolute(settings.organization.logo) } : {}),
   ...(settings.organization.sameAs.length ? { sameAs: settings.organization.sameAs } : {}),
   ...(settings.organization.email ? { contactPoint: { '@type': 'ContactPoint', contactType: 'customer support', email: settings.organization.email, availableLanguage: 'English' } } : {}),
@@ -76,7 +76,7 @@ export const organizationLd = (settings: SeoSettings) => ({
 
 export const websiteLd = (settings: SeoSettings) => ({
   '@context': 'https://schema.org', '@type': 'WebSite', '@id': SITE_ORIGIN + '/#website',
-  url: SITE_ORIGIN + '/', name: settings.site.name, description: settings.site.description, inLanguage: 'en',
+  url: SITE_ORIGIN + '/', name: settings.site.name, alternateName: ['Backpage New', new URL(SITE_ORIGIN).hostname], description: settings.site.description, inLanguage: 'en',
   publisher: { '@id': SITE_ORIGIN + '/#organization' },
 });
 
