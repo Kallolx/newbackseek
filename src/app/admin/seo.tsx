@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Accordion, ActionIcon, Alert, Anchor, Badge, Button, Group, NumberInput, Paper, Progress, Select, SimpleGrid, Skeleton, Stack, Switch, Tabs, TagsInput, Text, TextInput, Textarea, Title } from '@mantine/core';
 import { FiAlertTriangle, FiCheckCircle, FiExternalLink, FiGlobe, FiLink, FiPlus, FiSearch, FiSend, FiSettings, FiTrash2, FiType, FiXCircle } from 'react-icons/fi';
 import { adminApi, useAdminResource } from './live-api';
@@ -49,6 +49,14 @@ export function SeoCenter({ locations, categories }: { locations: LocationCountr
   const [draft, setDraft] = useState<SeoSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<string | null>('overview');
+  // Warn before the page is closed or refreshed with changes that were not saved.
+  const unsaved = Boolean(draft && data && JSON.stringify(draft) !== JSON.stringify(data.settings));
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [unsaved]);
   if (!data && loading) return <Stack>{[0, 1, 2].map((i) => <Skeleton key={i} height={120} radius="md" />)}</Stack>;
   if (error || !data) return <EmptyState title="SEO settings could not load" description="" action="Retry" onAction={reload} />;
   const form = draft ?? data.settings;
@@ -57,12 +65,16 @@ export function SeoCenter({ locations, categories }: { locations: LocationCountr
 
   async function save() {
     setSaving(true);
-    try { await adminApi('/admin/seo', { method: 'PUT', body: JSON.stringify(form) }); toast.success('SEO settings saved.'); setDraft(null); reload(); }
+    try { await adminApi('/admin/seo', { method: 'PUT', body: JSON.stringify(form) }); toast.success('Saved. The website picks it up within a couple of minutes.'); setDraft(null); reload(); }
     catch (cause) { toast.error(cause instanceof Error ? cause.message : 'Could not save.'); }
     finally { setSaving(false); }
   }
 
   return <Stack>
+    {dirty && <Alert color="orange" variant="light" icon={<FiAlertTriangle />} title="You have changes that are not saved yet">
+      <Group justify="space-between" wrap="wrap" gap="xs"><Text size="sm">Nothing changes on the website until you press Save. If you refresh now, these changes are lost.</Text>
+        <Group gap="xs"><Button size="compact-md" variant="default" disabled={saving} onClick={() => setDraft(null)}>Discard</Button><Button size="compact-md" color="orange" loading={saving} onClick={() => void save()}>Save changes</Button></Group></Group>
+    </Alert>}
     <Tabs value={tab} onChange={setTab} keepMounted={false} variant="pills" classNames={{ list: styles.seoTabs }}>
       <Tabs.List>
         <Tabs.Tab value="overview" leftSection={<FiCheckCircle />}>Overview</Tabs.Tab>
@@ -76,7 +88,7 @@ export function SeoCenter({ locations, categories }: { locations: LocationCountr
       </Tabs.List>
       <Tabs.Panel value="overview" pt="md"><Overview data={data} form={form} go={setTab} /></Tabs.Panel>
       <Tabs.Panel value="brand" pt="md"><Stack><Tip>Your name, picture and logo as Google and social networks show them. The picture and logo are already set. Add your official social pages when you have them: Google uses them to recognise the brand.</Tip><Brand form={form} update={update} /></Stack></Tabs.Panel>
-      <Tabs.Panel value="titles" pt="md"><Stack><Tip>The big blue line on a Google result is the <b>title</b>, and the grey text under it is the <b>description</b>. These templates write them automatically for every page, filling in the city, state or category. The recommended text is already set, so only change it if you want different wording. “Reset to recommended” undoes any change.</Tip><Titles form={form} update={update} defaults={data.defaults} /></Stack></Tabs.Panel>
+      <Tabs.Panel value="titles" pt="md"><Stack><Tip>After you change something, press the orange <b>Save changes</b> button. Until you do, nothing is saved and a refresh loses it. The big blue line on a Google result is the <b>title</b>, and the grey text under it is the <b>description</b>. These templates write them automatically for every page, filling in the city, state or category. The recommended text is already set, so only change it if you want different wording. “Reset to recommended” undoes any change.</Tip><Titles form={form} update={update} defaults={data.defaults} /></Stack></Tabs.Panel>
       <Tabs.Panel value="pages" pt="md"><Stack><Tip>Write your own title, description and text for one page, for example a city you want to rank in. Choose the country, state, city and category, then fill in what you want. Text you write here shows on the page and is the best way to help a city rank. The 20 busiest cities already have text; you can edit it.</Tip><Pages data={data} locations={locations} categories={categories} reload={reload} /></Stack></Tabs.Panel>
       <Tabs.Panel value="indexing" pt="md"><Stack><Tip>“Indexing” means Google adding a page to its search results. These switches decide which pages Google may add. The recommended settings are on. Leave them unless you have a reason, and be careful with the red switch at the bottom.</Tip><Indexing form={form} update={update} origin={data.origin} /></Stack></Tabs.Panel>
       <Tabs.Panel value="redirects" pt="md"><Stack><Tip>Use this when a page moves or is deleted. Visitors and Google are sent to the new address, so you do not lose ranking. You will not need it until you change or remove a page.</Tip><Redirects data={data} reload={reload} /></Stack></Tabs.Panel>
@@ -164,16 +176,33 @@ function Brand({ form, update }: { form: SeoSettings; update: Update }) {
 }
 
 // ---------------- Titles ----------------
+const tokenLabels: Record<string, string> = { '{city}': 'City', '{region}': 'State / region', '{country}': 'Country', '{category}': 'Category', '{site}': 'Site name', '{title}': 'Ad title', '{excerpt}': 'Short text', '{adsLine}': 'Number of ads' };
 function Titles({ form, update, defaults }: { form: SeoSettings; update: Update; defaults: SeoSettings }) {
   const [kind, setKind] = useState<keyof SeoSettings['templates']>('city');
+  // Which box the next tapped word goes into, and where in that box.
+  const titleBox = useRef<HTMLInputElement>(null); const descriptionBox = useRef<HTMLTextAreaElement>(null);
+  const [target, setTarget] = useState<'title' | 'description'>('title');
+  function insert(token: string) {
+    const box = target === 'title' ? titleBox.current : descriptionBox.current;
+    const current = form.templates[kind][target];
+    const start = box?.selectionStart ?? current.length; const end = box?.selectionEnd ?? start;
+    const spaced = (start > 0 && !/\s$/.test(current.slice(0, start)) ? ' ' : '') + token;
+    update((v) => { v.templates[kind][target] = current.slice(0, start) + spaced + current.slice(end); });
+    requestAnimationFrame(() => { box?.focus(); const position = start + spaced.length; box?.setSelectionRange(position, position); });
+  }
   const tpl = form.templates[kind]; const meta = kinds.find((item) => item.key === kind)!;
   const vars = { ...SAMPLE, site: form.site.name };
   const title = expand(tpl.title, vars, TITLE_LIMIT); const description = expand(tpl.description, vars);
   return <Stack>
     <Select label="Page type" value={kind} onChange={(value) => value && setKind(value as keyof SeoSettings['templates'])} allowDeselect={false} data={kinds.map((item) => ({ value: item.key, label: item.label }))} />
     <Paper withBorder radius="md" p="md"><Stack gap="sm">
-      <div><TextInput label="Title template" value={tpl.title} onChange={(event) => update((v) => { v.templates[kind].title = event.currentTarget.value; })} /><Group justify="space-between"><Text size="xs" c="dimmed">Words you can use: {meta.tokens}</Text><Counter value={title} limit={TITLE_LIMIT} /></Group></div>
-      <div><Textarea label="Description template" autosize minRows={2} value={tpl.description} onChange={(event) => update((v) => { v.templates[kind].description = event.currentTarget.value; })} /><Counter value={description} limit={DESCRIPTION_LIMIT} /></div>
+      <div><TextInput ref={titleBox} onFocus={() => setTarget('title')} label="Title template" value={tpl.title} onChange={(event) => update((v) => { v.templates[kind].title = event.currentTarget.value; })} /><Group justify="space-between"><Text size="xs" c="dimmed">Typed words like {'{city}'} are filled in automatically.</Text><Counter value={title} limit={TITLE_LIMIT} /></Group></div>
+      <div><Textarea ref={descriptionBox} onFocus={() => setTarget('description')} label="Description template" autosize minRows={2} value={tpl.description} onChange={(event) => update((v) => { v.templates[kind].description = event.currentTarget.value; })} /><Counter value={description} limit={DESCRIPTION_LIMIT} /></div>
+      <div>
+        <Text size="sm" fw={600}>Tap a word to add it to the {target === 'title' ? 'title' : 'description'}</Text>
+        <Text size="xs" c="dimmed" mb={6}>It is replaced by the real name on each page. For example, City becomes Phoenix and Category becomes Women Seeking Men.</Text>
+        <Group gap={6}>{meta.tokens.split(' ').map((token) => <Button key={token} size="compact-sm" variant="light" leftSection={<FiPlus size={12} />} onClick={() => insert(token)}>{tokenLabels[token] ?? token}</Button>)}</Group>
+      </div>
       <Button variant="subtle" size="compact-sm" style={{ alignSelf: 'flex-start' }} onClick={() => update((v) => { v.templates[kind] = structuredClone(defaults.templates[kind]); })}>Reset to recommended</Button>
     </Stack></Paper>
     <Text size="sm" fw={600}>How it looks on Google (example)</Text>

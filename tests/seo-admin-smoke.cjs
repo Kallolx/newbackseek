@@ -48,6 +48,18 @@ const locations = [{ code: 'us', name: 'United States', regions: [{ name: 'Arizo
       await page.getByRole('textbox', { name: 'Title template' }).fill('{city} Classifieds, {region} | {site}');
       await page.getByText('Phoenix Classifieds, Arizona | BackpageNew').first().waitFor();
       await page.screenshot({ path: `${shots}/seo-${name}-titles.png` });
+      // One-tap words go in at the cursor; the unsaved banner is impossible to miss.
+      await page.getByRole('textbox', { name: 'Title template' }).click();
+      await page.getByRole('button', { name: 'Country', exact: true }).click();
+      assert.match(await page.getByRole('textbox', { name: 'Title template' }).inputValue(), /\{country\}/, 'tapped word inserted');
+      await page.getByText('You have changes that are not saved yet').waitFor();
+      await page.getByRole('button', { name: 'Save changes' }).click();
+      await page.waitForFunction(() => !document.body.innerText.includes('not saved yet'));
+      assert.match(saved.settings.templates.city.title, /\{country\}/);
+      // After a refresh the saved wording is still there.
+      await page.reload(); await page.getByRole('tab', { name: 'Titles' }).click();
+      assert.match(await page.getByRole('textbox', { name: 'Title template' }).inputValue(), /\{country\}/, 'still saved after refresh');
+      await page.getByRole('textbox', { name: 'Title template' }).fill('{city} Classifieds, {region} | {site}');
       await page.getByRole('button', { name: 'Save', exact: true }).click();
       await page.waitForFunction(() => !document.body.innerText.includes('Unsaved changes'));
       assert.equal(saved.settings.templates.city.title, '{city} Classifieds, {region} | {site}');
