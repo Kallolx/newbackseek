@@ -16,6 +16,7 @@ export function SiteFooter() {
         <Link href="/backpage-alternative" prefetch={false}>Backpage Alternative</Link><Link href="/personals" prefetch={false}>Local Personals</Link>
         <Link href="/dating" prefetch={false}>Dating</Link><Link href="/classifieds" prefetch={false}>Free Classifieds</Link>
       </nav>}
+      <p><a href="https://x.com/BackpageNew" target="_blank" rel="me noopener noreferrer" aria-label="BackpageNew on X (Twitter)">Follow us on X</a></p>
       <p>© 2026 BackpageNew.com</p>
       <a className="back-to-top" href="#top">↑ Top</a>
     </div></footer>

@@ -202,7 +202,7 @@ export async function sitemapAds(page) {
 
 export function buildLlms(settings) {
   if (settings.llms.text.trim()) return settings.llms.text.trim() + '\n';
-  return `# ${settings.site.name}\n\n> ${settings.site.description}\n\n## Main pages\n- [Home](${origin()}/): countries, regions and cities\n- [All cities](${origin()}/browse): browse by city\n- [Blog](${origin()}/blog): tips for posting and staying safe\n- [Guidelines](${origin()}/guidelines): rules for ads and members\n- [Contact](${origin()}/contact): support\n\n## About\n${settings.site.name} lists free local classifieds and personal ads in the United States, Canada, the United Kingdom and Australia. Ads are organised by country, state or region, city and category. Members must be 18 or older.\n`;
+  return `# ${settings.site.name}\n\n> ${settings.site.description}\n\n## Main pages\n- [Home](${origin()}/): countries, regions and cities\n- [All cities](${origin()}/browse): browse by city\n- [Blog](${origin()}/blog): tips for posting and staying safe\n- [Guidelines](${origin()}/guidelines): rules for ads and members\n- [Contact](${origin()}/contact): support\n\n## Follow\n- [X (Twitter)](https://x.com/BackpageNew)\n\n## About\n${settings.site.name} lists free local classifieds and personal ads in the United States, Canada, the United Kingdom and Australia. Ads are organised by country, state or region, city and category. Members must be 18 or older.\n`;
 }
 
 // ---------- Redirects (applied by the geo gate on every page request) ----------
