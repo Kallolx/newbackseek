@@ -359,7 +359,7 @@ function Connect({ form, update, data }: { form: SeoSettings; update: Update; da
           <Text size="sm">Open <Anchor href="https://search.google.com/search-console" target="_blank">search.google.com/search-console</Anchor> and sign in.</Text>
           <Text size="sm">Add property → <b>Domain</b> → enter <b>backpagenew.com</b> → copy the TXT record it shows.</Text>
           <Text size="sm">Cloudflare → DNS → Add record → Type <b>TXT</b>, Name <b>@</b>, paste the value → Save. Back in Google, click Verify.</Text>
-          <Text size="sm">Sitemaps → enter <b>sitemap.xml</b> → Submit. Then URL Inspection → paste the home page → Request indexing (do the same for /backpage-alternative, /personals, /dating and a few cities).</Text>
+          <Text size="sm">Sitemaps → enter the <b>full address</b> <b>https://backpagenew.com/sitemap.xml</b> (a Domain property needs the whole address, not just sitemap.xml) → Submit. It should say “Success”. Then URL Inspection → paste the home page → Request indexing (do the same for /backpage-alternative, /personals, /dating and a few cities).</Text>
         </Stack></Accordion.Panel></Accordion.Item>
         <Accordion.Item value="bing"><Accordion.Control>2 · Bing Webmaster Tools</Accordion.Control><Accordion.Panel><Stack gap={4}>
           <Text size="sm">Open <Anchor href="https://www.bing.com/webmasters" target="_blank">bing.com/webmasters</Anchor> and sign in.</Text>

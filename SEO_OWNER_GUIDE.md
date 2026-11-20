@@ -11,7 +11,7 @@ the owner can do, because they need your Google, Bing and Cloudflare accounts. D
 3. Google shows a **TXT record** (starts with `google-site-verification=`). Copy it.
 4. Cloudflare → your domain → **DNS** → **Add record**: Type `TXT`, Name `@`, Content = the value you copied → Save.
 5. Back in Google click **Verify** (if it fails, wait 2 minutes and retry).
-6. Left menu → **Sitemaps** → type `sitemap.xml` → **Submit**. It should say "Success".
+6. Left menu → **Sitemaps** → type the **full address** `https://backpagenew.com/sitemap.xml` → **Submit**. (With a Domain property, typing only `sitemap.xml` gives "Invalid sitemap address".) It should say "Success".
 7. Left menu → **URL Inspection** → paste `https://backpagenew.com/` → **Request indexing**.
    Repeat for `/backpage-alternative`, `/personals`, `/dating`, `/classifieds`, `/about` and 5–10 busy city pages.
 
