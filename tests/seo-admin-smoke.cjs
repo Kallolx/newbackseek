@@ -12,6 +12,7 @@ const defaults = {
   indexing: { minAdsForListing: 1, adMaxAgeDays: 0, siteNoindex: false, sitemaps: { pages: true, locations: true, listings: true, ads: true }, imagesInSitemap: true, adultRating: true },
   robots: { extra: '', blockTrainingBots: false, blockAllAiBots: false },
   verification: { google: '', bing: '', yandex: '', baidu: '', pinterest: '' },
+  connected: { google: false, bing: false },
   analytics: { ga4: '', cloudflareBeacon: '' },
   schema: { organization: true, website: true, breadcrumbs: true, itemList: true, ad: true, blog: true, faq: true },
   indexnow: { enabled: true, key: 'a'.repeat(32) }, llms: { enabled: true, text: '' },
@@ -96,6 +97,8 @@ const locations = [{ code: 'us', name: 'United States', regions: [{ name: 'Arizo
       await page.getByRole('button', { name: 'Cancel' }).click();
       assert.ok(!(await page.getByText('Unsaved changes').isVisible().catch(() => false)), 'cancelled: nothing changed');
       await page.getByRole('tab', { name: 'Connect' }).click();
+      await page.getByText('Google Search Console is connected').dispatchEvent('click');
+      await page.getByText('You have changes that are not saved yet').waitFor();
       await page.getByRole('textbox', { name: 'Google Search Console' }).fill('abc123');
       await page.getByText('Unsaved changes').waitFor();
       assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, 'no sideways scroll');

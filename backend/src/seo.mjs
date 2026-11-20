@@ -41,6 +41,8 @@ export const SEO_DEFAULTS = {
   },
   robots: { extra: '', blockTrainingBots: false, blockAllAiBots: false },
   verification: { google: '', bing: '', yandex: '', baidu: '', pinterest: '' },
+  // The owner verified another way (for example DNS in Cloudflare), so no code is needed here.
+  connected: { google: false, bing: false },
   analytics: { ga4: '', cloudflareBeacon: '' },
   schema: { organization: true, website: true, breadcrumbs: true, itemList: true, ad: true, blog: true, faq: true },
   indexnow: { enabled: true, key: '' },
@@ -64,6 +66,7 @@ export const settingsSchema = z.object({
   }),
   robots: z.object({ extra: z.string().max(3000), blockTrainingBots: flag, blockAllAiBots: flag }),
   verification: z.object({ google: token, bing: token, yandex: token, baidu: token, pinterest: token }),
+  connected: z.object({ google: flag, bing: flag }),
   analytics: z.object({ ga4: z.union([z.literal(''), z.string().trim().regex(/^G-[A-Z0-9]{4,14}$/, 'A GA4 measurement ID looks like G-XXXXXXXXXX')]), cloudflareBeacon: z.union([z.literal(''), z.string().trim().regex(/^[a-f0-9]{32}$/, 'The 32-character token from Cloudflare Web Analytics')]) }),
   schema: z.object({ organization: flag, website: flag, breadcrumbs: flag, itemList: flag, ad: flag, blog: flag, faq: flag }),
   indexnow: z.object({ enabled: flag, key: z.string().regex(/^[a-f0-9]{32}$/).or(z.literal('')) }),
@@ -432,7 +435,7 @@ export function seoRoutes(app, { admin, fail }) {
       sitemap: { status: sitemap.status, children: (sitemap.text.match(/<sitemap>/g) || []).length },
       indexnow: { status: key.status, matches: key.text.trim() === settings.indexnow.key, last: last || null },
       counts: { ...counts, listingPages: listings.length },
-      verification: Object.fromEntries(Object.entries(settings.verification).map(([name, value]) => [name, Boolean(value)])),
+      verification: Object.fromEntries(Object.entries(settings.verification).map(([name, value]) => [name, Boolean(value) || Boolean(settings.connected[name])])),
       siteNoindex: settings.indexing.siteNoindex, hasOgImage: Boolean(settings.site.ogImage), hasLogo: Boolean(settings.organization.logo), sameAsCount: settings.organization.sameAs.length,
       analytics: { ga4: Boolean(settings.analytics.ga4), cloudflareBeacon: Boolean(settings.analytics.cloudflareBeacon) },
     };

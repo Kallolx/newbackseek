@@ -115,8 +115,8 @@ function Overview({ data, form, go }: { data: Data; form: SeoSettings; go: (tab:
     { w: 10, ok: health.robots.status === 200 && !health.robots.blocksEverything, label: 'robots.txt works', hint: 'robots.txt does not load or blocks everything.', tab: 'indexing' },
     { w: 10, ok: health.sitemap.status === 200 && health.sitemap.children > 0, label: `Sitemap works (${health.sitemap.children} files)`, hint: 'The sitemap did not load.', tab: 'indexing' },
     { w: 5, ok: health.robots.sitemapListed, label: 'robots.txt points to the sitemap', hint: '', tab: 'indexing' },
-    { w: 10, ok: health.verification.google, label: 'Google Search Console connected', hint: 'Add the Google verification code (or verify by DNS in Cloudflare), then submit the sitemap.', tab: 'connect' },
-    { w: 5, ok: health.verification.bing, label: 'Bing Webmaster Tools connected', hint: 'Bing also powers DuckDuckGo, Yahoo and ChatGPT search.', tab: 'connect' },
+    { w: 10, ok: health.verification.google || form.connected.google, label: 'Google Search Console connected', hint: 'Verify the site in Google (DNS in Cloudflare is easiest), then switch “Already connected” on in Connect. No code is needed.', tab: 'connect' },
+    { w: 5, ok: health.verification.bing || form.connected.bing, label: 'Bing Webmaster Tools connected', hint: 'Bing also powers DuckDuckGo, Yahoo and ChatGPT search. Import from Google Search Console, then switch “Already connected” on in Connect.', tab: 'connect' },
     { w: 10, ok: health.indexnow.status === 200 && health.indexnow.matches && form.indexnow.enabled, label: 'IndexNow is working (new ads reach Bing in minutes)', hint: 'Turn IndexNow on in Connect.', tab: 'connect' },
     { w: 5, ok: health.hasOgImage, warn: true, label: 'Share image set', hint: 'The built-in image is used. Add your own in Brand for nicer link previews.', tab: 'brand' },
     { w: 5, ok: health.hasLogo, warn: true, label: 'Logo set for Google', hint: 'Add your logo address in Brand.', tab: 'brand' },
@@ -125,7 +125,8 @@ function Overview({ data, form, go }: { data: Data; form: SeoSettings; go: (tab:
     { w: 10, ok: form.indexing.minAdsForListing >= 1, label: 'Empty listing pages are kept out of Google', hint: 'Set the minimum ads to at least 1.', tab: 'indexing' },
   ];
   const score = items.reduce((sum, item) => sum + (item.ok ? item.w : 0), 0);
-  const needsYou = items.filter((item) => !item.ok && ['connect', 'brand'].includes(item.tab));
+  const needsYou = items.filter((item) => !item.ok && item.tab === 'connect');
+  const optional = items.filter((item) => !item.ok && item.tab === 'brand');
   return <Stack>
     <Tip>This page controls how Google and Bing find and show BackpageNew. <b>You do not have to change anything here.</b> The recommended settings are already on. Only the items under “Only you can do this” need you, because they need your own Google, Bing or social accounts.</Tip>
     <SimpleGrid cols={{ base: 2, md: 4 }}>
@@ -139,6 +140,10 @@ function Overview({ data, form, go }: { data: Data; form: SeoSettings; go: (tab:
     {needsYou.length > 0 && <Paper withBorder radius="md" p="md" style={{ borderColor: 'var(--mantine-color-orange-3)' }}>
       <Title order={3} size="h5" mb={4}>Only you can do this</Title>
       {needsYou.map((item) => <div key={item.label}><Check ok={false} warn label={item.label} hint={item.hint} /><Button variant="light" size="compact-sm" ml={28} onClick={() => go(item.tab)}>{item.tab === 'connect' ? 'Show me how' : 'Open'}</Button></div>)}
+    </Paper>}
+    {optional.length > 0 && <Paper withBorder radius="md" p="md">
+      <Title order={3} size="h5" mb={4}>Nice to have (optional)</Title>
+      {optional.map((item) => <div key={item.label}><Check ok={false} warn label={item.label} hint={item.hint} /><Button variant="subtle" size="compact-sm" ml={28} onClick={() => go(item.tab)}>Open</Button></div>)}
     </Paper>}
     <Paper withBorder radius="md" p="md">
       <Group justify="space-between" mb={4}><Title order={3} size="h5">Full checklist</Title><Button variant="subtle" size="compact-sm" onClick={reload} loading={loading}>Check again</Button></Group>
@@ -377,7 +382,13 @@ function Connect({ form, update, data }: { form: SeoSettings; update: Update; da
         </Stack></Accordion.Panel></Accordion.Item>
       </Accordion>
     </Section>
-    <Section icon={<FiCheckCircle />} title="Search engine verification" hint="Paste only the code (the value of content=“…”), not the whole tag. Verifying in Cloudflare DNS is the other option and needs no code here.">
+    <Section icon={<FiCheckCircle />} title="Already connected?" hint="If you verified Google or Bing another way (for example with a DNS record in Cloudflare, or by importing from Google), you do not need any code. Switch it on so the checklist stops asking.">
+      <Stack gap="sm">
+        <Switch label="Google Search Console is connected" checked={form.connected.google} onChange={(event) => update((v) => { v.connected.google = event.currentTarget.checked; })} />
+        <Switch label="Bing Webmaster Tools is connected" checked={form.connected.bing} onChange={(event) => update((v) => { v.connected.bing = event.currentTarget.checked; })} />
+      </Stack>
+    </Section>
+    <Section icon={<FiCheckCircle />} title="Verification codes (only if you use the code method)" hint="Paste only the code (the value of content=“…”), not the whole tag. Verifying in Cloudflare DNS is the other option and needs no code here.">
       <Stack gap="sm">
         {field('google', 'Google Search Console', 'google-site-verification code')}
         {field('bing', 'Bing Webmaster Tools', 'msvalidate.01 code')}

@@ -8,6 +8,7 @@ export type SeoSettings = {
   indexing: { minAdsForListing: number; adMaxAgeDays: number; siteNoindex: boolean; sitemaps: { pages: boolean; locations: boolean; listings: boolean; ads: boolean }; imagesInSitemap: boolean; adultRating: boolean };
   robots: { extra: string; blockTrainingBots: boolean; blockAllAiBots: boolean };
   verification: { google: string; bing: string; yandex: string; baidu: string; pinterest: string };
+  connected: { google: boolean; bing: boolean };
   analytics: { ga4: string; cloudflareBeacon: string };
   schema: { organization: boolean; website: boolean; breadcrumbs: boolean; itemList: boolean; ad: boolean; blog: boolean; faq: boolean };
   indexnow: { enabled: boolean; key: string };
@@ -36,6 +37,7 @@ export const SEO_DEFAULTS: SeoSettings = {
   indexing: { minAdsForListing: 1, adMaxAgeDays: 0, siteNoindex: false, sitemaps: { pages: true, locations: true, listings: true, ads: true }, imagesInSitemap: true, adultRating: true },
   robots: { extra: '', blockTrainingBots: false, blockAllAiBots: false },
   verification: { google: '', bing: '', yandex: '', baidu: '', pinterest: '' },
+  connected: { google: false, bing: false },
   analytics: { ga4: '', cloudflareBeacon: '' },
   schema: { organization: true, website: true, breadcrumbs: true, itemList: true, ad: true, blog: true, faq: true },
   indexnow: { enabled: true, key: '' },
