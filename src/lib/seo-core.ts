@@ -25,10 +25,10 @@ export const SEO_DEFAULTS: SeoSettings = {
   },
   organization: { name: 'BackpageNew', logo: '', email: 'support@backpagenew.com', sameAs: [] },
   templates: {
-    home: { title: 'BackpageNew – The New Backpage Alternative for Local Classifieds', description: 'BackpageNew is the new Backpage alternative. Browse and post free local classifieds and personal ads in the US, Canada, the UK and Australia, city by city.' },
+    home: { title: 'BackpageNew – The New Backpage Alternative for Classifieds', description: 'BackpageNew is the new Backpage alternative. Browse and post free local classifieds and personal ads in the US, Canada, the UK and Australia, city by city.' },
     country: { title: '{country} Classifieds & Personal Ads – {site}', description: 'Free {country} classifieds and personal ads by state and city. Find dating, services, jobs, rentals and more on {site}, the new Backpage alternative.' },
     region: { title: '{region} Classifieds & Personal Ads – {site}', description: 'Free classifieds and personal ads in {region}, {country}. Choose your city to browse local listings on {site}, a Backpage {region} alternative.' },
-    city: { title: '{city}, {region} Classifieds & Personal Ads – {site}', description: 'Browse free classifieds and personal ads in {city}, {region}: dating, services, jobs, rentals, for sale and more. {adsLine} Post your own ad free on {site}.' },
+    city: { title: '{city}, {region} Classifieds & Personal Ads – {site}', description: 'Free classifieds and personal ads in {city}, {region}: dating, services, jobs, rentals and more. {adsLine} Post your own ad on {site}.' },
     category: { title: '{category} in {city}, {region} – Free Ads | {site}', description: '{adsLine} Free {category} ads in {city}, {region}. Browse local listings or post your own on {site}, the new Backpage alternative.' },
     ad: { title: '{title} – {category} in {city} | {site}', description: '{excerpt}' },
     blog: { title: '{title} – {site} Blog', description: '{excerpt}' },

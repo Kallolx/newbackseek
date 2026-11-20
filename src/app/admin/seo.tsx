@@ -109,7 +109,8 @@ function Overview({ data, form, go }: { data: Data; form: SeoSettings; go: (tab:
   const { data: health, loading, reload } = useAdminResource<Health>('/admin/seo/health');
   if (loading && !health) return <Skeleton height={300} radius="md" />;
   if (!health) return <EmptyState title="The checks could not run" description="" action="Retry" onAction={reload} />;
-  const long = Object.values(form.templates).some((tpl) => expand(tpl.title, SAMPLE, 0).length > 70);
+  // Long ad titles are shortened by the site itself, so measure the way the site builds them.
+  const long = Object.values(form.templates).some((tpl) => expand(tpl.title, SAMPLE, TITLE_LIMIT).length > TITLE_LIMIT + 6);
   const items = [
     { w: 20, ok: !health.siteNoindex, label: 'The site is open to search engines', hint: 'Indexing → “Hide the whole site” is ON. Turn it off.', tab: 'indexing' },
     { w: 10, ok: health.robots.status === 200 && !health.robots.blocksEverything, label: 'robots.txt works', hint: 'robots.txt does not load or blocks everything.', tab: 'indexing' },
