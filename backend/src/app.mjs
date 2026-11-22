@@ -473,7 +473,7 @@ export async function buildApp() {
     return cached(`feed:${q.cityId ?? ""}:${q.cityHref ?? ""}:${q.category}:${search}:${q.page}`, search ? 10000 : 30000, async () => {
       // placements_public_feed_idx answers city + category + published, newest first.
       const rows =
-        await sql`select a.id,a.title,left(a.description,240) as description,a.age,a.location,p.ranked_at,
+        await sql`select a.id,a.title,left(a.description,240) as description,a.age,a.location,a.created_at,p.ranked_at,
        (select variants from media where ad_id=a.id and status='ready' and purpose='ad' order by created_at,id limit 1) as image,
        (coalesce((select o.verified_at is not null from users o where o.id=a.owner_id),false) or exists(select 1 from verifications v where v.user_id=a.owner_id and v.status='approved')) as verified
        from placements p join ads a on a.id=p.ad_id

@@ -160,6 +160,8 @@ h1 { font-size: clamp(18px, 4.2vw, 25px); line-height: 1.28; letter-spacing: -.0
   border-radius: 8px;
   background: #f8f9fc;
 }
+.post-list .post-date-divider { display: block; grid-column: 1 / -1; min-height: 0; margin: 12px 0 2px; padding: 2px 0 2px 12px; border: 0; border-left: 3px solid #315aa4; border-radius: 0; background: none; color: var(--muted); font-size: 13px; font-weight: 700; line-height: 1.5; }
+.post-list .post-date-divider:first-child { margin-top: 0; }
 .post-thumbnail {
   display: grid;
   place-items: center;

@@ -6,7 +6,7 @@ import { cache } from 'react';
 export const PUBLIC_TAG = 'public-ads';
 const API = process.env.API_INTERNAL_URL || 'http://api:4000';
 
-export type FeedPost = { id: string; title: string; description: string; age: number; location: string; verified?: boolean; image?: { card?: { url: string }; thumb?: { url: string } } | null };
+export type FeedPost = { id: string; title: string; description: string; age: number; location: string; created_at: string; verified?: boolean; image?: { card?: { url: string }; thumb?: { url: string } } | null };
 export type Feed = { posts: FeedPost[]; hasMore: boolean };
 export type AdPage = { post: { id: string; title: string; description: string; age: number; location: string; phone: string; contact_email?: string; created_at: string; category_slug: string }; canonicalHref?: string | null; images: { id: string; variants: Record<string, { url: string }> }[]; cities: { href: string }[] };
 
