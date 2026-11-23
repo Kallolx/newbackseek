@@ -1,8 +1,10 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Accordion, ActionIcon, Alert, Badge, Button, Checkbox, Group, Menu, Modal, Pagination, Paper, Select, SimpleGrid, Skeleton, Stack, Text, TextInput, Title, UnstyledButton } from '@mantine/core';
 import { BarChart } from '@mantine/charts';
-import { FiAlertTriangle, FiCheckCircle, FiCloud, FiCopy, FiCpu, FiImage, FiLock, FiMoreVertical, FiRefreshCw, FiRotateCw, FiSearch, FiSettings, FiTrash2, FiX, FiXCircle } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheckCircle, FiCloud, FiCopy, FiCpu, FiExternalLink, FiImage, FiLock, FiMoreVertical, FiRefreshCw, FiRotateCw, FiSearch, FiSettings, FiTrash2, FiX, FiXCircle } from 'react-icons/fi';
+import { adminRoutes } from './admin-routes';
 import { adminApi, useAdminResource } from './live-api';
 import { toast } from '../../components/toast';
 import { EmptyState } from '../../components/page-state';
@@ -18,7 +20,7 @@ type Storage = {
   verification: { total: number; bytes: number };
   buckets: { public: { objects: number; bytes: number } | null; private: { objects: number; bytes: number } | null; scannedAt: string | null };
 };
-type Picture = { id: string; ad_id: string | null; ad_status: string | null; title: string | null; owner: string; status: string; created_at: string; expected_bytes: number; original_bytes: number | null; stored_bytes: number; width: number | null; height: number | null };
+type Picture = { id: string; ad_id: string | null; ad_status: string | null; title: string | null; owner: string; status: string; created_at: string; expected_bytes: number; original_bytes: number | null; stored_bytes: number; width: number | null; height: number | null; ever_attached: boolean; preview_url: string | null };
 type Pictures = { items: Picture[]; total: number; page: number; pageSize: number; counts: { all: number; ready: number; processing: number; failed: number; in_ad: number; not_in_ad: number } };
 
 const PAGE_SIZE = 20;
@@ -57,11 +59,11 @@ function TechRow({ icon, label, detail, ok, text }: { icon: ReactNode; label: st
   return <div className={styles.techRow}><span className={styles.tileIcon}>{icon}</span><div className={styles.grow}><Text size="sm" fw={600}>{label}</Text><Text size="xs" c="dimmed">{detail}</Text></div><Badge color={ok ? 'teal' : 'red'} variant="light">{text}</Badge></div>;
 }
 
-export function MediaCenter() {
+export function MediaCenter({ canViewAds }: { canViewAds: boolean }) {
   const [scan, setScan] = useState(0);
   const report = useAdminResource<Storage>(`/admin/storage${scan ? `?scan=1&t=${scan}` : ''}`);
   const [status, setStatus] = useState('');
-  const [placement, setPlacement] = useState('');
+  const [placement, setPlacement] = useState('in_ad');
   const [sort, setSort] = useState('newest');
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
@@ -112,7 +114,7 @@ export function MediaCenter() {
   const thisWeek = data?.daily.slice(-7).reduce((sum, row) => sum + row.pictures, 0) ?? 0;
   const from = list.data ? (list.data.page - 1) * list.data.pageSize + 1 : 0;
   const to = list.data ? Math.min(list.data.total, list.data.page * list.data.pageSize) : 0;
-  const filtered = Boolean(search || status || placement);
+  const filtered = Boolean(search || status || (placement && placement !== 'in_ad'));
 
   return <Stack gap="md" className={styles.page}>
     {!data && report.loading ? <Stack gap="sm"><Skeleton height={56} radius="md" /><SimpleGrid cols={{ base: 2, md: 4 }}>{[0, 1, 2, 3].map(i => <Skeleton key={i} height={104} radius="md" />)}</SimpleGrid></Stack>
@@ -175,6 +177,7 @@ export function MediaCenter() {
         <Title order={3} size="h5">All pictures</Title>
         <TextInput className={styles.search} leftSection={<FiSearch />} placeholder="Search ad, owner or ID" value={query} onChange={event => setQuery(event.currentTarget.value)} rightSection={query ? <ActionIcon variant="subtle" size="sm" aria-label="Clear search" onClick={() => setQuery('')}><FiX /></ActionIcon> : null} />
       </div>
+      <Text size="xs" c="dimmed" px="md" pb="xs">Showing pictures attached to ads. Use “Where” to review uploads or pictures removed from an ad.</Text>
       <div className={styles.filters}>
         <div className={styles.chips} role="group" aria-label="Filter by status">
           {([['', 'All', list.data?.counts.all], ['ready', 'Ready', list.data?.counts.ready], ['processing', 'Processing', list.data?.counts.processing], ['failed', 'Failed', list.data?.counts.failed]] as const).map(([value, label, count]) =>
@@ -204,17 +207,20 @@ export function MediaCenter() {
           {items.map(item => {
             const state = STATUS[item.status] || { label: item.status, color: 'gray' };
             const busyRow = ['queued', 'processing'].includes(item.status);
+            const adHref = canViewAds && item.ad_id && item.ad_status !== 'deleted' ? `${adminRoutes.Ads}?search=${encodeURIComponent(item.ad_id)}` : null;
+            const preview = item.preview_url ? <img src={item.preview_url} alt="" loading="lazy" /> : <FiImage aria-hidden="true" />;
             return <li key={item.id} className={styles.row} data-selected={selected.has(item.id) || undefined}>
               <Checkbox size="sm" aria-label={`Select picture ${item.id.slice(0, 8)}`} checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
-              <span className={styles.dot} data-color={state.color} aria-hidden="true" />
+              {adHref ? <Link className={styles.thumbnail} href={adHref} aria-label={`Find ad #${item.ad_id}`}>{preview}</Link> : <span className={styles.thumbnail} aria-hidden="true">{preview}</span>}
               <div className={styles.grow}>
-                <Text size="sm" fw={600} truncate>{item.ad_id ? <>Ad #{item.ad_id}{item.title ? <span className={styles.title}> · {item.title}</span> : null}</> : <span className={styles.muted}>Not in an ad</span>}</Text>
+                <Text size="sm" fw={600} truncate>{item.ad_id ? <>{adHref ? <Link className={styles.adLink} href={adHref}>Ad #{item.ad_id}</Link> : `Ad #${item.ad_id}`}{item.title ? <span className={styles.title}> · {item.title}</span> : null}</> : <span className={styles.muted}>{item.ever_attached ? 'Removed from an ad' : 'Not added to a post yet'}</span>}</Text>
                 <Text size="xs" c="dimmed" truncate>{state.label} · {item.owner} · {ago(item.created_at)}{item.stored_bytes ? ` · ${formatBytes(item.stored_bytes)}` : ''}</Text>
               </div>
               <Menu position="bottom-end" withinPortal shadow="md" width={210}>
                 <Menu.Target><ActionIcon variant="subtle" color="gray" aria-label="Picture actions"><FiMoreVertical /></ActionIcon></Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>{item.width ? `${item.width}×${item.height}` : state.label}{item.original_bytes ? ` · original ${formatBytes(item.original_bytes)}` : ''}</Menu.Label>
+                  {adHref && <Menu.Item component={Link} href={adHref} leftSection={<FiExternalLink />}>View ad #{item.ad_id}</Menu.Item>}
                   {item.ad_id && <Menu.Item leftSection={<FiCopy />} onClick={() => copy(item.ad_id!, 'Ad ID')}>Copy ad ID</Menu.Item>}
                   <Menu.Item leftSection={<FiCopy />} onClick={() => copy(item.id, 'Picture ID')}>Copy picture ID</Menu.Item>
                   {item.status === 'failed' && <Menu.Item leftSection={<FiRotateCw />} onClick={() => setConfirm({ kind: 'retry', ids: [item.id] })}>Try processing again</Menu.Item>}
@@ -225,7 +231,7 @@ export function MediaCenter() {
             </li>;
           })}
         </ul>
-        : <EmptyState compact kind="search" title={filtered ? 'No pictures match' : 'No pictures yet'} description={filtered ? 'Try another search or filter.' : 'Pictures appear here once members add them to ads.'} action={filtered ? 'Clear filters' : undefined} onAction={() => { setQuery(''); change(() => { setStatus(''); setPlacement(''); }); }} />}
+        : <EmptyState compact kind="search" title={filtered ? 'No pictures match' : 'No pictures yet'} description={filtered ? 'Try another search or filter.' : 'Pictures appear here once members add them to ads.'} action={filtered ? 'Clear filters' : undefined} onAction={() => { setQuery(''); change(() => { setStatus(''); setPlacement('in_ad'); }); }} />}
 
       {list.data && list.data.total > PAGE_SIZE && <Group justify="center" mt="md"><Pagination size="sm" total={Math.ceil(list.data.total / PAGE_SIZE)} value={page} onChange={value => { setPage(value); setSelected(new Set()); }} siblings={1} boundaries={1} /></Group>}
     </Paper>

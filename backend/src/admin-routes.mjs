@@ -41,7 +41,9 @@ export function adminManagement(app, { admin, fail }) {
   const size=collection==='users'?20:50, offset=(q.page-1)*size, term='%'+q.search+'%';
   let rows, total;
   if(collection==='ads') {
-   const filter=sql`a.status!='deleted' and (${q.status}='' or a.status=${q.status}) and (a.id::text ilike ${term} or a.title ilike ${term} or u.username ilike ${term})`;
+   const idSearch=/^\d+$/.test(q.search.trim())?q.search.trim():null;
+   const match=idSearch?sql`a.id::text=${idSearch}`:sql`(a.id::text ilike ${term} or a.title ilike ${term} or u.username ilike ${term})`;
+   const filter=sql`a.status!='deleted' and (${q.status}='' or a.status=${q.status}) and ${match}`;
    rows=await sql`select ${projection} from ads a join users u on u.id=a.owner_id where ${filter} order by a.created_at desc limit 50 offset ${offset}`;
    [total]=await sql`select count(*)::int as count from ads a join users u on u.id=a.owner_id where ${filter}`;
   } else if(collection==='users') {

@@ -60,15 +60,16 @@ export function storageReport(app, { admin, fail }) {
     const order = q.sort === 'oldest' ? sql`m.created_at asc` : q.sort === 'largest' ? sql`${storedBytes} desc, m.created_at desc` : q.sort === 'smallest' ? sql`${storedBytes} asc, m.created_at desc` : sql`m.created_at desc`;
     const from = sql`from media m join users u on u.id=m.owner_id left join ads a on a.id=m.ad_id where m.purpose='ad'`;
     const [items, [total], [counts]] = await Promise.all([
-      sql`select m.id,m.ad_id,m.status,m.created_at,m.expected_bytes,m.original_bytes,m.width,m.height,
+      sql`select m.id,m.ad_id,m.status,m.created_at,m.expected_bytes,m.original_bytes,m.width,m.height,m.ever_attached,
+            coalesce(m.variants->'thumb'->>'url',m.variants->'card'->>'url') as preview_url,
             ${storedBytes} as stored_bytes,u.username as owner,a.title,a.status as ad_status
           ${from} and ${statusFilter} and ${placementFilter} and ${searchFilter}
           order by ${order}, m.id limit ${q.pageSize} offset ${(q.page - 1) * q.pageSize}`,
       sql`select count(*)::int as count ${from} and ${statusFilter} and ${placementFilter} and ${searchFilter}`,
-      sql`select count(*)::int as all,
-            count(*) filter (where m.status='ready')::int as ready,
-            count(*) filter (where m.status in ${sql(IN_PROGRESS)})::int as processing,
-            count(*) filter (where m.status='failed')::int as failed,
+      sql`select count(*) filter (where ${placementFilter})::int as all,
+            count(*) filter (where ${placementFilter} and m.status='ready')::int as ready,
+            count(*) filter (where ${placementFilter} and m.status in ${sql(IN_PROGRESS)})::int as processing,
+            count(*) filter (where ${placementFilter} and m.status='failed')::int as failed,
             count(*) filter (where m.ad_id is not null)::int as in_ad,
             count(*) filter (where m.ad_id is null)::int as not_in_ad
           ${from} and ${searchFilter}`,

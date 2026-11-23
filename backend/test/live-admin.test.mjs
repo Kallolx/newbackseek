@@ -40,6 +40,8 @@ test('live administration and public authentication lifecycle',{skip:process.env
   const publicContact=(await call('GET',`/api/ads/${post.id}`)).json().post;assert.equal(publicContact.phone,body.phone);assert.equal(publicContact.contact_email,body.contactEmail);assert.equal(publicContact.email,undefined,'login email is never exposed as contact email');
   await sql`delete from media where ad_id=${post.id}`;
   assert.equal((await adminCall('GET','/api/admin/ads?search=Real')).json().total,1);
+  const byId=(await adminCall('GET',`/api/admin/ads?search=${post.id}`)).json();
+  assert.equal(byId.total,1,'a numeric Post ID filters to one exact ad');assert.equal(byId.items[0].id,post.id);
   const edited=await adminCall('PATCH',`/api/admin/ads/${post.id}`,{...body,title:'Updated regression listing'});assert.equal(edited.statusCode,200,edited.body);
   assert.equal((await adminCall('POST',`/api/admin/ads/${post.id}/bump`,{})).statusCode,200);
   assert.equal((await adminCall('POST',`/api/admin/ads/${post.id}/status`,{status:'paused'})).statusCode,200);

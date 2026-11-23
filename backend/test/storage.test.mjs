@@ -36,8 +36,11 @@ test('admin storage report: counts, sizes, savings and picture list filters', { 
     const pics = (await call('/api/admin/pictures?search=storageadmin')).json();
     assert.equal(pics.pageSize, 20); assert.equal(pics.total, 3);
     assert.deepEqual({ ready: pics.counts.ready, failed: pics.counts.failed, not_in_ad: pics.counts.not_in_ad }, { ready: 2, failed: 1, not_in_ad: 3 });
+    assert.equal(pics.items.find((item) => item.status === 'ready').preview_url, variants.thumb.url, 'picture list includes a small preview');
+    assert.ok(pics.items.every((item) => item.ever_attached === false), 'unattached uploads are identified separately from pictures removed from an ad');
     assert.equal((await call('/api/admin/pictures?search=storageadmin&status=failed')).json().items.length, 1);
-    assert.equal((await call('/api/admin/pictures?search=storageadmin&placement=in_ad')).json().total, 0);
+    const attached = (await call('/api/admin/pictures?search=storageadmin&placement=in_ad')).json();
+    assert.equal(attached.total, 0); assert.equal(attached.counts.all, 0, 'status chips reflect the selected placement');
     const largest = (await call('/api/admin/pictures?search=storageadmin&sort=smallest')).json().items;
     assert.equal(largest[0].stored_bytes, 0, 'smallest first puts the failed picture (0 bytes) first');
     assert.equal((await call('/api/admin/pictures?status=bogus')).statusCode, 400);

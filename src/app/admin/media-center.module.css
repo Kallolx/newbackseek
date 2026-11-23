@@ -37,10 +37,11 @@
 .row:last-child { border-bottom: 0; }
 .row:hover { background: #fafbfd; }
 .row[data-selected] { background: #f2f6fd; }
-.dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: #9aa5b5; }
-.dot[data-color=teal] { background: #12b886; }
-.dot[data-color=red] { background: #e03131; }
-.dot[data-color=yellow] { background: #f59f00; }
+.thumbnail { display: grid; place-items: center; width: 46px; height: 46px; flex-shrink: 0; overflow: hidden; border: 1px solid #dfe5ee; border-radius: 8px; background: #eef2f8; color: #74829a; }
+.thumbnail img { display: block; width: 100%; height: 100%; object-fit: cover; }
+a.thumbnail:hover, a.thumbnail:focus-visible { border-color: #2e4f82; }
+.adLink { color: #20457e; text-decoration: none; }
+.adLink:hover { text-decoration: underline; }
 .title { font-weight: 400; color: #4a5872; }
 .muted { color: #7a869a; font-weight: 500; }
 
@@ -53,5 +54,6 @@
   .selects { width: 100%; }
   .selects > * { flex: 1 1 0; width: auto; min-width: 0; }
   .row, .selectRow, .listHead, .filters { padding-inline: 12px; }
+  .thumbnail { width: 40px; height: 40px; }
   .tileValue { font-size: 19px; }
 }
