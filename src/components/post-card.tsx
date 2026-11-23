@@ -22,18 +22,17 @@ export function PostCard({ title, label, description, details, href, thumbnail, 
   );
 
   return (
-    <li>
+    <li className={href ? 'post-card-clickable' : undefined}>
+      {href && <Link className="post-card-hitbox" href={href} prefetch={false} aria-label={'View ' + title} />}
       <div className="post-media">
         {verified ? <span className="verified-badge" title="This poster has been verified"><MdVerified aria-hidden="true" /> Verified</span> : <span className="verified-space" aria-hidden="true" />}
-        {href
-          ? <Link className="post-thumbnail" href={href} prefetch={false} aria-label={'View ' + title}>{image}</Link>
-          : <div className="post-thumbnail">{image}</div>}
+        <div className="post-thumbnail">{image}</div>
       </div>
       <div className="post-copy">
         <div className="post-card-heading">
           <div>
             <p className="post-breadcrumb">{label}</p>
-            <h2>{href ? <Link href={href} prefetch={false}>{title}</Link> : title}</h2>
+            <h2>{title}</h2>
           </div>
           {actions}
         </div>

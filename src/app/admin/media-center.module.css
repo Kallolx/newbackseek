@@ -31,17 +31,17 @@
 .selectRow { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 16px; border-block: 1px solid #edf0f5; background: #fafbfd; }
 .selectRow[data-active] { background: #eef3fb; position: sticky; top: 0; z-index: 2; }
 
-.rows { margin: 0; padding: 0; list-style: none; transition: opacity .15s; }
+.rows { margin: 0; padding: 8px; list-style: none; background: #f7f9fc; transition: opacity .15s; }
 .rows[data-loading] { opacity: .55; }
-.row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #f0f2f6; }
-.row:last-child { border-bottom: 0; }
-.row:hover { background: #fafbfd; }
-.row[data-selected] { background: #f2f6fd; }
+.row { position: relative; display: flex; align-items: center; gap: 12px; min-height: 68px; margin-bottom: 7px; padding: 10px 12px; border: 1px solid #dfe5ee; border-radius: 10px; background: white; transition: border-color .15s, background-color .15s, box-shadow .15s; }
+.row:last-child { margin-bottom: 0; }
+.row[data-clickable]:hover { border-color: #a8bddc; background: #f9fbff; box-shadow: 0 2px 9px #23487510; }
+.row[data-clickable]:focus-within { outline: 2px solid #315aa4; outline-offset: 1px; }
+.row[data-selected] { border-color: #bbcdf0; background: #f2f6fd; }
+.rowLink { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.rowControl { position: relative; z-index: 2; flex-shrink: 0; }
 .thumbnail { display: grid; place-items: center; width: 46px; height: 46px; flex-shrink: 0; overflow: hidden; border: 1px solid #dfe5ee; border-radius: 8px; background: #eef2f8; color: #74829a; }
 .thumbnail img { display: block; width: 100%; height: 100%; object-fit: cover; }
-a.thumbnail:hover, a.thumbnail:focus-visible { border-color: #2e4f82; }
-.adLink { color: #20457e; text-decoration: none; }
-.adLink:hover { text-decoration: underline; }
 .title { font-weight: 400; color: #4a5872; }
 .muted { color: #7a869a; font-weight: 500; }
 
@@ -53,7 +53,7 @@ a.thumbnail:hover, a.thumbnail:focus-visible { border-color: #2e4f82; }
   .chip { padding: 4px 10px; font-size: 12px; }
   .selects { width: 100%; }
   .selects > * { flex: 1 1 0; width: auto; min-width: 0; }
-  .row, .selectRow, .listHead, .filters { padding-inline: 12px; }
+  .selectRow, .listHead, .filters { padding-inline: 12px; }
   .thumbnail { width: 40px; height: 40px; }
   .tileValue { font-size: 19px; }
 }

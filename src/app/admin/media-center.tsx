@@ -209,14 +209,15 @@ export function MediaCenter({ canViewAds }: { canViewAds: boolean }) {
             const busyRow = ['queued', 'processing'].includes(item.status);
             const adHref = canViewAds && item.ad_id && item.ad_status !== 'deleted' ? `${adminRoutes.Ads}?search=${encodeURIComponent(item.ad_id)}` : null;
             const preview = item.preview_url ? <img src={item.preview_url} alt="" loading="lazy" /> : <FiImage aria-hidden="true" />;
-            return <li key={item.id} className={styles.row} data-selected={selected.has(item.id) || undefined}>
-              <Checkbox size="sm" aria-label={`Select picture ${item.id.slice(0, 8)}`} checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
-              {adHref ? <Link className={styles.thumbnail} href={adHref} aria-label={`Find ad #${item.ad_id}`}>{preview}</Link> : <span className={styles.thumbnail} aria-hidden="true">{preview}</span>}
+            return <li key={item.id} className={styles.row} data-clickable={adHref ? true : undefined} data-selected={selected.has(item.id) || undefined}>
+              {adHref && <Link className={styles.rowLink} href={adHref} aria-label={`View ad #${item.ad_id}${item.title ? `: ${item.title}` : ''}`} />}
+              <div className={styles.rowControl}><Checkbox size="sm" aria-label={`Select picture ${item.id.slice(0, 8)}`} checked={selected.has(item.id)} onChange={() => toggle(item.id)} /></div>
+              <span className={styles.thumbnail} aria-hidden="true">{preview}</span>
               <div className={styles.grow}>
-                <Text size="sm" fw={600} truncate>{item.ad_id ? <>{adHref ? <Link className={styles.adLink} href={adHref}>Ad #{item.ad_id}</Link> : `Ad #${item.ad_id}`}{item.title ? <span className={styles.title}> · {item.title}</span> : null}</> : <span className={styles.muted}>{item.ever_attached ? 'Removed from an ad' : 'Not added to a post yet'}</span>}</Text>
+                <Text size="sm" fw={600} truncate>{item.ad_id ? <>Ad #{item.ad_id}{item.title ? <span className={styles.title}> · {item.title}</span> : null}</> : <span className={styles.muted}>{item.ever_attached ? 'Removed from an ad' : 'Not added to a post yet'}</span>}</Text>
                 <Text size="xs" c="dimmed" truncate>{state.label} · {item.owner} · {ago(item.created_at)}{item.stored_bytes ? ` · ${formatBytes(item.stored_bytes)}` : ''}</Text>
               </div>
-              <Menu position="bottom-end" withinPortal shadow="md" width={210}>
+              <div className={styles.rowControl}><Menu position="bottom-end" withinPortal shadow="md" width={210}>
                 <Menu.Target><ActionIcon variant="subtle" color="gray" aria-label="Picture actions"><FiMoreVertical /></ActionIcon></Menu.Target>
                 <Menu.Dropdown>
                   <Menu.Label>{item.width ? `${item.width}×${item.height}` : state.label}{item.original_bytes ? ` · original ${formatBytes(item.original_bytes)}` : ''}</Menu.Label>
@@ -227,7 +228,7 @@ export function MediaCenter({ canViewAds }: { canViewAds: boolean }) {
                   <Menu.Divider />
                   <Menu.Item color="red" leftSection={<FiTrash2 />} disabled={busyRow} onClick={() => setConfirm({ kind: 'delete', ids: [item.id] })}>{busyRow ? 'Processing…' : 'Delete'}</Menu.Item>
                 </Menu.Dropdown>
-              </Menu>
+              </Menu></div>
             </li>;
           })}
         </ul>
