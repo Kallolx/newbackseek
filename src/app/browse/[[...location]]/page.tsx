@@ -175,13 +175,15 @@ export default async function BrowsePage({ params }: Params) {
   const h1 = override.h1 || current.title || `${current.name} Classifieds & Personal Ads for Backpage ${current.name} Alternative`;
 
   // Words that are true for this place right now (unique per page, not boilerplate).
-  const categoryNames = new Map(allServices.map((item) => [item.slug, item.name]));
-  const top = (stats?.categories ?? []).slice(0, 3).map((item) => categoryNames.get(item.slug) ?? item.slug);
   const intro = city
-    ? `${city.name} is one of the cities on BackpageNew, the new Backpage alternative. Browse free classifieds and personal ads from people in ${city.name}, ${region?.name}, or post your own.${stats?.total ? ` There ${stats.total === 1 ? 'is' : 'are'} ${plural(stats.total, 'active ad')} in ${city.name} right now${top.length ? `, most of them in ${top.length > 1 ? top.slice(0, -1).join(', ') + ' and ' + top[top.length - 1] : top[0]}` : ''}.` : ''}`
+    ? `Browse local classifieds and personal ads in ${city.name}, ${region?.name}. Choose a category below or post your own ad.${stats?.total ? ` ${plural(stats.total, 'active ad')} right now.` : ''}`
     : region
       ? `Choose a city in ${region.name} to see its local classifieds and personal ads. BackpageNew covers ${plural(region.cities.length, 'city')} in ${region.name}.${stats?.total ? ` Together they have ${plural(stats.total, 'active ad')} right now.` : ''}`
       : `BackpageNew has free classifieds and personal ads across ${plural(country.regions.length, country.code === 'us' ? 'state' : 'region')} in ${country.name}. Choose a ${country.code === 'us' ? 'state' : 'region'} to find your city.`;
+  // City descriptions sit directly above the category links. Show only a short
+  // first sentence from an admin override so the links stay visible on phones.
+  const cityIntroSentence = city ? override.intro?.trim().replace(/\s+/g, ' ').match(/^.*?[.!?](?=\s|$)/)?.[0] : undefined;
+  const visibleIntro = cityIntroSentence && cityIntroSentence.length <= 220 ? cityIntroSentence : intro;
   const faq = city ? [
     { q: `How do I post an ad in ${city.name}?`, a: `Create a free BackpageNew account, verify your email, choose Post an Ad, pick ${city.name} as the city and a category, then add a title, description and pictures. Your ad is reviewed and then appears in ${city.name}.` },
     { q: `Is BackpageNew free to use in ${city.name}?`, a: `Browsing ${city.name} classifieds and personal ads is free. Posting is currently free as well; if paid options are added, they will be shown clearly before you pay.` },
@@ -203,8 +205,8 @@ export default async function BrowsePage({ params }: Params) {
         <span aria-current="page">{current.name}</span>
       </nav>
       <h1>{h1}</h1>
-      <p className="browse-intro">{intro}</p>
-      <AdminIntro text={override.intro} />
+      <p className="browse-intro">{visibleIntro}</p>
+      {!city && <AdminIntro text={override.intro} />}
       {city ? (
         <div className="browse-columns">
           <div>
