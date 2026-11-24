@@ -20,7 +20,7 @@ type Storage = {
   verification: { total: number; bytes: number };
   buckets: { public: { objects: number; bytes: number } | null; private: { objects: number; bytes: number } | null; scannedAt: string | null };
 };
-type Picture = { id: string; ad_id: string | null; ad_status: string | null; title: string | null; owner: string; status: string; created_at: string; expected_bytes: number; original_bytes: number | null; stored_bytes: number; width: number | null; height: number | null; ever_attached: boolean; preview_url: string | null };
+type Picture = { id: string; ad_id: string | null; ad_status: string | null; title: string | null; owner: string; status: string; created_at: string; expected_bytes: number; original_bytes: number | null; stored_bytes: number; width: number | null; height: number | null; ever_attached: boolean };
 type Pictures = { items: Picture[]; total: number; page: number; pageSize: number; counts: { all: number; ready: number; processing: number; failed: number; in_ad: number; not_in_ad: number } };
 
 const PAGE_SIZE = 20;
@@ -208,11 +208,9 @@ export function MediaCenter({ canViewAds }: { canViewAds: boolean }) {
             const state = STATUS[item.status] || { label: item.status, color: 'gray' };
             const busyRow = ['queued', 'processing'].includes(item.status);
             const adHref = canViewAds && item.ad_id && item.ad_status !== 'deleted' ? `${adminRoutes.Ads}?search=${encodeURIComponent(item.ad_id)}` : null;
-            const preview = item.preview_url ? <img src={item.preview_url} alt="" loading="lazy" /> : <FiImage aria-hidden="true" />;
             return <li key={item.id} className={styles.row} data-clickable={adHref ? true : undefined} data-selected={selected.has(item.id) || undefined}>
               {adHref && <Link className={styles.rowLink} href={adHref} aria-label={`View ad #${item.ad_id}${item.title ? `: ${item.title}` : ''}`} />}
               <div className={styles.rowControl}><Checkbox size="sm" aria-label={`Select picture ${item.id.slice(0, 8)}`} checked={selected.has(item.id)} onChange={() => toggle(item.id)} /></div>
-              <span className={styles.thumbnail} aria-hidden="true">{preview}</span>
               <div className={styles.grow}>
                 <Text size="sm" fw={600} truncate>{item.ad_id ? <>Ad #{item.ad_id}{item.title ? <span className={styles.title}> · {item.title}</span> : null}</> : <span className={styles.muted}>{item.ever_attached ? 'Removed from an ad' : 'Not added to a post yet'}</span>}</Text>
                 <Text size="xs" c="dimmed" truncate>{state.label} · {item.owner} · {ago(item.created_at)}{item.stored_bytes ? ` · ${formatBytes(item.stored_bytes)}` : ''}</Text>

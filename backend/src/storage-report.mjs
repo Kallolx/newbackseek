@@ -61,7 +61,6 @@ export function storageReport(app, { admin, fail }) {
     const from = sql`from media m join users u on u.id=m.owner_id left join ads a on a.id=m.ad_id where m.purpose='ad'`;
     const [items, [total], [counts]] = await Promise.all([
       sql`select m.id,m.ad_id,m.status,m.created_at,m.expected_bytes,m.original_bytes,m.width,m.height,m.ever_attached,
-            coalesce(m.variants->'thumb'->>'url',m.variants->'card'->>'url') as preview_url,
             ${storedBytes} as stored_bytes,u.username as owner,a.title,a.status as ad_status
           ${from} and ${statusFilter} and ${placementFilter} and ${searchFilter}
           order by ${order}, m.id limit ${q.pageSize} offset ${(q.page - 1) * q.pageSize}`,
