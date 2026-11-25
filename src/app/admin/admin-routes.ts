@@ -2,6 +2,7 @@ export const adminRoutes = {
   Overview: '/admin',
   Ads: '/admin/all-ads',
   Publish: '/admin/ad-publish',
+  Import: '/admin/import',
   'Bump post': '/admin/bump',
   'Distribute post': '/admin/distribute',
   'Post planner': '/admin/planner',

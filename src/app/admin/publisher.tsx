@@ -7,6 +7,7 @@ import { AdminPicturePicker } from './picture-picker';
 import { useRef, useState } from 'react';
 import { FiArrowLeft, FiArrowRight, FiCheck, FiImage, FiMapPin, FiSearch, FiX } from 'react-icons/fi';
 import type { Ad, CategoryGroup, LocationCountry } from './admin-data';
+import type { ImportedPost } from './saved-post-import';
 import { DescriptionEditor } from '../../member/description-editor';
 import { isBoldGroup, isBoldService } from '../../directory/emphasis';
 import { EmptyState } from '../../components/page-state';
@@ -42,16 +43,16 @@ function CityPicker({ locations, selected, onChange, excluded = [] }: { location
   </Stack>;
 }
 
-export function Publisher({ locations, categories, source, mode, onSubmit, defaultOwner, heading, submitLabel, removableSaved = false }: { locations: LocationCountry[]; categories: CategoryGroup[]; source?: Ad; mode: 'create' | 'copy' | 'edit'; onSubmit: (request: PublishRequest) => Promise<void>; defaultOwner?:string;
+export function Publisher({ locations, categories, source, initial, mode, onSubmit, defaultOwner, heading, submitLabel, removableSaved = false }: { locations: LocationCountry[]; categories: CategoryGroup[]; source?: Ad; initial?: ImportedPost; mode: 'create' | 'copy' | 'edit'; onSubmit: (request: PublishRequest) => Promise<void>; defaultOwner?:string;
   /** Post planner: its own title and button text, and saved pictures can be taken off. */ heading?: string; submitLabel?: string; removableSaved?: boolean }) {
   const [step, setStep] = useState(mode === 'copy' ? 1 : 0);
-  const [selected, setSelected] = useState<string[]>(mode === 'edit' ? source?.targets ?? [] : []);
-  const [description, setDescription] = useState(source?.description ?? '');
+  const [selected, setSelected] = useState<string[]>(initial?.targets ?? (mode === 'edit' ? source?.targets ?? [] : []));
+  const [description, setDescription] = useState(source?.description ?? initial?.description ?? '');
   const [html, setHtml] = useState(source?.descriptionHtml ?? '');
-  const [group, setGroup] = useState<string | null>(categories.find((item) => item.services.some((service) => service.slug === source?.category))?.name ?? null);
-  const [category, setCategory] = useState<string | null>(source?.category ?? null);
+  const [group, setGroup] = useState<string | null>(categories.find((item) => item.services.some((service) => service.slug === (source?.category ?? initial?.category)))?.name ?? null);
+  const [category, setCategory] = useState<string | null>(source?.category ?? initial?.category ?? null);
   const [images, setImages] = useState<string[]>(source?.images ?? []);
-  const [files,setFiles]=useState<File[]>([]);
+  const [files,setFiles]=useState<File[]>(initial?.pictures ?? []);
   const uploaded=useRef(new Map<File,string>());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -100,12 +101,12 @@ export function Publisher({ locations, categories, source, mode, onSubmit, defau
   }
   return <form ref={form} className={styles.publishFlow} noValidate onSubmit={async(event) => { event.preventDefault(); if (busy) return; if (step === 2 && review) {setBusy(true);setError('');try{const mediaIds=await uploadPictures();await onSubmit({...review,mediaIds});}catch(cause){setError(cause instanceof Error?cause.message:'Unable to save.');}finally{setBusy(false);}} else next(); }}>
     <Stepper active={step} size="sm" mb="lg"><Stepper.Step label="Details" /><Stepper.Step label="Cities" /><Stepper.Step label="Review" /></Stepper>
-    <div style={{ display: step === 0 ? undefined : 'none' }}><Paper withBorder p={{ base: 'sm', sm: 'lg' }} radius="md"><Stack gap="md"><div><Title order={3} size="h4">{heading ?? (mode === 'edit' ? 'Edit ad #' + source?.id : 'Create an ad')}</Title><Text size="sm" c="dimmed">Use the same content fields and formatting as the public site.</Text></div>
-      <TextInput label="Owner username" name="owner" defaultValue={source?.owner ?? defaultOwner ?? ''} placeholder="Username of an existing account" />
-      <TextInput label="Ad title" name="titles" maxLength={150} defaultValue={source?.title} placeholder="Enter a clear headline" />
+    <div style={{ display: step === 0 ? undefined : 'none' }}><Paper withBorder p={{ base: 'sm', sm: 'lg' }} radius="md"><Stack gap="md"><div><Title order={3} size="h4">{heading ?? (mode === 'edit' ? 'Edit ad #' + source?.id : initial ? 'Review imported post' : 'Create an ad')}</Title><Text size="sm" c="dimmed">{initial ? `Source: ${initial.sourceName}. Check every field and picture before publishing.` : 'Use the same content fields and formatting as the public site.'}</Text></div>
+      <TextInput label="Owner username" name="owner" defaultValue={source?.owner ?? initial?.owner ?? defaultOwner ?? ''} placeholder="Username of an existing account" />
+      <TextInput label="Ad title" name="titles" maxLength={150} defaultValue={source?.title ?? initial?.title} placeholder="Enter a clear headline" />
       <SimpleGrid cols={{ base: 1, sm: 2 }}><Select searchable label="Category group" renderOption={({ option }) => <Text size="sm" fw={isBoldGroup(option.value) ? 800 : 400}>{option.label}</Text>} value={group} placeholder="Choose a category group" data={categories.map((item) => item.name)} onChange={(value) => { setGroup(value); setCategory(null); }} /><Select searchable label="Subcategory" renderOption={({ option }) => <Text size="sm" fw={isBoldService(option.value) ? 800 : 400}>{option.label}</Text>} value={category} disabled={!group} placeholder={group ? 'Choose a subcategory' : 'Choose a group first'} data={categories.find((item) => item.name === group)?.services.map((item) => ({ label: item.name, value: item.slug })) ?? []} onChange={setCategory} /></SimpleGrid>
-      <div><Text size="sm" fw={500} mb={6}>Description</Text><DescriptionEditor content={source?.descriptionHtml ?? source?.description ?? ''} onChange={(text, value) => { setDescription(text); setHtml(value); }} /></div>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}><NumberInput label="Age (when applicable)" name="age" defaultValue={source?.age} min={18} max={120} /><TextInput label="Location / neighborhood" name="location" defaultValue={source?.location} placeholder="Public location text" /><TextInput label="Contact phone" name="phone" defaultValue={source?.phone} placeholder="Phone number" /><TextInput label="Contact email" name="email" type="email" defaultValue={source?.email} placeholder="name@example.com" /></SimpleGrid>
+      <div><Text size="sm" fw={500} mb={6}>Description</Text><DescriptionEditor content={source?.descriptionHtml ?? source?.description ?? initial?.description ?? ''} onChange={(text, value) => { setDescription(text); setHtml(value); }} /></div>
+      <SimpleGrid cols={{ base: 1, sm: 2 }}><NumberInput label="Age (when applicable)" name="age" defaultValue={source?.age ?? initial?.age} min={18} max={120} /><TextInput label="Location / neighborhood" name="location" defaultValue={source?.location ?? initial?.location} placeholder="Public location text" /><TextInput label="Contact phone" name="phone" defaultValue={source?.phone ?? initial?.phone} placeholder="Phone number" /><TextInput label="Contact email" name="email" type="email" defaultValue={source?.email ?? initial?.email} placeholder="name@example.com" /></SimpleGrid>
       <AdminPicturePicker files={files} onChange={setFiles} existing={images} disabled={busy} onRemoveExisting={removableSaved ? (url) => setImages((list) => list.filter((item) => item !== url)) : undefined}/>
     </Stack></Paper></div>
     <div style={{ display: step === 1 ? undefined : 'none' }}><Paper withBorder p={{ base: 'sm', sm: 'lg' }} radius="md"><Stack><Title order={3} size="h4">Choose destination cities</Title>{mode === 'copy' && <Alert color="blue">Ad #{source?.id}: {source?.title}. Existing destinations are disabled. Pictures are reused rather than duplicated.</Alert>}<CityPicker locations={locations} selected={selected} onChange={setSelected} excluded={mode === 'copy' ? source?.targets : []} /></Stack></Paper></div>

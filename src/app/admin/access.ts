@@ -3,7 +3,7 @@
 export type Account = { id: string; username: string; email?: string; role: string; display_name?: string | null; permissions?: string[] };
 
 export const permissionOf: Record<string, string | null> = {
-  Overview: 'overview', Ads: 'ads', Publish: 'publish', 'Bump post': 'bump', 'Distribute post': 'distribute', 'Post planner': 'planner', SEO: 'seo',
+  Overview: 'overview', Ads: 'ads', Publish: 'publish', Import: 'publish', 'Bump post': 'bump', 'Distribute post': 'distribute', 'Post planner': 'planner', SEO: 'seo',
   Users: 'users', Media: 'media', Reports: 'reports', Verification: 'verification', 'System health': 'health',
   Security: 'security', VPN: 'vpn', Team: null,
 };
