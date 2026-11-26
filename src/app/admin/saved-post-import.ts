@@ -18,8 +18,6 @@ export type ImportedPost = {
   posted: boolean;
 };
 
-export type ImportDefaults = { owner: string; category: string; targets: string[] };
-
 function textWithLines(element: Element | null): string {
   if (!element) return '';
   const parts: string[] = [];
@@ -54,7 +52,7 @@ function savedSource(markup: string): URL | null {
   try { return new URL(match[1]); } catch { return null; }
 }
 
-export async function readSavedPosts(input: File[], defaults: ImportDefaults): Promise<{ posts: ImportedPost[]; skipped: string[] }> {
+export async function readSavedPosts(input: File[]): Promise<{ posts: ImportedPost[]; skipped: string[] }> {
   const isPage = (file: File) => /\.(?:html?|mht(?:ml)?|bin)$/i.test(file.name) || !file.name.includes('.');
   const htmlFiles = input.filter(isPage);
   const assets = new Map<string, File>();
@@ -122,7 +120,7 @@ export async function readSavedPosts(input: File[], defaults: ImportDefaults): P
     }
     if (sources.length > 6) warnings.push('Only the first six pictures can be used');
     if (!pictures.length) warnings.push('Add pictures before publishing');
-    posts.push({ id: source.href, sourceUrl: source.href, sourceName: 'MegaPersonals', title, description, age: parsedAge >= 18 && parsedAge <= 120 ? parsedAge : undefined, location, phone, email, pictures, warnings: [...new Set(warnings)], owner: defaults.owner, category: defaults.category, targets: [...defaults.targets], posted: false });
+    posts.push({ id: source.href, sourceUrl: source.href, sourceName: 'MegaPersonals', title, description, age: parsedAge >= 18 && parsedAge <= 120 ? parsedAge : undefined, location, phone, email, pictures, warnings: [...new Set(warnings)], owner: '', category: '', targets: [], posted: false });
   }
   if (htmlFiles.length > 100) skipped.push('Only the first 100 HTML files were read.');
   return { posts, skipped };

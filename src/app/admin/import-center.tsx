@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Badge, Button, Group, Paper, Select, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core';
-import { FiCheck, FiFileText, FiFolder, FiImage, FiUploadCloud, FiX } from 'react-icons/fi';
-import type { CategoryGroup, LocationCountry } from './admin-data';
+import { Badge, Button, Group, Paper, Stack, Text, Title } from '@mantine/core';
+import { FiCheck, FiFileText, FiImage, FiUploadCloud, FiX } from 'react-icons/fi';
 import { readSavedPosts, type ImportedPost } from './saved-post-import';
 import { toast } from '../../components/toast';
 import { EmptyState } from '../../components/page-state';
@@ -28,50 +27,34 @@ function ImportCard({ post, onOpen, onRemove }: { post: ImportedPost; onOpen: ()
   </Paper>;
 }
 
-export function ImportCenter({ locations, categories, defaultOwner, posts, onImport, onOpen, onRemove, onClear }: { locations: LocationCountry[]; categories: CategoryGroup[]; defaultOwner: string; posts: ImportedPost[]; onImport: (posts: ImportedPost[]) => void; onOpen: (post: ImportedPost) => void; onRemove: (id: string) => void; onClear: () => void }) {
-  const [owner, setOwner] = useState(defaultOwner);
-  const [country, setCountry] = useState(locations[0]?.code || '');
-  const [region, setRegion] = useState<string | null>(null);
-  const [city, setCity] = useState<string | null>(null);
-  const [group, setGroup] = useState<string | null>(null);
-  const [category, setCategory] = useState<string | null>(null);
+export function ImportCenter({ posts, onImport, onOpen, onRemove, onClear }: { posts: ImportedPost[]; onImport: (posts: ImportedPost[]) => void; onOpen: (post: ImportedPost) => void; onRemove: (id: string) => void; onClear: () => void }) {
   const [reading, setReading] = useState(false);
   const [skipped, setSkipped] = useState<string[]>([]);
-  const folderInput = useRef<HTMLInputElement | null>(null);
   const filesInput = useRef<HTMLInputElement | null>(null);
-  const currentCountry = locations.find(item => item.code === country);
-  const currentRegion = currentCountry?.regions.find(item => item.id === region);
   async function importFiles(files: File[]) {
     if (!files.length) return;
-    if (!city || !category) { toast.warning('Choose a destination city and category first.'); return; }
     setReading(true);
     try {
-      const result = await readSavedPosts(files, { owner: owner.trim(), category, targets: [city] });
+      const result = await readSavedPosts(files);
       setSkipped(result.skipped);
-      if (result.posts.length) { onImport(result.posts); toast.success(`${result.posts.length} posts added to the review queue.`); }
+      const existing = new Set(posts.map(post => post.id));
+      const added = result.posts.filter(post => !existing.has(post.id));
+      if (added.length) { onImport(added); toast.success(`${added.length} ${added.length === 1 ? 'post' : 'posts'} added to the review queue.`); }
+      else if (result.posts.length) toast.info('These posts are already in the review queue.');
       else toast.warning('No supported post detail pages were found.');
-    } catch { toast.error('These saved files could not be read. Try choosing the folder again.'); }
+    } catch { toast.error('These saved files could not be read. Try choosing the files again.'); }
     finally { setReading(false); }
   }
   return <Stack gap="lg" className={styles.page}>
     <Paper withBorder radius="md" p={{ base: 'md', sm: 'lg' }}><Stack gap="md">
-      <div><Title order={2} size="h4">Import saved posts</Title><Text size="sm" c="dimmed">Choose the destination once, then load desktop saved pages or Chrome mobile offline downloads. Each post stays local until you publish it.</Text></div>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <TextInput label="Post owner username (optional here)" value={owner} onChange={event => setOwner(event.currentTarget.value)} placeholder="Enter an existing member username" />
-        <Select label="Country" searchable value={country} data={locations.map(item => ({ value: item.code, label: item.name }))} onChange={value => { setCountry(value || ''); setRegion(null); setCity(null); }} />
-        <Select label="State / region" searchable value={region} placeholder="Choose a state or region" data={currentCountry?.regions.map(item => ({ value: item.id, label: item.name })) || []} onChange={value => { setRegion(value); setCity(null); }} />
-        <Select label="City" searchable value={city} disabled={!region} placeholder="Choose a city" data={currentRegion?.cities.map(item => ({ value: item.id, label: item.name })) || []} onChange={setCity} />
-        <Select label="Category group" searchable value={group} placeholder="Choose a group" data={categories.map(item => item.name)} onChange={value => { setGroup(value); setCategory(null); }} />
-        <Select label="Subcategory" searchable value={category} disabled={!group} placeholder="Choose a subcategory" data={categories.find(item => item.name === group)?.services.map(item => ({ value: item.slug, label: item.name })) || []} onChange={setCategory} />
-      </SimpleGrid>
-      <div className={styles.dropArea}><FiUploadCloud size={24} aria-hidden="true"/><Text fw={600}>Select saved post pages</Text><Text size="xs" c="dimmed">Desktop: choose a folder with HTML pages and their “_files” picture folders. Mobile: choose Chrome offline downloads (.bin or extensionless files); embedded pictures are read automatically.</Text><Group justify="center" gap="xs"><Button size="sm" leftSection={<FiFolder />} loading={reading} onClick={() => folderInput.current?.click()}>Choose folder</Button><Button size="sm" variant="light" leftSection={<FiFileText />} disabled={reading} onClick={() => filesInput.current?.click()}>Choose files</Button></Group>
-        <input ref={node => { folderInput.current = node; node?.setAttribute('webkitdirectory', ''); }} type="file" hidden aria-label="Choose a folder of saved posts" onChange={event => { void importFiles(Array.from(event.currentTarget.files || [])); event.currentTarget.value = ''; }} />
-        <input ref={filesInput} type="file" hidden multiple aria-label="Choose saved post pages and pictures" onChange={event => { void importFiles(Array.from(event.currentTarget.files || [])); event.currentTarget.value = ''; }} />
+      <div><Title order={2} size="h4">Import saved posts</Title><Text size="sm" c="dimmed">Add Chrome offline post files together or one at a time. Choose the owner, category and cities for each post when you review it.</Text></div>
+      <div className={styles.dropArea}><FiUploadCloud size={24} aria-hidden="true"/><Text fw={600}>Add saved post files</Text><Text size="xs" c="dimmed">Select one or more Chrome offline downloads (.bin or files without an extension). You can add more files to the queue later.</Text><Button size="sm" leftSection={<FiFileText />} loading={reading} onClick={() => filesInput.current?.click()}>{posts.length ? 'Add more files' : 'Choose files'}</Button>
+        <input ref={filesInput} type="file" hidden multiple aria-label="Choose saved post files" onChange={event => { void importFiles(Array.from(event.currentTarget.files || [])); event.currentTarget.value = ''; }} />
       </div>
       <Text size="xs" c="dimmed">The queue lasts while this admin tab stays open. Imported posts are never published automatically. Review ownership, age, contact details and images before posting.</Text>
       {skipped.length > 0 && <Paper withBorder p="sm" radius="sm"><Text size="sm" fw={600}>Files needing attention</Text>{skipped.slice(0, 8).map(message => <Text key={message} size="xs" c="dimmed">{message}</Text>)}{skipped.length > 8 && <Text size="xs" c="dimmed">And {skipped.length - 8} more.</Text>}</Paper>}
     </Stack></Paper>
     <Group justify="space-between" align="center"><div><Title order={2} size="h4">Review queue</Title><Text size="xs" c="dimmed">{posts.filter(post => !post.posted).length} waiting · {posts.filter(post => post.posted).length} published</Text></div>{posts.length > 0 && <Button size="xs" variant="subtle" color="red" onClick={onClear}>Clear queue</Button>}</Group>
-    {posts.length ? <div className={styles.grid}>{posts.map(post => <ImportCard key={post.id} post={post} onOpen={() => onOpen(post)} onRemove={() => onRemove(post.id)} />)}</div> : <EmptyState kind="search" title="No posts in the queue" description="Choose saved post HTML files and their picture folders to preview posts here." />}
+    {posts.length ? <div className={styles.grid}>{posts.map(post => <ImportCard key={post.id} post={post} onOpen={() => onOpen(post)} onRemove={() => onRemove(post.id)} />)}</div> : <EmptyState kind="search" title="No posts in the queue" description="Choose saved post files to preview them here." />}
   </Stack>;
 }
