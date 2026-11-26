@@ -1,3 +1,5 @@
+import { readSavedArchive } from './saved-post-archive';
+
 export type ImportedPost = {
   id: string;
   sourceName: string;
@@ -53,10 +55,11 @@ function savedSource(markup: string): URL | null {
 }
 
 export async function readSavedPosts(input: File[], defaults: ImportDefaults): Promise<{ posts: ImportedPost[]; skipped: string[] }> {
-  const htmlFiles = input.filter(file => /\.html?$/i.test(file.name));
+  const isPage = (file: File) => /\.(?:html?|mht(?:ml)?|bin)$/i.test(file.name) || !file.name.includes('.');
+  const htmlFiles = input.filter(isPage);
   const assets = new Map<string, File>();
   const names = new Map<string, File | null>();
-  for (const file of input.filter(file => !/\.html?$/i.test(file.name))) {
+  for (const file of input.filter(file => !isPage(file))) {
     assets.set(normalizedPath(file.webkitRelativePath || file.name), file);
     const name = file.name.toLowerCase();
     names.set(name, names.has(name) ? null : file);
@@ -64,9 +67,24 @@ export async function readSavedPosts(input: File[], defaults: ImportDefaults): P
   const posts: ImportedPost[] = [];
   const skipped: string[] = [];
   for (const file of htmlFiles.slice(0, 100)) {
-    if (file.size > 2 * 1024 * 1024) { skipped.push(`${file.name}: HTML file is too large.`); continue; }
-    const markup = await file.text();
-    const source = savedSource(markup);
+    const isHtml = /\.html?$/i.test(file.name);
+    if (isHtml && file.size > 2 * 1024 * 1024) { skipped.push(`${file.name}: HTML file is too large.`); continue; }
+    let markup: string;
+    let source: URL | null;
+    let archivedImages = new Map<string, File>();
+    if (isHtml) {
+      markup = await file.text();
+      source = savedSource(markup);
+    } else {
+      try {
+        const archive = await readSavedArchive(file);
+        ({ markup, source } = archive);
+        archivedImages = archive.images;
+      } catch (error) {
+        skipped.push(`${file.name}: ${error instanceof Error ? error.message : 'Archive could not be read'}.`);
+        continue;
+      }
+    }
     if (!source || !['megapersonals.eu', 'www.megapersonals.eu'].includes(source.hostname.toLowerCase()) || !/^\/public\/post_detail\/\d+\/?$/.test(source.pathname)) {
       skipped.push(`${file.name}: this is not a supported MegaPersonals post detail page.`);
       continue;
@@ -90,7 +108,10 @@ export async function readSavedPosts(input: File[], defaults: ImportDefaults): P
     const base = new URL(htmlPath, 'https://saved.local/');
     const sources = [...document.querySelectorAll<HTMLImageElement>('.viewpostgallery img.post_preview_image')].map(image => image.getAttribute('src') || '');
     for (const src of sources.slice(0, 6)) {
-      if (!src || /^(https?:|data:|blob:)/i.test(src)) { warnings.push('A remote picture needs to be added manually'); continue; }
+      if (!src || /^(data:|blob:)/i.test(src)) { warnings.push('A picture needs to be added manually'); continue; }
+      const archived = archivedImages.get(new URL(src, source).href);
+      if (archived) { pictures.push(archived); continue; }
+      if (/^https?:/i.test(src)) { warnings.push('A picture was not saved in the archive'); continue; }
       let path: string;
       try { path = normalizedPath(new URL(src, base).pathname); } catch { warnings.push('A picture path could not be read'); continue; }
       const image = assets.get(path) || names.get(path.split('/').pop()!.toLowerCase());
