@@ -1,5 +1,5 @@
 .page { max-width: 1100px; margin-inline: auto; }
-.dropArea { display: flex; justify-content: center; padding: 16px; border: 1px dashed var(--mantine-color-default-border); border-radius: 10px; background: var(--mantine-color-default-hover); }
+.dropArea { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 16px; border: 1px dashed var(--mantine-color-default-border); border-radius: 10px; background: var(--mantine-color-default-hover); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 14px; }
 .card { display: grid; grid-template-columns: 105px minmax(0, 1fr); gap: 12px; padding: 10px; min-width: 0; }
 .cover { position: relative; display: grid; place-items: center; width: 105px; min-height: 145px; overflow: hidden; border-radius: 7px; background: var(--mantine-color-default-hover); color: var(--mantine-color-dimmed); }

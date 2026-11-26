@@ -23,6 +23,8 @@ const routes = {
   'POST /api/admin/ads/:id/destinations': ['distribute'],
   'DELETE /api/admin/ads/:id': ['ads'],
   'POST /api/admin/media/upload': ['publish', 'distribute', 'planner'],
+  'GET /api/admin/import-rules': ['publish'],
+  'PUT /api/admin/import-rules/:domain': ['publish'],
   'GET /api/admin/seo': ['seo'],
   'PUT /api/admin/seo': ['seo'],
   'PUT /api/admin/seo/page': ['seo'],

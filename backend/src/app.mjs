@@ -17,6 +17,7 @@ import { redis, images } from "./queue.mjs";
 import { s3, storageReady } from "./storage.mjs";
 import { emailReady, sendVerificationEmail, sendPasswordResetEmail, sendContactMessage } from "./email.mjs";
 import { adminManagement } from "./admin-routes.mjs";
+import { importRuleRoutes } from "./import-rules.mjs";
 import { securityCenter, startupEdgeSync } from "./security-center.mjs";
 import { vpnRoutes } from "./vpn.mjs";
 import { storageReport } from "./storage-report.mjs";
@@ -667,6 +668,7 @@ export async function buildApp() {
     return { ok: true };
   });
   adminManagement(app, { admin, fail });
+  importRuleRoutes(app, { admin });
   securityCenter(app, { admin, fail });
   vpnRoutes(app, { admin, fail });
   teamRoutes(app, { admin, fail });

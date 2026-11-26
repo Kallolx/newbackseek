@@ -301,6 +301,8 @@ Production Compose services:
 
 ## 10. Deployment procedure
 
+The admin saved-page importer (`src/app/admin/saved-post-import.ts`, `site-rule-trainer.tsx`, `import-center.tsx`) reads Chrome MHTML/`.bin` archives locally in the browser. The embedded HTML is parsed inertly and embedded pictures remain local until the final ad publish action. MegaPersonals has its original extractor; CallEscort and MyEscort have built-in layouts. For other domains, the admin chooses a saved page, selects field/picture matches in “Teach layout”, and saves a domain rule through `/api/admin/import-rules`. Rules live in `admin_import_rules` (migration `026_import_rules.sql`) and apply to later files from that domain and its subdomains. Never render or run archived markup. New site layouts require human review before an ad is published.
+
 Docker on the VPS needs sudo, and the live Compose project is `app` using docker-compose.production.yml. From /srv/backpagenew/app:
 
 ~~~bash

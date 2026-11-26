@@ -1,5 +1,25 @@
 import { readSavedArchive } from './saved-post-archive';
 
+export type SiteRule = { domain: string; name: string; selectors: { title: string; description: string; images: string; age: string; location: string; phone: string; email: string } };
+export type UntrainedPage = { file: File; domain: string; sourceUrl: string };
+
+const builtInRules: SiteRule[] = [
+  { domain: 'callescort.org', name: 'CallEscort', selectors: { title: 'meta[name="description"]', description: 'meta[name="description"]', images: '.fotorama__stage__frame img', age: '', location: '.product-info .product-info-list a[title^="browse all escort in"]', phone: '.product-info a[href^="tel:"]', email: '' } },
+  { domain: 'myescort.network', name: 'MyEscort', selectors: { title: '.ad-details h1[itemprop="disambiguatingDescription"]', description: '.ad-details tr.description td', images: '#photo-gallery img', age: 'meta[name="description"]', location: 'meta[itemprop="address"]', phone: 'meta[itemprop="telephone"]', email: '' } },
+];
+
+export function domainFor(source: URL): string {
+  const parts = source.hostname.toLowerCase().split('.');
+  const compound = new Set(['co.uk', 'org.uk', 'com.au', 'net.au', 'co.nz', 'co.in', 'com.bd', 'com.br', 'com.mx']);
+  const length = compound.has(parts.slice(-2).join('.')) ? 3 : 2;
+  return parts.length > length ? parts.slice(-length).join('.') : source.hostname.toLowerCase();
+}
+
+function findRule(source: URL, rules: SiteRule[]) {
+  const hostname = source.hostname.toLowerCase();
+  return [...rules, ...builtInRules].find(rule => hostname === rule.domain || hostname.endsWith(`.${rule.domain}`));
+}
+
 export type ImportedPost = {
   id: string;
   sourceName: string;
@@ -18,14 +38,15 @@ export type ImportedPost = {
   posted: boolean;
 };
 
-function textWithLines(element: Element | null): string {
+export function textWithLines(element: Element | null): string {
   if (!element) return '';
+  if (element.tagName === 'META') return element.getAttribute('content')?.trim() || '';
   const parts: string[] = [];
   const visit = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) { parts.push(node.textContent || ''); return; }
     if (node.nodeType !== Node.ELEMENT_NODE) return;
     const tag = (node as Element).tagName.toLowerCase();
-    if (tag === 'script' || tag === 'style') return;
+    if (['script', 'style', 'template', 'noscript'].includes(tag)) return;
     if (tag === 'br') { parts.push('\n'); return; }
     for (const child of node.childNodes) visit(child);
     if (['p', 'div', 'li'].includes(tag)) parts.push('\n');
@@ -52,8 +73,38 @@ function savedSource(markup: string): URL | null {
   try { return new URL(match[1]); } catch { return null; }
 }
 
-export async function readSavedPosts(input: File[]): Promise<{ posts: ImportedPost[]; skipped: string[] }> {
-  const isPage = (file: File) => /\.(?:html?|mht(?:ml)?|bin)$/i.test(file.name) || !file.name.includes('.');
+export async function readSavedPage(file: File) {
+  const start = new TextDecoder().decode(await file.slice(0, 180).arrayBuffer());
+  if (/^from: <saved by blink>|^snapshot-content-location:/i.test(start)) return readSavedArchive(file);
+  if (file.size > 2 * 1024 * 1024) throw new Error('HTML file is over 2 MB');
+  const markup = await file.text();
+  if (!/<!doctype html|<html\b/i.test(markup.slice(0, 2000))) throw new Error('File is not a saved HTML page');
+  const source = savedSource(markup);
+  if (!source) throw new Error('Saved page source URL is missing');
+  return { source, markup, images: new Map<string, File>() };
+}
+
+function field(doc: Document, selector: string): string {
+  if (!selector) return '';
+  let node: Element | null;
+  try { node = doc.querySelector(selector); } catch { return ''; }
+  if (!node) return '';
+  if (node.tagName === 'A') {
+    const href = node.getAttribute('href') || '';
+    if (/^(?:tel|sms|mailto):/i.test(href)) return href.replace(/^(?:tel|sms|mailto):/i, '').trim();
+  }
+  return textWithLines(node);
+}
+
+export function extractFields(doc: Document, rule: SiteRule) {
+  const selectors = rule.selectors;
+  return { title: field(doc, selectors.title), description: field(doc, selectors.description), age: field(doc, selectors.age),
+    location: field(doc, selectors.location), phone: field(doc, selectors.phone), email: field(doc, selectors.email), images: selectors.images };
+}
+
+export async function readSavedPosts(input: File[], rules: SiteRule[] = []): Promise<{ posts: ImportedPost[]; skipped: string[]; untrained: UntrainedPage[] }> {
+  // Saved Chrome pages may have a title with a dot but no extension. Treat only known images as assets.
+  const isPage = (file: File) => !mediaType(file);
   const htmlFiles = input.filter(isPage);
   const assets = new Map<string, File>();
   const names = new Map<string, File | null>();
@@ -64,47 +115,47 @@ export async function readSavedPosts(input: File[]): Promise<{ posts: ImportedPo
   }
   const posts: ImportedPost[] = [];
   const skipped: string[] = [];
+  const untrained: UntrainedPage[] = [];
   for (const file of htmlFiles.slice(0, 100)) {
-    const isHtml = /\.html?$/i.test(file.name);
-    if (isHtml && file.size > 2 * 1024 * 1024) { skipped.push(`${file.name}: HTML file is too large.`); continue; }
     let markup: string;
     let source: URL | null;
     let archivedImages = new Map<string, File>();
-    if (isHtml) {
-      markup = await file.text();
-      source = savedSource(markup);
-    } else {
-      try {
-        const archive = await readSavedArchive(file);
-        ({ markup, source } = archive);
-        archivedImages = archive.images;
-      } catch (error) {
-        skipped.push(`${file.name}: ${error instanceof Error ? error.message : 'Archive could not be read'}.`);
-        continue;
-      }
-    }
-    if (!source || !['megapersonals.eu', 'www.megapersonals.eu'].includes(source.hostname.toLowerCase()) || !/^\/public\/post_detail\/\d+\/?$/.test(source.pathname)) {
-      skipped.push(`${file.name}: this is not a supported MegaPersonals post detail page.`);
+    try {
+      const archive = await readSavedPage(file);
+      ({ markup, source } = archive);
+      archivedImages = archive.images;
+    } catch (error) {
+      skipped.push(`${file.name}: ${error instanceof Error ? error.message : 'Saved page could not be read'}.`);
       continue;
     }
+    const mega = ['megapersonals.eu', 'www.megapersonals.eu'].includes(source.hostname.toLowerCase()) && /^\/public\/post_detail\/\d+\/?$/.test(source.pathname);
+    const rule = findRule(source, rules);
+    if (!mega && !rule) { untrained.push({ file, domain: domainFor(source), sourceUrl: source.href }); continue; }
     // DOMParser gives us an inert document. Never render saved markup or run its scripts.
     const document = new DOMParser().parseFromString(markup, 'text/html');
-    const titleNode = document.querySelector('.post_preview_title')?.cloneNode(true) as Element | undefined;
+    const titleNode = mega && !rule ? document.querySelector('.post_preview_title')?.cloneNode(true) as Element | undefined : undefined;
     titleNode?.querySelector('.post_preview_date_time')?.remove();
-    const title = textWithLines(titleNode || null).replace(/\s+/g, ' ').slice(0, 140);
-    const description = textWithLines(document.querySelector('.postbody')).slice(0, 2950);
-    const ageLine = [...document.querySelectorAll('.isee-age > div')].find(row => /\bage\b/i.test(row.querySelector('.isee-age__label')?.textContent || ''));
-    const parsedAge = Number(ageLine?.querySelector('.isee-age__value')?.textContent?.match(/\b\d{2,3}\b/)?.[0]);
-    const phone = document.querySelector<HTMLAnchorElement>('.post_preview_phone a[href^="tel:"]')?.getAttribute('href')?.slice(4).trim() || '';
-    const email = document.querySelector<HTMLAnchorElement>('.post_preview_body a[href^="mailto:"]')?.getAttribute('href')?.slice(7).trim() || '';
-    const location = textWithLines(document.querySelector('.prev_city span')).replace(/\s+/g, ' ').slice(0, 200);
+    const ageLine = mega && !rule ? [...document.querySelectorAll('.isee-age > div')].find(row => /\bage\b/i.test(row.querySelector('.isee-age__label')?.textContent || '')) : undefined;
+    const extracted = rule ? extractFields(document, rule) : {
+      title: textWithLines(titleNode || null), description: field(document, '.postbody'),
+      age: ageLine?.querySelector('.isee-age__value')?.textContent || '', location: field(document, '.prev_city span'),
+      phone: field(document, '.post_preview_phone a[href^="tel:"]'), email: field(document, '.post_preview_body a[href^="mailto:"]'),
+      images: '.viewpostgallery img.post_preview_image',
+    };
+    const title = extracted.title.replace(/\s+/g, ' ').slice(0, 140);
+    const description = extracted.description.slice(0, 2950);
+    const parsedAge = Number(extracted.age.match(/\b\d{2,3}\b/)?.[0]);
+    const { phone, email } = extracted;
+    const location = extracted.location.replace(/\s+/g, ' ').slice(0, 200);
     const warnings: string[] = [];
     if (title.length < 5) warnings.push('Title needs review');
     if (description.length < 20) warnings.push('Description needs review');
     const pictures: File[] = [];
     const htmlPath = normalizedPath(file.webkitRelativePath || file.name);
     const base = new URL(htmlPath, 'https://saved.local/');
-    const sources = [...document.querySelectorAll<HTMLImageElement>('.viewpostgallery img.post_preview_image')].map(image => image.getAttribute('src') || '');
+    let imageNodes: Element[] = [];
+    try { imageNodes = [...document.querySelectorAll(extracted.images)]; } catch { warnings.push('Picture selector needs review'); }
+    const sources = [...new Set(imageNodes.map(image => image.getAttribute('src') || image.getAttribute('data-src') || image.getAttribute('href') || '').filter(Boolean))];
     for (const src of sources.slice(0, 6)) {
       if (!src || /^(data:|blob:)/i.test(src)) { warnings.push('A picture needs to be added manually'); continue; }
       const archived = archivedImages.get(new URL(src, source).href);
@@ -120,8 +171,8 @@ export async function readSavedPosts(input: File[]): Promise<{ posts: ImportedPo
     }
     if (sources.length > 6) warnings.push('Only the first six pictures can be used');
     if (!pictures.length) warnings.push('Add pictures before publishing');
-    posts.push({ id: source.href, sourceUrl: source.href, sourceName: 'MegaPersonals', title, description, age: parsedAge >= 18 && parsedAge <= 120 ? parsedAge : undefined, location, phone, email, pictures, warnings: [...new Set(warnings)], owner: '', category: '', targets: [], posted: false });
+    posts.push({ id: source.href, sourceUrl: source.href, sourceName: rule?.name || 'MegaPersonals', title, description, age: parsedAge >= 18 && parsedAge <= 120 ? parsedAge : undefined, location, phone, email, pictures, warnings: [...new Set(warnings)], owner: '', category: '', targets: [], posted: false });
   }
   if (htmlFiles.length > 100) skipped.push('Only the first 100 HTML files were read.');
-  return { posts, skipped };
+  return { posts, skipped, untrained };
 }
