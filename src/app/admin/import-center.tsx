@@ -43,7 +43,7 @@ export function ImportCenter({ locations, categories, defaultOwner, posts, onImp
   const currentRegion = currentCountry?.regions.find(item => item.id === region);
   async function importFiles(files: File[]) {
     if (!files.length) return;
-    if (!owner.trim() || !city || !category) { toast.warning('Choose an owner, destination city and category first.'); return; }
+    if (!city || !category) { toast.warning('Choose a destination city and category first.'); return; }
     setReading(true);
     try {
       const result = await readSavedPosts(files, { owner: owner.trim(), category, targets: [city] });
@@ -57,7 +57,7 @@ export function ImportCenter({ locations, categories, defaultOwner, posts, onImp
     <Paper withBorder radius="md" p={{ base: 'md', sm: 'lg' }}><Stack gap="md">
       <div><Title order={2} size="h4">Import saved posts</Title><Text size="sm" c="dimmed">Choose the destination once, then load saved post pages and their picture folders. Each post stays local until you publish it.</Text></div>
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <TextInput label="Post owner username" value={owner} onChange={event => setOwner(event.currentTarget.value)} placeholder="Existing account username" />
+        <TextInput label="Post owner username (optional here)" value={owner} onChange={event => setOwner(event.currentTarget.value)} placeholder="Enter an existing member username" />
         <Select label="Country" searchable value={country} data={locations.map(item => ({ value: item.code, label: item.name }))} onChange={value => { setCountry(value || ''); setRegion(null); setCity(null); }} />
         <Select label="State / region" searchable value={region} placeholder="Choose a state or region" data={currentCountry?.regions.map(item => ({ value: item.id, label: item.name })) || []} onChange={value => { setRegion(value); setCity(null); }} />
         <Select label="City" searchable value={city} disabled={!region} placeholder="Choose a city" data={currentRegion?.cities.map(item => ({ value: item.id, label: item.name })) || []} onChange={setCity} />
