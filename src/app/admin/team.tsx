@@ -54,7 +54,7 @@ function AccessPicker({ permissions, value, onChange }: { permissions: Permissio
     </Group></Group>
     <Checkbox.Group value={value} onChange={onChange} aria-label="Sections this manager can open">
       <SimpleGrid cols={{ base: 1, xs: 2 }} spacing={8} verticalSpacing={8}>
-        {permissions.map((item) => <Checkbox key={item.key} value={item.key} label={item.label} />)}
+        {permissions.map((item) => <Checkbox key={item.key} value={item.key} label={item.key === 'publish' ? 'Ad Publish + Import posts' : item.label} />)}
       </SimpleGrid>
     </Checkbox.Group>
   </Stack>;

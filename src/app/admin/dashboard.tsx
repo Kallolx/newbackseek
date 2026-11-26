@@ -119,5 +119,5 @@ export function AdminDashboard({locations,categories}:{locations:LocationCountry
   </>}
   <Modal opened={Boolean(photo||adPreview)} onClose={()=>{setPhoto('');setAdPreview(null);}} title={adPreview?`Post #${adPreview.id} pictures`:'Image preview'} centered size="lg">{adPreview?<PhotoGallery key={adPreview.id} title={adPreview.title} photos={adPreview.images.map(src=>({src}))} allowFullscreen={false}/>:photo&&<img src={photo} alt="Selected image" style={{width:'100%',height:'auto',maxHeight:'75vh',objectFit:'contain'}}/>}</Modal>
   <Modal opened={Boolean(confirm)} onClose={()=>{if(!busy)setConfirm(null);}} title={confirm?.title} centered><Stack><Text size="sm">{confirm?.description}</Text><Group justify="flex-end"><Button variant="default" disabled={busy} onClick={()=>setConfirm(null)}>Cancel</Button><Button color={/delete|suspend|reject|pause/i.test(confirm?.title||'')?'red':'indigo'} loading={busy} onClick={async()=>{if(confirm&&await action(confirm.run,'Action completed.'))setConfirm(null);}}>Confirm action</Button></Group></Stack></Modal>
-  </Box></AppShell.Main></AppShell><AdminMobileNavigation onCreate={()=>{setSource(undefined);setActiveImportId(null);}} may={may}/></div>;
+  </Box></AppShell.Main></AppShell><AdminMobileNavigation onCreate={()=>{setSource(undefined);setActiveImportId(null);}} may={may} manager={manager}/></div>;
 }
